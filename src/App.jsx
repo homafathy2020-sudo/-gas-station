@@ -3416,8 +3416,9 @@ const getTrialInfo = () => {
 
 // ==================== PLAN SYSTEM ====================
 const getPlan = () => localStorage.getItem('app_plan') || 'trial';
-const planHasGPS      = (plan) => ['pro', 'enterprise', 'lifetime'].includes(plan);
-const planHasExcelAdv = (plan) => ['enterprise', 'lifetime'].includes(plan);
+// أثناء الـ trial كل المميزات متاحة
+const planHasGPS      = (plan) => ['trial', 'pro', 'enterprise', 'lifetime'].includes(plan);
+const planHasExcelAdv = (plan) => ['trial', 'enterprise', 'lifetime'].includes(plan);
 const planIsFree      = (plan) => plan === 'free';
 const FREE_WORKER_LIMIT = 5;
 
