@@ -2750,7 +2750,18 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const [newPass, setNewPass] = useState('');
   const [newPassErr, setNewPassErr] = useState('');
   const [inviteWorkerName, setInviteWorkerName] = useState('');
-  const [invites, setInvites] = useState(() => getInvites(currentUser.id));
+  const [invites, setInvites] = useState([]);
+
+  // جيب الدعوات من Firebase عند فتح الصفحة
+  useEffect(() => {
+    const loadInvites = async () => {
+      try {
+        const d = await getDoc(doc(db, 'owners', currentUser.id, 'meta', 'invites'));
+        if (d.exists()) setInvites(d.data().list || []);
+      } catch {}
+    };
+    loadInvites();
+  }, []);
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
   const toast = useToast();
   const ownerCode = currentUser.ownerCode || 'STAT-????';
@@ -3158,9 +3169,13 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       // لو عامل، يتضاف في داتا المالك
       if (regForm.role === 'worker' && ownerData && onRegisterWorker) {
         await onRegisterWorker(newUser, ownerData.id);
-        // امسح الدعوة بالاسم
-        const invites = getInvites(ownerData.id);
-        await saveInvites(ownerData.id, invites.filter(x => x !== regForm.name.trim()));
+        // امسح الدعوة من Firebase مباشرة
+        try {
+          const inviteDoc = await getDoc(doc(db, 'owners', ownerData.id, 'meta', 'invites'));
+          const currentList = inviteDoc.exists() ? (inviteDoc.data().list || []) : [];
+          const updatedList = currentList.filter(x => x !== regForm.name.trim());
+          await setDoc(doc(db, 'owners', ownerData.id, 'meta', 'invites'), { list: updatedList });
+        } catch (e) { console.log('invite remove error', e); }
       }
 
       toast('تم إنشاء الحساب بنجاح ✓', 'success');
