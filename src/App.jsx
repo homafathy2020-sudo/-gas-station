@@ -2749,10 +2749,12 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const [changePassId, setChangePassId] = useState(null);
   const [newPass, setNewPass] = useState('');
   const [newPassErr, setNewPassErr] = useState('');
-  const [inviteUsername, setInviteUsername] = useState('');
+  const [inviteWorkerName, setInviteWorkerName] = useState('');
   const [invites, setInvites] = useState(() => getInvites(currentUser.id));
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
   const toast = useToast();
+  const ownerCode = currentUser.ownerCode || 'STAT-????';
+  const appUrl = window.location.origin;
 
   const roleLabels = { owner: 'المالك', manager: 'مدير', worker: 'عامل' };
 
@@ -2816,18 +2818,36 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   };
 
   const handleAddInvite = () => {
-    const username = inviteUsername.trim();
-    if (!username) { toast('اكتب اسم المستخدم أولاً', 'error'); return; }
-    if (invites.includes(username)) { toast('هذا الاسم موجود في القائمة مسبقاً', 'warning'); return; }
-    const updated = [...invites, username];
+    const workerName = inviteWorkerName.trim();
+    if (!workerName) { toast('اكتب اسم العامل أولاً', 'error'); return; }
+    if (invites.includes(workerName)) { toast('هذا الاسم موجود في القائمة مسبقاً', 'warning'); return; }
+    const updated = [...invites, workerName];
     setInvites(updated);
     saveInvites(currentUser.id, updated);
-    setInviteUsername('');
-    toast(`تمت دعوة "${username}" ✓`, 'success');
+
+    // فتح واتساب برسالة جاهزة باسم العامل والكود
+    const msg = encodeURIComponent(
+      `أهلاً يا ${workerName} 👋
+
+تم تسجيلك في منظومة بترومين لإدارة المحطة ⛽
+
+خطوات التسجيل:
+1️⃣ افتح الرابط: ${appUrl}
+2️⃣ اضغط "إنشاء حساب جديد"
+3️⃣ اختر دورك: عامل
+4️⃣ اكتب اسمك بالظبط: ${workerName}
+5️⃣ كود الانضمام: ${ownerCode}
+
+متنساش تحفظ الكود! 🔑`
+    );
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+
+    setInviteWorkerName('');
+    toast(`تمت دعوة "${workerName}" ✓`, 'success');
   };
 
-  const handleRemoveInvite = (username) => {
-    const updated = invites.filter(u => u !== username);
+  const handleRemoveInvite = (workerName) => {
+    const updated = invites.filter(u => u !== workerName);
     setInvites(updated);
     saveInvites(currentUser.id, updated);
     toast('تم حذف الدعوة', 'success');
@@ -2972,36 +2992,68 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
       {/* ==================== قائمة الدعوات ==================== */}
       <div className="card" style={{ marginTop: 24 }}>
         <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-          📩 دعوات العمال المعلقة
+          📩 دعوة العمال
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-          أضف اسم المستخدم اللي هيسجل به العامل — مش هيقدر يسجل غير لو اسمه موجود هنا
+
+        {/* كود الانضمام */}
+        <div style={{ background: 'rgba(26,86,219,0.08)', border: '1px solid rgba(26,86,219,0.25)', borderRadius: 12, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>كود الانضمام الخاص بك</div>
+            <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 4, color: 'var(--primary-light)', fontFamily: 'monospace' }}>{ownerCode}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>العمال بيحتاجوا الكود ده عشان يسجلوا تحت اسمك</div>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(ownerCode); toast('تم نسخ الكود ✓', 'success'); }}>
+            📋 نسخ الكود
+          </button>
+        </div>
+
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+          اكتب اسم العامل بالظبط — هيتبعتله رسالة واتساب بالكود وخطوات التسجيل
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <input
             type="text"
             className="form-input"
-            placeholder="اسم المستخدم اللي هيختاره العامل"
-            value={inviteUsername}
-            onChange={e => setInviteUsername(e.target.value)}
+            placeholder="اسم العامل (مثال: محمد أحمد)"
+            value={inviteWorkerName}
+            onChange={e => setInviteWorkerName(e.target.value)}
             onKeyPress={e => e.key === 'Enter' && handleAddInvite()}
           />
-          <button className="btn btn-primary" onClick={handleAddInvite} style={{ whiteSpace: 'nowrap' }}>📩 دعوة</button>
+          <button className="btn btn-primary" onClick={handleAddInvite} style={{ whiteSpace: 'nowrap' }}>
+            💬 دعوة واتساب
+          </button>
         </div>
+
         {invites.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: 13 }}>
             لا توجد دعوات معلقة
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {invites.map((username) => (
-              <div key={username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10 }}>
+            {invites.map((workerName) => (
+              <div key={workerName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 16 }}>👷</span>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{username}</span>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{workerName}</span>
                   <span className="badge badge-blue" style={{ fontSize: 10 }}>في الانتظار</span>
                 </div>
-                <button className="btn btn-danger btn-xs" onClick={() => handleRemoveInvite(username)}>🗑️ حذف</button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="btn btn-success btn-xs" onClick={() => {
+                    const msg = encodeURIComponent(`أهلاً يا ${workerName} 👋
+
+تذكير بخطوات التسجيل في منظومة بترومين ⛽
+
+1️⃣ افتح الرابط: ${appUrl}
+2️⃣ اضغط "إنشاء حساب جديد"
+3️⃣ اختر دورك: عامل
+4️⃣ اكتب اسمك بالظبط: ${workerName}
+5️⃣ كود الانضمام: ${ownerCode}
+
+متنساش تحفظ الكود! 🔑`);
+                    window.open(`https://wa.me/?text=${msg}`, '_blank');
+                  }}>💬 إعادة إرسال</button>
+                  <button className="btn btn-danger btn-xs" onClick={() => handleRemoveInvite(workerName)}>🗑️</button>
+                </div>
               </div>
             ))}
           </div>
@@ -3075,11 +3127,11 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
           });
           if (!ownerData) { errs.reg_ownerCode = 'كود المالك غير صحيح'; }
           else {
-            // مزامنة الدعوات من Firestore ثم تحقق
+            // مزامنة الدعوات من Firestore ثم تحقق بالاسم
             await syncInvites(ownerData.id);
             const inviteList = getInvites(ownerData.id);
-            if (!inviteList.includes(regForm.email.trim())) {
-              errs.reg_email = 'لم يتم دعوتك من قِبل هذا المالك';
+            if (!inviteList.includes(regForm.name.trim())) {
+              errs.reg_name = 'الاسم ده مش موجود في قائمة الدعوات — تأكد إن المالك كتب اسمك بالظبط';
             }
           }
         } catch { errs.reg_ownerCode = 'حدث خطأ في التحقق من الكود'; }
@@ -3098,7 +3150,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         name:      regForm.name.trim(),
         role:      regForm.role,
         roleLabel: roleLabels[regForm.role],
-        ...(regForm.role === 'owner'  ? { ownerCode: regForm.email.split('@')[0] } : {}),
+        ...(regForm.role === 'owner'  ? { ownerCode: 'STAT-' + Math.random().toString(36).substring(2,6).toUpperCase() } : {}),
         ...(regForm.role === 'worker' && ownerData ? { ownerId: ownerData.id } : {}),
       };
       await setDoc(doc(db, 'users', uid), newUser);
@@ -3106,9 +3158,9 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       // لو عامل، يتضاف في داتا المالك
       if (regForm.role === 'worker' && ownerData && onRegisterWorker) {
         await onRegisterWorker(newUser, ownerData.id);
-        // امسح الدعوة
+        // امسح الدعوة بالاسم
         const invites = getInvites(ownerData.id);
-        await saveInvites(ownerData.id, invites.filter(x => x !== regForm.email.trim()));
+        await saveInvites(ownerData.id, invites.filter(x => x !== regForm.name.trim()));
       }
 
       toast('تم إنشاء الحساب بنجاح ✓', 'success');
