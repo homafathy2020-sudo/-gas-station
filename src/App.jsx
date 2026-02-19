@@ -3286,6 +3286,43 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
 const TRIAL_DAYS = 15;
 const WHATSAPP_NUMBER = '201220523598';
 
+// ---- Firebase-based trial & plan helpers ----
+const getOwnerTrialDoc = (ownerId) => doc(db, 'owners', ownerId, 'settings', 'subscription');
+
+const initTrialIfNeeded = async (ownerId) => {
+  const ref = getOwnerTrialDoc(ownerId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      trialStart: new Date().toISOString(),
+      plan: 'trial',
+    });
+  }
+};
+
+const getTrialInfoFromDB = async (ownerId) => {
+  const ref = getOwnerTrialDoc(ownerId);
+  const snap = await getDoc(ref);
+  let data = snap.exists() ? snap.data() : null;
+  if (!data) {
+    const startDate = new Date().toISOString();
+    await setDoc(ref, { trialStart: startDate, plan: 'trial' });
+    data = { trialStart: startDate, plan: 'trial' };
+  }
+  const start = new Date(data.trialStart);
+  const now = new Date();
+  const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
+  const expired = elapsedDays >= TRIAL_DAYS;
+  return { remaining, expired, elapsedDays, startDate: data.trialStart, plan: data.plan || 'trial' };
+};
+
+const setPlanInDB = async (ownerId, plan) => {
+  const ref = getOwnerTrialDoc(ownerId);
+  await updateDoc(ref, { plan });
+};
+
+// legacy fallback (غير مستخدم للمستخدمين المسجلين)
 const getTrialInfo = () => {
   let startDate = localStorage.getItem('app_trial_start');
   if (!startDate) {
@@ -3301,7 +3338,6 @@ const getTrialInfo = () => {
 };
 
 // ==================== PLAN SYSTEM ====================
-// لتفعيل خطة: localStorage.setItem('app_plan', 'basic' | 'pro' | 'enterprise' | 'lifetime')
 const getPlan = () => localStorage.getItem('app_plan') || 'trial';
 const planHasGPS      = (plan) => ['pro', 'enterprise', 'lifetime'].includes(plan);
 const planHasExcelAdv = (plan) => ['enterprise', 'lifetime'].includes(plan);
@@ -3473,19 +3509,59 @@ const PricingScreen = ({ onBack }) => {
 };
 
 // ===== شريط التجربة المجانية =====
-const TrialBanner = ({ remaining, onViewPlans }) => {
+const TrialBanner = ({ remaining, onViewPlans, userName }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const calcTime = () => {
+      const now = new Date();
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      const diff = endOfDay - now;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+    };
+    calcTime();
+    const interval = setInterval(calcTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (remaining <= 0) return null;
   const urgent = remaining <= 3;
+
   return (
-    <div className="trial-banner no-print">
+    <div className="trial-banner no-print" style={{
+      background: urgent
+        ? 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))'
+        : 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
+      borderBottom: urgent ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(245,158,11,0.25)',
+    }}>
       <div className="trial-banner-text">
         <span>{urgent ? '🔴' : '⏳'}</span>
         <span>
+          {userName && <strong style={{ color: 'var(--text)' }}>{userName}، </strong>}
           {urgent
             ? `تنتهي تجربتك المجانية خلال ${remaining} ${remaining === 1 ? 'يوم' : 'أيام'} فقط!`
-            : `أنت في فترة التجربة المجانية — متبقي ${remaining} يوم`}
+            : `أنت الآن في الفترة التجريبية المجانية — متبقي`}
         </span>
         <span className={`trial-days-badge ${urgent ? 'urgent' : ''}`}>{remaining} يوم</span>
+        {!urgent && timeLeft && (
+          <span style={{
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '2px 10px',
+            borderRadius: 20,
+            fontFamily: 'monospace',
+            fontSize: 13,
+            fontWeight: 800,
+            color: '#f8fafc',
+            letterSpacing: 2,
+          }}>
+            ⏱ {timeLeft}
+          </span>
+        )}
       </div>
       <button className="btn btn-accent btn-sm" onClick={onViewPlans}>
         💳 اشترك الآن
@@ -4003,7 +4079,35 @@ const App = () => {
 
 export default function Root() {
   const [showPricing, setShowPricing] = useState(false);
-  const trial = getTrialInfo();
+  const [trialInfo, setTrialInfo] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // تابع حالة Auth عشان نعرف المستخدم الحالي
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          const userData = { id: firebaseUser.uid, ...userDoc.data() };
+          setCurrentUser(userData);
+          // حمّل الـ trial من Firebase
+          const ownerId = userData.role === 'owner' ? userData.id : userData.ownerId;
+          if (ownerId) {
+            await initTrialIfNeeded(ownerId);
+            const info = await getTrialInfoFromDB(ownerId);
+            setTrialInfo(info);
+          }
+        }
+      } else {
+        setCurrentUser(null);
+        setTrialInfo(null);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const trial = trialInfo || getTrialInfo();
+  const userName = currentUser?.name || currentUser?.email?.split('@')[0] || '';
 
   if (trial.expired || showPricing) {
     return (
@@ -4018,7 +4122,11 @@ export default function Root() {
     <>
       <style>{globalStyles}</style>
       <ToastProvider>
-        <TrialBanner remaining={trial.remaining} onViewPlans={() => setShowPricing(true)} />
+        <TrialBanner
+          remaining={trial.remaining}
+          onViewPlans={() => setShowPricing(true)}
+          userName={userName}
+        />
         <App />
       </ToastProvider>
     </>
