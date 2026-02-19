@@ -1,0 +1,4026 @@
+import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
+import { auth, db } from "./firebase";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
+
+// ==================== STYLES ====================
+const globalStyles = `
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #1a56db; --primary-dark: #1040a8; --primary-light: #3b82f6;
+  --accent: #f59e0b; --accent-dark: #d97706;
+  --dark: #0f172a; --dark-2: #1e293b; --dark-3: #334155;
+  --text: #f8fafc; --text-muted: #94a3b8;
+  --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+  --border: rgba(255,255,255,0.08); --card: rgba(255,255,255,0.04); --card-hover: rgba(255,255,255,0.07);
+  --sidebar-w: 260px;
+}
+html { direction: rtl; }
+body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--dark-2); } ::-webkit-scrollbar-thumb { background: var(--dark-3); border-radius: 3px; }
+.app-shell { display: flex; min-height: 100vh; }
+
+.sidebar { width: var(--sidebar-w); background: var(--dark-2); border-left: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; right: 0; top: 0; bottom: 0; z-index: 100; transition: transform 0.3s ease; }
+.sidebar-logo { padding: 24px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+.logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.logo-text { font-size: 16px; font-weight: 800; line-height: 1.2; }
+.logo-sub { font-size: 11px; color: var(--text-muted); }
+.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.nav-section-title { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 8px 8px 4px; margin-top: 8px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-muted); transition: all 0.2s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: right; }
+.nav-item:hover { background: var(--card-hover); color: var(--text); }
+.nav-item.active { background: linear-gradient(135deg, rgba(26,86,219,0.3), rgba(245,158,11,0.1)); color: var(--primary-light); border: 1px solid rgba(26,86,219,0.3); }
+.nav-icon { font-size: 18px; width: 20px; text-align: center; }
+.sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+.user-card { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: var(--card); }
+.user-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.user-name { font-size: 13px; font-weight: 600; }
+.user-role { font-size: 11px; color: var(--text-muted); }
+.logout-btn { margin-top: 10px; width: 100%; padding: 8px; border-radius: 8px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+.logout-btn:hover { background: rgba(239,68,68,0.2); }
+.main-content { flex: 1; margin-right: var(--sidebar-w); display: flex; flex-direction: column; }
+.topbar { background: var(--dark-2); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+.topbar-title { font-size: 20px; font-weight: 700; }
+.page-content { padding: 28px; flex: 1; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: flex-start; gap: 16px; transition: all 0.2s; }
+.stat-card:hover { transform: translateY(-2px); background: var(--card-hover); }
+.stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap; }
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; }
+.btn-primary:hover { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); transform: translateY(-1px); box-shadow: 0 4px 15px rgba(26,86,219,0.3); }
+.btn-accent { background: linear-gradient(135deg, var(--accent-dark), var(--accent)); color: var(--dark); font-weight: 700; }
+.btn-accent:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(245,158,11,0.3); }
+.btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { background: rgba(255,255,255,0.1); }
+.btn-danger { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.btn-danger:hover { background: rgba(239,68,68,0.25); }
+.btn-success { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+.btn-success:hover { background: rgba(16,185,129,0.25); }
+.btn-warning { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+.btn-warning:hover { background: rgba(245,158,11,0.25); }
+.btn-blue { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+.btn-blue:hover { background: rgba(59,130,246,0.25); }
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+.btn-xs { padding: 4px 9px; font-size: 11px; border-radius: 6px; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-input { width: 100%; padding: 10px 13px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 14px; transition: all 0.2s; outline: none; text-align: right; }
+.form-input:focus { border-color: var(--primary-light); background: rgba(26,86,219,0.06); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+.form-input.error { border-color: var(--danger); }
+select { width: 100%; padding: 10px 13px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 14px; transition: all 0.2s; outline: none; text-align: right; }
+select:focus { border-color: var(--primary-light); background: rgba(26,86,219,0.06); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+select option { background: var(--dark-2); color: var(--text); }
+.form-error { font-size: 11px; color: var(--danger); margin-top: 4px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-success { background: rgba(16,185,129,0.15); color: #10b981; }
+.badge-danger { background: rgba(239,68,68,0.15); color: #ef4444; }
+.badge-warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.badge-blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { background: var(--dark-2); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+.modal-header { padding: 22px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 17px; font-weight: 700; }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+.close-btn { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-muted); width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; }
+.close-btn:hover { background: rgba(239,68,68,0.15); color: var(--danger); }
+.toast-container { position: fixed; bottom: 24px; left: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+.toast { display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-radius: 12px; font-size: 13px; font-weight: 600; min-width: 260px; animation: slideIn 0.3s ease; border: 1px solid; }
+.toast-success { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: #10b981; }
+.toast-error { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+.toast-warning { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: #f59e0b; }
+.toast-info { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.3); color: #3b82f6; }
+@keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.loader-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 150; display: flex; align-items: center; justify-content: center; }
+.spinner { width: 46px; height: 46px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary-light); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes warningPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 12px rgba(239,68,68,0); } }
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--dark); position: relative; overflow: hidden; }
+.login-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(26,86,219,0.2) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(245,158,11,0.1) 0%, transparent 50%); }
+.login-card { width: 100%; max-width: 420px; position: relative; z-index: 1; }
+.login-logo { width: 70px; height: 70px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 16px; box-shadow: 0 8px 32px rgba(26,86,219,0.3); }
+
+/* Worker Selector */
+.worker-selector { background: var(--dark-2); border: 2px solid var(--border); border-radius: 20px; padding: 26px; margin-bottom: 26px; }
+.worker-dropdown { position: relative; }
+.worker-dropdown-btn { width: 100%; padding: 14px 18px; background: rgba(255,255,255,0.05); border: 2px solid var(--border); border-radius: 14px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; text-align: right; }
+.worker-dropdown-btn:hover, .worker-dropdown-btn.open { border-color: var(--primary-light); background: rgba(26,86,219,0.07); }
+.worker-dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; left: 0; background: var(--dark-2); border: 1px solid var(--border); border-radius: 14px; z-index: 50; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); max-height: 300px; overflow-y: auto; }
+.worker-dropdown-item { display: flex; align-items: center; gap: 14px; padding: 13px 18px; cursor: pointer; transition: all 0.15s; border-bottom: 1px solid var(--border); }
+.worker-dropdown-item:last-child { border-bottom: none; }
+.worker-dropdown-item:hover { background: rgba(26,86,219,0.1); }
+.worker-dropdown-item.selected { background: rgba(26,86,219,0.15); }
+.w-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+
+/* Worker Detail */
+.worker-detail { animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.detail-header { background: linear-gradient(135deg, rgba(26,86,219,0.15), rgba(245,158,11,0.08)); border: 1px solid rgba(26,86,219,0.2); border-radius: 18px; padding: 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.detail-avatar { width: 68px; height: 68px; border-radius: 18px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; flex-shrink: 0; }
+.detail-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 18px; overflow: hidden; }
+.detail-section-hdr { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.detail-section-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.detail-body { padding: 20px; }
+.entries-tbl { width: 100%; border-collapse: collapse; }
+.entries-tbl th { background: rgba(255,255,255,0.03); padding: 9px 13px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: right; border-bottom: 1px solid var(--border); }
+.entries-tbl td { padding: 10px 13px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; font-weight: 500; }
+.entries-tbl tr:last-child td { border-bottom: none; }
+.entries-tbl tr:hover td { background: rgba(255,255,255,0.02); }
+.net-card { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04)); border: 2px solid rgba(16,185,129,0.25); border-radius: 18px; padding: 22px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 16px; }
+.net-amount { font-size: 36px; font-weight: 900; color: #10b981; }
+.fuel-bar { height: 5px; background: var(--dark-3); border-radius: 3px; overflow: hidden; }
+.fuel-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 3px; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-icon { font-size: 52px; margin-bottom: 14px; }
+.empty-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.hamburger { display: none; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 8px; cursor: pointer; color: var(--text); }
+.mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+.mobile-overlay.show { display: block; }
+table { width: 100%; border-collapse: collapse; }
+th { background: rgba(255,255,255,0.03); padding: 11px 14px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.table-container { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.table-hdr { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(100%); } .sidebar.open { transform: translateX(0); }
+  .main-content { margin-right: 0; } .hamburger { display: flex; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .page-content { padding: 16px; } .topbar { padding: 12px 16px; }
+  .net-amount { font-size: 26px; }
+}
+@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
+@media print {
+  .sidebar, .topbar, .no-print { display: none !important; }
+  .main-content { margin-right: 0; }
+  body { background: white; color: black; }
+  .card, .detail-section, .net-card { background: white !important; border: 1px solid #ddd; }
+}
+
+/* ===== GPS ATTENDANCE STYLES ===== */
+.attendance-hero { background: linear-gradient(135deg, rgba(26,86,219,0.15), rgba(16,185,129,0.08)); border: 1px solid rgba(26,86,219,0.25); border-radius: 24px; padding: 36px 28px; text-align: center; margin-bottom: 24px; position: relative; overflow: hidden; }
+.attendance-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% -20%, rgba(26,86,219,0.2) 0%, transparent 70%); pointer-events: none; }
+.gps-pulse-ring { position: absolute; border-radius: 50%; border: 2px solid; animation: gpsPulse 2s ease-out infinite; }
+@keyframes gpsPulse { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+.checkin-btn { width: 130px; height: 130px; border-radius: 50%; border: none; cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 15px; font-weight: 800; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.3s; position: relative; margin: 0 auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.checkin-btn:hover { transform: scale(1.06); }
+.checkin-btn:active { transform: scale(0.97); }
+.checkin-btn.idle { background: linear-gradient(135deg, #1a56db, #3b82f6); color: white; }
+.checkin-btn.loading { background: linear-gradient(135deg, #334155, #475569); color: white; cursor: not-allowed; }
+.checkin-btn.checked-in { background: linear-gradient(135deg, #059669, #10b981); color: white; cursor: not-allowed; }
+.attendance-status-bar { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 18px; font-size: 13px; font-weight: 600; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; }
+.status-dot.green { background: #10b981; box-shadow: 0 0 8px #10b981; animation: blink 1.5s infinite; }
+.status-dot.gray { background: #64748b; }
+.status-dot.red { background: #ef4444; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.attendance-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+@media(max-width:600px){ .attendance-info-grid { grid-template-columns: 1fr 1fr; } }
+.att-info-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: center; }
+.att-info-icon { font-size: 24px; margin-bottom: 6px; }
+.att-info-val { font-size: 17px; font-weight: 800; }
+.att-info-lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.geofence-indicator { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 10px 20px; border-radius: 50px; font-size: 13px; font-weight: 700; margin: 14px auto 0; width: fit-content; }
+.geofence-inside { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+.geofence-outside { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.geofence-unknown { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+
+/* Owner attendance dashboard */
+.live-workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.live-worker-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s; }
+.live-worker-card:hover { background: var(--card-hover); transform: translateY(-2px); }
+.live-worker-card.present { border-color: rgba(16,185,129,0.35); }
+.live-worker-card.absent { border-color: rgba(239,68,68,0.2); }
+.live-worker-top { display: flex; align-items: center; gap: 12px; }
+.live-worker-info { flex: 1; }
+.live-worker-name { font-size: 14px; font-weight: 700; }
+.live-worker-pump { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.presence-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.presence-badge.present { background: rgba(16,185,129,0.15); color: #10b981; }
+.presence-badge.absent { background: rgba(239,68,68,0.15); color: #ef4444; }
+.att-log-table { width: 100%; border-collapse: collapse; }
+.att-log-table th { background: rgba(255,255,255,0.03); padding: 9px 13px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: right; border-bottom: 1px solid var(--border); }
+.att-log-table td { padding: 10px 13px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; font-weight: 500; }
+.att-log-table tr:last-child td { border-bottom: none; }
+.checkout-btn { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.1)); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; padding: 6px 14px; border-radius: 8px; font-family: 'Cairo', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.checkout-btn:hover { background: rgba(239,68,68,0.3); }
+.setup-geofence-card { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3); border-radius: 16px; padding: 22px; margin-bottom: 22px; }
+.offline-badge { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+
+/* ===== NOTIFICATION BELL ===== */
+.notif-bell-wrap { position: relative; }
+.notif-bell-btn { position: relative; width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; color: var(--text); }
+.notif-bell-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--primary-light); }
+.notif-bell-btn.has-notif { animation: bellShake 3s ease-in-out infinite; }
+@keyframes bellShake { 0%,85%,100%{transform:rotate(0)} 87%{transform:rotate(-9deg)} 89%{transform:rotate(9deg)} 91%{transform:rotate(-6deg)} 93%{transform:rotate(5deg)} 95%{transform:rotate(-3deg)} }
+.notif-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; min-width: 18px; height: 18px; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 3px; border: 2px solid var(--dark-2); animation: popIn .3s cubic-bezier(.175,.885,.32,1.275); }
+@keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+.notif-dropdown { position: absolute; top: calc(100% + 10px); left: 0; width: 340px; background: var(--dark-2); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); z-index: 300; overflow: hidden; animation: fadeIn .2s ease; }
+@media(max-width:480px){ .notif-dropdown { right: -60px; left: auto; width: 290px; } }
+.notif-hdr { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.notif-hdr-title { font-size: 14px; font-weight: 700; }
+.notif-clear-btn { font-size: 11px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: 'Cairo',sans-serif; padding: 3px 8px; border-radius: 6px; transition: all .2s; }
+.notif-clear-btn:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+.notif-list { max-height: 400px; overflow-y: auto; }
+.notif-item { display: flex; align-items: flex-start; gap: 12px; padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background .15s; }
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: rgba(255,255,255,0.04); }
+.notif-item.unread { background: rgba(26,86,219,0.06); }
+.notif-item.unread:hover { background: rgba(26,86,219,0.1); }
+.notif-item.clickable:hover { background: rgba(59,130,246,0.1); }
+.notif-icon-wrap { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.notif-icon-wrap.type-warning { background: rgba(245,158,11,0.15); }
+.notif-icon-wrap.type-info { background: rgba(59,130,246,0.15); }
+.notif-icon-wrap.type-success { background: rgba(16,185,129,0.15); }
+.notif-icon-wrap.type-danger { background: rgba(239,68,68,0.15); }
+.notif-text { flex: 1; min-width: 0; }
+.notif-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.notif-sub { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.notif-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.notif-nav-hint { font-size: 10px; color: var(--primary-light); margin-top: 3px; opacity: 0.8; }
+.notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary-light); flex-shrink: 0; margin-top: 5px; }
+.notif-empty { padding: 36px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.notif-empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+/* ===== TRIAL BANNER ===== */
+.trial-banner { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04)); border-bottom: 1px solid rgba(245,158,11,0.25); padding: 9px 28px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.trial-banner-text { font-size: 13px; font-weight: 600; color: #f59e0b; display: flex; align-items: center; gap: 8px; }
+.trial-days-badge { background: rgba(245,158,11,0.2); border: 1px solid rgba(245,158,11,0.4); padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; color: #f59e0b; }
+.trial-days-badge.urgent { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4); color: #ef4444; animation: urgentPulse 1.5s ease-in-out infinite; }
+@keyframes urgentPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* ===== EXPIRED / PRICING SCREEN ===== */
+.expired-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--dark); position: relative; overflow-y: auto; padding: 30px 20px; }
+.expired-screen::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(245,158,11,0.07) 0%, transparent 50%); pointer-events:none; z-index:0; }
+.pricing-wrap { width: 100%; max-width: 1000px; position: relative; z-index: 1; }
+.pricing-header { text-align: center; margin-bottom: 40px; }
+.pricing-icon { width: 70px; height: 70px; background: linear-gradient(135deg, #ef4444, #f59e0b); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 18px; box-shadow: 0 8px 32px rgba(239,68,68,0.3); }
+.pricing-title { font-size: 28px; font-weight: 900; margin-bottom: 10px; }
+.pricing-sub { font-size: 14px; color: var(--text-muted); line-height: 1.8; max-width: 500px; margin: 0 auto; }
+.plans-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 28px; }
+@media(max-width:900px){ .plans-grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:540px){ .plans-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto 28px; } }
+.plan-card { background: var(--card); border: 2px solid var(--border); border-radius: 20px; padding: 26px 22px; display: flex; flex-direction: column; position: relative; transition: all 0.3s; }
+.plan-card:hover { transform: translateY(-4px); background: var(--card-hover); }
+.plan-card.popular { border-color: var(--primary-light); background: linear-gradient(160deg, rgba(26,86,219,0.1), rgba(26,86,219,0.03)); box-shadow: 0 0 0 1px rgba(59,130,246,0.2), 0 20px 40px rgba(26,86,219,0.12); }
+.plan-card.gold { border-color: rgba(245,158,11,0.5); background: linear-gradient(160deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02)); }
+.popular-badge { position: absolute; top: -13px; right: 50%; transform: translateX(50%); background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; font-size: 11px; font-weight: 800; padding: 4px 16px; border-radius: 20px; white-space: nowrap; letter-spacing: 0.3px; }
+.plan-emoji { font-size: 32px; margin-bottom: 10px; }
+.plan-name { font-size: 19px; font-weight: 800; margin-bottom: 4px; }
+.plan-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6; }
+.plan-price { font-size: 40px; font-weight: 900; line-height: 1; color: var(--text); }
+.plan-price sup { font-size: 16px; font-weight: 700; color: var(--text-muted); vertical-align: super; }
+.plan-price sub { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.plan-period { font-size: 11px; color: var(--text-muted); margin-top: 4px; margin-bottom: 18px; }
+.plan-divider { height: 1px; background: var(--border); margin: 14px 0; }
+.plan-features { flex: 1; display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+.plan-feature { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; padding: 5px 0; }
+.plan-feature.yes { color: var(--text); }
+.plan-feature.no { color: var(--text-muted); opacity: 0.45; }
+.feat-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.plan-card.lifetime { border-color: rgba(168,85,247,0.6); background: linear-gradient(160deg, rgba(168,85,247,0.12), rgba(168,85,247,0.03)); box-shadow: 0 0 0 1px rgba(168,85,247,0.2), 0 20px 40px rgba(168,85,247,0.12); }
+.plan-card.lifetime:hover { box-shadow: 0 0 0 1px rgba(168,85,247,0.4), 0 24px 50px rgba(168,85,247,0.2); }
+.lifetime-badge { position: absolute; top: -13px; right: 50%; transform: translateX(50%); background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; font-size: 11px; font-weight: 800; padding: 4px 16px; border-radius: 20px; white-space: nowrap; letter-spacing: 0.3px; }
+.btn-lifetime { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; }
+.btn-lifetime:hover { background: linear-gradient(135deg, #6d28d9, #9333ea); transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
+.contact-strip p { color: var(--text-muted); font-size: 13px; margin-bottom: 14px; line-height: 1.7; }
+.whatsapp-btn { display: inline-flex; align-items: center; gap: 10px; background: #25d366; color: white; padding: 13px 32px; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; font-family: 'Cairo',sans-serif; transition: all 0.2s; text-decoration: none; box-shadow: 0 4px 15px rgba(37,211,102,0.3); }
+.whatsapp-btn:hover { background: #1da851; transform: translateY(-1px); }
+`;
+
+// ==================== DATA ====================
+const WORK_PLACES = ['الطرمبة 1', 'الطرمبة 2', 'الطرمبة 3', 'الطرمبة 4', 'المكتب', 'الورشة', 'البوابة'];
+
+const MOCK_WORKERS = [
+  { id: 1, name: 'أحمد محمد علي', pump: 'طرمبة 1', workDays: 26, salary: 3500, avatar: 'أ',
+    delays: [{ id: 1, date: '2025-02-03', minutes: 30, deduction: 25 }, { id: 2, date: '2025-02-11', minutes: 45, deduction: 37 }],
+    absences: [{ id: 1, date: '2025-02-07', reason: 'مرض', deduction: 116 }],
+    absences_no_reason: [{ id: 1, date: '2025-02-08', deduction: 50 }, { id: 2, date: '2025-02-15', deduction: 75 }],
+    discipline: [{ id: 1, date: '2025-02-10', stars: 5, reward: 100 }, { id: 2, date: '2025-02-20', stars: 4, reward: 80 }] },
+  { id: 2, name: 'محمود إبراهيم', pump: 'طرمبة 2', workDays: 28, salary: 3500, avatar: 'م', 
+    delays: [], absences: [],
+    absences_no_reason: [],
+    discipline: [{ id: 1, date: '2025-02-12', stars: 5, reward: 100 }] },
+  { id: 3, name: 'عبد الله حسن', pump: 'طرمبة 3', workDays: 24, salary: 3500, avatar: 'ع',
+    delays: [{ id: 1, date: '2025-02-05', minutes: 60, deduction: 50 }, { id: 2, date: '2025-02-18', minutes: 20, deduction: 16 }, { id: 3, date: '2025-02-22', minutes: 90, deduction: 75 }],
+    absences: [{ id: 1, date: '2025-02-10', reason: 'ظروف شخصية', deduction: 116 }, { id: 2, date: '2025-02-15', reason: 'مرض', deduction: 116 }],
+    absences_no_reason: [{ id: 1, date: '2025-02-25', deduction: 60 }],
+    discipline: [{ id: 1, date: '2025-02-14', stars: 3, reward: 50 }] },
+  { id: 5, name: 'سامي خالد', pump: 'طرمبة 2', workDays: 25, salary: 3800, avatar: 'س',
+    delays: [{ id: 1, date: '2025-02-01', minutes: 40, deduction: 32 }, { id: 2, date: '2025-02-14', minutes: 25, deduction: 20 }],
+    absences: [{ id: 1, date: '2025-02-20', reason: 'إجازة طارئة', deduction: 126 }],
+    absences_no_reason: [],
+    discipline: [{ id: 1, date: '2025-02-17', stars: 4, reward: 80 }] },
+  { id: 6, name: 'حسام الدين', pump: 'طرمبة 4', workDays: 28, salary: 3800, avatar: 'ح', 
+    delays: [], absences: [],
+    absences_no_reason: [{ id: 1, date: '2025-02-21', deduction: 90 }],
+    discipline: [{ id: 1, date: '2025-02-16', stars: 5, reward: 100 }] },
+];
+
+// مسح الداتا القديمة المشتركة (مرة واحدة عند التحديث)
+if (!localStorage.getItem('app_v2_clean')) {
+  ['users_data', 'workers_data', 'workplaces_data'].forEach(k => localStorage.removeItem(k));
+  localStorage.setItem('app_v2_clean', '1');
+}
+
+// حسابات افتراضية - فارغة
+const DEFAULT_USERS = [];
+
+// ==================== UTILS ====================
+const totalDed = (w) => [...w.delays, ...w.absences, ...(w.absences_no_reason || [])].reduce((s, e) => s + (e.deduction || 0), 0);
+const totalRewards = (w) => ((w.discipline || []).reduce((s, e) => s + (e.reward || 0), 0));
+const totalCash = (w) => ((w.cash_withdrawals || []).reduce((s, e) => s + (e.amount || 0), 0));
+const calcNet = (w) => w.salary - totalDed(w) + totalRewards(w) - totalCash(w);
+const fmt = (n) => `${Number(n).toLocaleString('ar-EG')} ج.م`;
+
+// التحقق من الأرقام المُدخلة: بين 0 و 1,000,000
+const validateNum = (val, label) => {
+  const n = Number(val);
+  if (val === '' || val === null || val === undefined) return `${label} مطلوب`;
+  if (isNaN(n)) return `${label} يجب أن يكون رقماً`;
+  if (n < 0) return `${label} لا يمكن أن يكون أقل من 0`;
+  if (n > 1000000) return `${label} لا يمكن أن يتجاوز 1,000,000`;
+  return '';
+};
+
+// مفاتيح localStorage الخاصة بكل مالك
+// ==================== FIRESTORE UTILS ====================
+const ownerDoc  = (ownerId)          => doc(db, 'owners', ownerId);
+const subDoc    = (ownerId, col, id) => doc(db, 'owners', ownerId, col, id);
+const subCol    = (ownerId, col)     => collection(db, 'owners', ownerId, col);
+
+// ── الدوال دي بتستخدم localStorage كـ cache سريع + بتحفظ في Firestore في الخلفية ──
+// عشان كده الكود القديم اللي بيستدعيها sync هيشتغل عادي
+
+const _lsKey = (ownerId, type) => `owner_${ownerId}_${type}`;
+
+// Invites
+const getInvites = (ownerId) => {
+  try { return JSON.parse(localStorage.getItem(_lsKey(ownerId,'invites')) || '[]'); } catch { return []; }
+};
+const saveInvites = async (ownerId, list) => {
+  localStorage.setItem(_lsKey(ownerId,'invites'), JSON.stringify(list));
+  try { await setDoc(doc(db,'owners',ownerId,'meta','invites'), { list }); } catch {}
+};
+// مزامنة من Firestore للـ cache
+const syncInvites = async (ownerId) => {
+  try {
+    const d = await getDoc(doc(db,'owners',ownerId,'meta','invites'));
+    if (d.exists()) localStorage.setItem(_lsKey(ownerId,'invites'), JSON.stringify(d.data().list || []));
+  } catch {}
+};
+
+// ==================== GPS ATTENDANCE UTILS ====================
+const getAttendance = (ownerId) => {
+  try { return JSON.parse(localStorage.getItem(_lsKey(ownerId,'attendance')) || '[]'); } catch { return []; }
+};
+const saveAttendance = async (ownerId, list) => {
+  localStorage.setItem(_lsKey(ownerId,'attendance'), JSON.stringify(list));
+  try { await setDoc(doc(db,'owners',ownerId,'meta','attendance'), { list }); } catch {}
+};
+const syncAttendance = async (ownerId) => {
+  try {
+    const d = await getDoc(doc(db,'owners',ownerId,'meta','attendance'));
+    if (d.exists()) localStorage.setItem(_lsKey(ownerId,'attendance'), JSON.stringify(d.data().list || []));
+  } catch {}
+};
+
+const getGeofence = (ownerId) => {
+  try { return JSON.parse(localStorage.getItem(_lsKey(ownerId,'geofence')) || 'null'); } catch { return null; }
+};
+const saveGeofence = async (ownerId, geo) => {
+  localStorage.setItem(_lsKey(ownerId,'geofence'), JSON.stringify(geo));
+  try { await setDoc(doc(db,'owners',ownerId,'meta','geofence'), { geo }); } catch {}
+};
+const syncGeofence = async (ownerId) => {
+  try {
+    const d = await getDoc(doc(db,'owners',ownerId,'meta','geofence'));
+    if (d.exists()) localStorage.setItem(_lsKey(ownerId,'geofence'), JSON.stringify(d.data().geo || null));
+  } catch {}
+};
+
+const getPendingAtt = (ownerId) => {
+  try { return JSON.parse(localStorage.getItem(_lsKey(ownerId,'pendingAtt')) || '[]'); } catch { return []; }
+};
+const savePendingAtt = async (ownerId, list) => {
+  localStorage.setItem(_lsKey(ownerId,'pendingAtt'), JSON.stringify(list));
+  try { await setDoc(doc(db,'owners',ownerId,'meta','pendingAtt'), { list }); } catch {}
+};
+
+// ── طلبات الحضور المكرر ──
+const getReCheckinRequests = (ownerId) => {
+  try { return JSON.parse(localStorage.getItem(_lsKey(ownerId,'recheckin')) || '[]'); } catch { return []; }
+};
+const saveReCheckinRequests = async (ownerId, list) => {
+  localStorage.setItem(_lsKey(ownerId,'recheckin'), JSON.stringify(list));
+  try { await setDoc(doc(db,'owners',ownerId,'meta','recheckin'), { list }); } catch {}
+};
+const syncReCheckin = async (ownerId) => {
+  try {
+    const d = await getDoc(doc(db,'owners',ownerId,'meta','recheckin'));
+    if (d.exists()) localStorage.setItem(_lsKey(ownerId,'recheckin'), JSON.stringify(d.data().list || []));
+  } catch {}
+};
+
+// حساب المسافة بالمتر بين نقطتين GPS (Haversine)
+const calcDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+};
+const fmtTime = (iso) => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }); };
+const fmtDateTime = (iso) => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString('ar-EG') + ' ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }); };
+const todayStr = () => new Date().toISOString().split('T')[0];
+const calcDuration = (checkIn, checkOut) => { if (!checkIn || !checkOut) return null; const ms = new Date(checkOut) - new Date(checkIn); const h = Math.floor(ms / 3600000); const m = Math.floor((ms % 3600000) / 60000); return `${h} س ${m} د`; };
+
+// ── Pure XML Excel builder ──
+const xmlEsc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const buildXlsxBlob = (sheetsData) => {
+
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="10">
+    <font><sz val="11"/><name val="Calibri"/><color theme="1"/></font>
+    <font><sz val="13"/><b/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>
+    <font><sz val="11"/><b/><name val="Calibri"/><color rgb="FFFFFFFF"/></font>
+    <font><sz val="11"/><b/><name val="Calibri"/><color rgb="FFDC2626"/></font>
+    <font><sz val="11"/><b/><name val="Calibri"/><color rgb="FF16A34A"/></font>
+    <font><sz val="11"/><b/><name val="Calibri"/><color rgb="FFCA8A04"/></font>
+    <font><sz val="11"/><name val="Calibri"/><color rgb="FFDC2626"/></font>
+    <font><sz val="11"/><name val="Calibri"/><color rgb="FF16A34A"/></font>
+    <font><sz val="13"/><b/><name val="Calibri"/><color rgb="FF4ADE80"/></font>
+    <font><sz val="11"/><b/><name val="Calibri"/><color rgb="FFFFD97D"/></font>
+  </fonts>
+  <fills count="16">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF1E3A5F"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF991B1B"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF166534"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFB45309"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF374151"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE8F0FE"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF0F4C2A"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF7F1D1D"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF2563EB"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFF0F0"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFF8E7"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF0FFF4"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="2">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FF999999"/></left>
+      <right style="thin"><color rgb="FF999999"/></right>
+      <top style="thin"><color rgb="FF999999"/></top>
+      <bottom style="thin"><color rgb="FF999999"/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="27">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"><alignment horizontal="right" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="right" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="right" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="9" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="right" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="11" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="8" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="5" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="5" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="6" fillId="12" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="6" fillId="13" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="7" fillId="12" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="7" fillId="13" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="7" fillId="14" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="15" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="right" vertical="center" readingOrder="2" wrapText="0"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="right" vertical="center" readingOrder="2" wrapText="0"/></xf>
+  </cellXfs>
+  <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+  const makeSheet = (rows, colWidths, merges) => {
+    const colsXml = colWidths.map((w, i) =>
+      `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`
+    ).join('');
+
+    const rowsXml = rows.map((row, ri) => {
+      const cellsXml = row.cells.map((cell, ci) => {
+        const col = String.fromCharCode(65 + ci);
+        const ref = `${col}${ri + 1}`;
+        const s = cell.s ?? 0;
+        const v = cell.v;
+        if (v === null || v === undefined || v === '') {
+          return `<c r="${ref}" s="${s}"/>`;
+        }
+        if (cell.t === 'n') {
+          return `<c r="${ref}" t="n" s="${s}"><v>${Number(v)}</v></c>`;
+        }
+        return `<c r="${ref}" t="inlineStr" s="${s}"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+      }).join('');
+      const ht = row.ht ? ` ht="${row.ht}" customHeight="1"` : '';
+      return `<row r="${ri + 1}"${ht}>${cellsXml}</row>`;
+    }).join('');
+
+    const mergesXml = merges && merges.length
+      ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>`
+      : '';
+
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+           xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetViews><sheetView rightToLeft="1" workbookViewId="0"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="15"/>
+  <cols>${colsXml}</cols>
+  <sheetData>${rowsXml}</sheetData>
+  ${mergesXml}
+</worksheet>`;
+  };
+
+  const sheetXmls = sheetsData.map(s => makeSheet(s.rows, s.colWidths, s.merges || []));
+
+  const sheetsRels = sheetsData.map((_, i) =>
+    `<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`
+  ).join('');
+
+  const sheetEntries = sheetsData.map((s, i) =>
+    `<sheet name="${xmlEsc(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`
+  ).join('');
+
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <bookViews><workbookView xWindow="0" yWindow="0" windowWidth="18140" windowHeight="8580"/></bookViews>
+  <sheets>${sheetEntries}</sheets>
+</workbook>`;
+
+  const wbRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${sheetsRels}
+  <Relationship Id="rId${sheetsData.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  ${sheetsData.map((_,i) => `<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+  const buildZip = (JSZip) => {
+    const zip = new JSZip();
+    zip.file('[Content_Types].xml', contentTypes);
+    zip.file('_rels/.rels', rootRels);
+    zip.file('xl/workbook.xml', workbook);
+    zip.file('xl/_rels/workbook.xml.rels', wbRels);
+    zip.file('xl/styles.xml', styles);
+    sheetXmls.forEach((xml, i) => zip.file(`xl/worksheets/sheet${i+1}.xml`, xml));
+    return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  };
+
+  const download = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const runWithJSZip = (JSZip, filename) => buildZip(JSZip).then(blob => download(blob, filename));
+  return { runWithJSZip, download };
+};
+
+const loadJSZip = (cb) => {
+  if (window.JSZip) { cb(window.JSZip); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  s.onload = () => cb(window.JSZip);
+  document.head.appendChild(s);
+};
+
+// ── Worker individual report ──
+const generateReport = (worker) => {
+  const net = calcNet(worker);
+  const totalDed_val = totalDed(worker);
+  const totalAbsNoReasonDed = (worker.absences_no_reason || []).reduce((s, a) => s + a.deduction, 0);
+  const totalDisciplineVal = (worker.discipline || []).reduce((s, d) => s + d.reward, 0);
+  const avgDiscipline = (worker.discipline || []).length > 0
+    ? (worker.discipline.reduce((s, d) => s + d.stars, 0) / worker.discipline.length).toFixed(1) : '0';
+
+  const buildExcel = () => {
+    // s = styleId: 1=hdrBlue,2=hdrRed,3=hdrGreen,4=hdrOrange,5=hdrDark
+    // 6=evenRow,7=oddRow,8=totalGreen,9=totalRed
+    // 10=redEven,11=greenEven,12=redOdd,13=greenOdd,14=goldEven,15=goldOdd
+    // 16=netRow,17=sectionHdr,25=boldEven,26=boldOdd
+    const C = (v, s, t) => ({ v, s: s ?? 0, t: t ?? (typeof v === 'number' ? 'n' : 's') });
+    const E = (s) => C('', s);
+
+    // ── Sheet 1: البيانات الأساسية ──
+    const infoSheet = {
+      name: 'البيانات الاساسية',
+      colWidths: [30, 30],
+      merges: ['A1:B1', 'A2:B2'],
+      rows: [
+        { cells: [C('محطة بترومين 10000', 1), E(1)], ht: 32 },
+        { cells: [C('تقرير العامل', 15), E(15)], ht: 26 },
+        { cells: [E(0), E(0)] },
+        { cells: [C('البيان', 1), C('القيمة', 1)], ht: 22 },
+        { cells: [C('الاسم الكامل', 6), C(worker.name, 6)] },
+        { cells: [C('رقم التليفون', 7), C(worker.phone || '-', 7)] },
+        { cells: [C('مكان العمل', 6), C(worker.pump, 6)] },
+        { cells: [C('ايام العمل', 7), C(worker.workDays, 7, 'n')] },
+        { cells: [C('الراتب الاساسي', 6), C(worker.salary, 14, 'n')] },
+        { cells: [C('اجمالي الخصومات', 7), C(totalDed_val, 10, 'n')] },
+        { cells: [C('اجمالي الحوافز', 6), C(totalDisciplineVal, 11, 'n')] },
+        { cells: [C('صافي المدفوعات', 16), C(net, 16, 'n')], ht: 28 },
+        { cells: [E(0), E(0)] },
+        { cells: [C('تاريخ الاصدار', 0), C(new Date().toLocaleDateString('ar-EG'), 0)] },
+      ],
+    };
+
+    // ── Sheet 2: التأخيرات ──
+    const delayRows = [
+      { cells: [C('#',1),C('التاريخ',1),C('مكان العمل',1),C('المدة (دقيقة)',1),C('الخصم',1)], ht: 22 },
+      ...worker.delays.map((d, i) => {
+        const ev = i % 2 === 0;
+        return { cells: [C(i+1, ev?6:7,'n'), C(d.date,ev?6:7), C(worker.pump,ev?6:7), C(d.minutes,ev?6:7,'n'), C(d.deduction,ev?10:12,'n')] };
+      }),
+      { cells: [E(9),E(9),E(9),C('الاجمالي',9),C(worker.delays.reduce((s,d)=>s+d.deduction,0),9,'n')], ht: 22 },
+    ];
+    const delaySheet = { name: 'التاخيرات', colWidths: [6,16,18,18,18], rows: delayRows };
+
+    // ── Sheet 3: الغيابات ──
+    const absRows = [
+      { cells: [C('#',2),C('التاريخ',2),C('مكان العمل',2),C('السبب',2),C('الخصم',2)], ht: 22 },
+      ...worker.absences.map((a, i) => {
+        const ev = i % 2 === 0;
+        return { cells: [C(i+1,ev?6:7,'n'), C(a.date,ev?6:7), C(worker.pump,ev?6:7), C(a.reason,ev?6:7), C(a.deduction,ev?10:12,'n')] };
+      }),
+      { cells: [E(9),E(9),E(9),C('الاجمالي',9),C(worker.absences.reduce((s,a)=>s+a.deduction,0),9,'n')], ht: 22 },
+    ];
+    const absSheet = { name: 'الغيابات', colWidths: [6,16,18,22,18], rows: absRows };
+
+    // ── Sheet 4: العجز ──
+    const absNR = worker.absences_no_reason || [];
+    const absNRRows = [
+      { cells: [C('#',4),C('التاريخ',4),C('مكان العمل',4),C('قيمة العجز',4)], ht: 22 },
+      ...absNR.map((a, i) => {
+        const ev = i % 2 === 0;
+        return { cells: [C(i+1,ev?6:7,'n'), C(a.date,ev?6:7), C(worker.pump,ev?6:7), C(a.deduction,ev?10:12,'n')] };
+      }),
+      { cells: [E(9),E(9),C('الاجمالي',9),C(totalAbsNoReasonDed,9,'n')], ht: 22 },
+    ];
+    const absNRSheet = { name: 'العجز', colWidths: [6,16,18,18], rows: absNRRows };
+
+    // ── Sheet 5: الانضباط ──
+    const disc = worker.discipline || [];
+    const discRows2 = [
+      { cells: [C('#',3),C('التاريخ',3),C('مكان العمل',3),C('النجوم',3),C('الحافز',3)], ht: 22 },
+      ...disc.map((d, i) => {
+        const ev = i % 2 === 0;
+        return { cells: [C(i+1,ev?6:7,'n'), C(d.date,ev?6:7), C(worker.pump,ev?6:7), C('★'.repeat(d.stars)+'☆'.repeat(5-d.stars),ev?6:7), C(d.reward,ev?11:13,'n')] };
+      }),
+      { cells: [E(8),C(`متوسط النجوم: ${avgDiscipline}`,8),E(8),C('اجمالي الحوافز',8),C(totalDisciplineVal,8,'n')], ht: 22 },
+    ];
+    const discSheet = { name: 'الانضباط', colWidths: [6,16,18,16,18], rows: discRows2 };
+
+    // ── Sheet 6: الملخص المالي ──
+    const summSheet = {
+      name: 'الملخص المالي',
+      colWidths: [30, 24],
+      merges: ['A1:B1'],
+      rows: [
+        { cells: [C('الملخص المالي', 1), E(1)], ht: 30 },
+        { cells: [E(0), E(0)] },
+        { cells: [C('البيان', 1), C('المبلغ', 1)], ht: 22 },
+        { cells: [C('الراتب الاساسي', 6), C(worker.salary, 14, 'n')] },
+        { cells: [C('خصم التاخيرات', 7), C(worker.delays.reduce((s,d)=>s+d.deduction,0), 10, 'n')] },
+        { cells: [C('خصم الغيابات', 6), C(worker.absences.reduce((s,a)=>s+a.deduction,0), 10, 'n')] },
+        { cells: [C('خصم العجز', 7), C(totalAbsNoReasonDed, 10, 'n')] },
+        { cells: [C('حوافز الانضباط', 6), C(totalDisciplineVal, 11, 'n')] },
+        { cells: [E(0), E(0)] },
+        { cells: [C('صافي المدفوعات', 16), C(net, 16, 'n')], ht: 28 },
+      ],
+    };
+
+    const { runWithJSZip } = buildXlsxBlob([infoSheet, delaySheet, absSheet, absNRSheet, discSheet, summSheet]);
+    loadJSZip(JSZip => runWithJSZip(JSZip, `تقرير-${worker.name}.xlsx`));
+  };
+
+  buildExcel();
+};
+
+// ==================== WORKER ATTENDANCE (GPS CHECK-IN) ====================
+const AttendanceSystem = ({ user, ownerId }) => {
+  const toast = useToast();
+  const [gpsStatus, setGpsStatus] = useState('idle'); // idle | loading | inside | outside | error
+  const [currentPos, setCurrentPos] = useState(null);
+  const [distance, setDistance] = useState(null);
+  const [checkedIn, setCheckedIn] = useState(false);
+  const [todayRecord, setTodayRecord] = useState(null);
+  const [allRecords, setAllRecords] = useState([]);
+  const [geofence, setGeofence] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // ── عداد الخروج ──
+  const [outSince, setOutSince] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const [warningSent, setWarningSent] = useState(false);
+  const countdownRef = useRef(null);
+  const watchRef = useRef(null);
+
+  // ── طلب الحضور المكرر ──
+  const [pendingRequest, setPendingRequest] = useState(null); // null | { id, status: 'pending'|'approved'|'rejected' }
+  const pollRef = useRef(null);
+
+  // تحميل البيانات
+  useEffect(() => {
+    const geo = getGeofence(ownerId);
+    setGeofence(geo);
+    const records = getAttendance(ownerId);
+    setAllRecords(records);
+    const today = records.find(r => r.workerId === user.id && r.date === todayStr());
+    if (today) { setTodayRecord(today); setCheckedIn(!!today.checkIn && !today.checkOut); }
+    // لو في طلب معلق من قبل ابقى تابعه
+    const existing = getReCheckinRequests(ownerId).find(r => r.workerId === user.id && r.date === todayStr() && r.status === 'pending');
+    if (existing) { setPendingRequest(existing); startPolling(existing.id); }
+    syncPending();
+    return () => { clearInterval(pollRef.current); };
+  }, []);
+
+  // polling — بيشيك كل 3 ثواني على رد المالك
+  const startPolling = (reqId) => {
+    clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => {
+      const reqs = getReCheckinRequests(ownerId);
+      const req = reqs.find(r => r.id === reqId);
+      if (!req) { clearInterval(pollRef.current); return; }
+
+      // تحقق من انتهاء الـ timeout
+      const geo = getGeofence(ownerId);
+      const timeoutMins = geo?.requestTimeoutMinutes || 30;
+      const elapsedMins = (Date.now() - req.requestedAt) / 60000;
+      if (req.status === 'pending' && elapsedMins >= timeoutMins) {
+        // انتهى الوقت — ارفض تلقائياً
+        const updated = reqs.map(r => r.id === reqId ? { ...r, status: 'rejected', autoRejected: true } : r);
+        saveReCheckinRequests(ownerId, updated);
+        clearInterval(pollRef.current);
+        setPendingRequest({ ...req, status: 'rejected', autoRejected: true });
+        toast(`❌ انتهت مهلة الرد (${timeoutMins} دقيقة) — تم رفض الطلب تلقائياً`, 'error');
+        return;
+      }
+
+      if (req.status === 'approved') {
+        clearInterval(pollRef.current);
+        setPendingRequest(req);
+        toast('✅ وافق المالك على حضورك — جاري التسجيل...', 'success');
+        setTimeout(() => doActualCheckIn(req.lat, req.lng, req.inZone), 800);
+      } else if (req.status === 'rejected') {
+        clearInterval(pollRef.current);
+        setPendingRequest(req);
+        toast(req.autoRejected ? `❌ انتهت مهلة الرد — تم رفض الطلب تلقائياً` : '❌ رفض المالك طلب الحضور', 'error');
+      }
+    }, 3000);
+  };
+
+  // بدء مراقبة الموقع بعد تسجيل الحضور
+  useEffect(() => {
+    if (!checkedIn || !geofence) return;
+    startWatching();
+    return () => stopWatching();
+  }, [checkedIn, geofence]);
+
+  // عداد تنازلي
+  useEffect(() => {
+    if (outSince === null) {
+      clearInterval(countdownRef.current);
+      setCountdown(null);
+      setWarningSent(false);
+      return;
+    }
+    const totalSecs = (geofence?.allowedOutMinutes || 15) * 60;
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - outSince) / 1000);
+      const remaining = totalSecs - elapsed;
+      if (remaining <= 0) {
+        // الوقت خلص → انصراف + غياب تلقائي
+        clearInterval(countdownRef.current);
+        setCountdown(0);
+        stopWatching();
+        handleAutoCheckOut();
+        return;
+      }
+      setCountdown(remaining);
+      // تحذير لما يوصل لـ 25% من الوقت
+      const quarterSecs = Math.floor(totalSecs * 0.25);
+      if (remaining <= quarterSecs && !warningSent) {
+        setWarningSent(true);
+        const mins = Math.ceil(remaining / 60);
+        toast(`⚠️ تحذير! باقي ${mins} دقيقة فقط — لو ماجيتش هيتسجل انصرافك وهياخد غياب!`, 'error');
+      }
+    };
+    tick();
+    countdownRef.current = setInterval(tick, 1000);
+    return () => clearInterval(countdownRef.current);
+  }, [outSince, warningSent]);
+
+  const startWatching = () => {
+    if (!navigator.geolocation) return;
+    watchRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        if (!geofence) return;
+        const dist = calcDistance(latitude, longitude, geofence.lat, geofence.lng);
+        setDistance(Math.round(dist));
+        if (dist <= geofence.radius) {
+          // جوا الـ zone → أوقف العداد
+          setGpsStatus('inside');
+          setOutSince(null);
+        } else {
+          // برا الـ zone → ابدأ العداد لو مش شغال
+          setGpsStatus('outside');
+          setOutSince(prev => prev === null ? Date.now() : prev);
+        }
+      },
+      () => setGpsStatus('error'),
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
+    );
+  };
+
+  const stopWatching = () => {
+    if (watchRef.current !== null) {
+      navigator.geolocation.clearWatch(watchRef.current);
+      watchRef.current = null;
+    }
+  };
+
+  const handleAutoCheckOut = () => {
+    const records = getAttendance(ownerId);
+    const rec = records.find(r => r.workerId === user.id && r.date === todayStr() && !r.checkOut);
+    if (!rec) return;
+    const updated = records.map(r => r.id === rec.id
+      ? { ...r, checkOut: new Date().toISOString(), duration: calcDuration(r.checkIn, new Date().toISOString()), autoCheckout: true }
+      : r
+    );
+    saveAttendance(ownerId, updated);
+    setAllRecords(updated);
+    const updatedRec = updated.find(r => r.id === rec.id);
+    setTodayRecord(updatedRec);
+    setCheckedIn(false);
+    setOutSince(null);
+    setCountdown(null);
+    // تسجيل غياب تلقائي في بيانات العامل
+    const workerKey = ownerKey(ownerId, 'workers');
+    try {
+      const workers = JSON.parse(localStorage.getItem(workerKey) || '[]');
+      const wIdx = workers.findIndex(w => w.id === user.id);
+      if (wIdx !== -1) {
+        const w = workers[wIdx];
+        const dailySalary = w.salary / (w.workDays || 26);
+        const absEntry = { id: Date.now(), date: todayStr(), reason: 'خروج تلقائي - تجاوز وقت الخروج المسموح', deduction: Math.round(dailySalary) };
+        workers[wIdx] = { ...w, absences: [...(w.absences || []), absEntry] };
+        localStorage.setItem(workerKey, JSON.stringify(workers));
+      }
+    } catch(e) {}
+    toast('🔴 تم تسجيل انصرافك تلقائياً وسجّل عليك غياب لتجاوز وقت الخروج!', 'error');
+  };
+
+  const syncPending = () => {
+    const pending = getPendingAtt(ownerId);
+    if (!pending.length) return;
+    const records = getAttendance(ownerId);
+    const merged = [...records];
+    pending.forEach(p => { if (!merged.find(r => r.id === p.id)) merged.push(p); });
+    saveAttendance(ownerId, merged);
+    savePendingAtt(ownerId, []);
+    toast('تم رفع سجلات الحضور المؤجلة ✓', 'success');
+  };
+
+  const getPosition = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error('GPS غير مدعوم')); return; }
+    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  });
+
+  const handleCheckIn = async () => {
+    if (checkedIn) return;
+    if (pendingRequest?.status === 'pending') { toast('في انتظار موافقة المالك...', 'warning'); return; }
+    setGpsStatus('loading'); setLoading(true);
+    try {
+      const pos = await getPosition();
+      const { latitude, longitude } = pos.coords;
+      setCurrentPos({ lat: latitude, lng: longitude });
+
+      // هل في سجل حضور سابق في نفس اليوم؟
+      const records = getAttendance(ownerId);
+      const hadCheckin = records.find(r => r.workerId === user.id && r.date === todayStr() && r.checkOut);
+      if (hadCheckin) {
+        // بعت طلب للمالك
+        let inZone = false;
+        let dist = null;
+        if (geofence) {
+          dist = calcDistance(latitude, longitude, geofence.lat, geofence.lng);
+          inZone = dist <= geofence.radius;
+          if (!inZone) {
+            toast(`أنت بعيد عن المحطة (${Math.round(dist)} متر) — لازم تكون داخل النطاق`, 'error');
+            setLoading(false);
+            setGpsStatus('outside');
+            return;
+          }
+        }
+        const req = {
+          id: Date.now(),
+          workerId: user.id,
+          workerName: user.name,
+          date: todayStr(),
+          requestedAt: new Date().toISOString(),
+          lat: latitude, lng: longitude,
+          inZone,
+          status: 'pending', // pending | approved | rejected
+        };
+        const reqs = getReCheckinRequests(ownerId);
+        saveReCheckinRequests(ownerId, [...reqs.filter(r => !(r.workerId === user.id && r.date === todayStr())), req]);
+        setPendingRequest(req);
+        setLoading(false);
+        setGpsStatus(inZone ? 'inside' : 'outside');
+        toast('📤 تم إرسال طلب الحضور للمالك — في انتظار الموافقة', 'info');
+        startPolling(req.id);
+        return;
+      }
+
+      // أول حضور في اليوم — عادي
+      if (!geofence) { doActualCheckIn(latitude, longitude, false); return; }
+      const dist2 = calcDistance(latitude, longitude, geofence.lat, geofence.lng);
+      setDistance(Math.round(dist2));
+      if (dist2 <= geofence.radius) {
+        setGpsStatus('inside');
+        doActualCheckIn(latitude, longitude, true);
+      } else {
+        setGpsStatus('outside');
+        toast(`أنت بعيد عن المحطة (${Math.round(dist2)} متر) — لازم تكون داخل ${geofence.radius} متر`, 'error');
+        setLoading(false);
+      }
+    } catch (e) {
+      setGpsStatus('error');
+      toast('تعذّر تحديد موقعك — جرّب تفتح الـ GPS', 'error');
+      setLoading(false);
+    }
+  };
+
+  const doActualCheckIn = (lat, lng, inZone) => {
+    const record = {
+      id: Date.now(),
+      workerId: user.id,
+      workerName: user.name,
+      date: todayStr(),
+      checkIn: new Date().toISOString(),
+      checkInLat: lat, checkInLng: lng,
+      inGeofence: inZone,
+      checkOut: null, checkOutLat: null, checkOutLng: null,
+      duration: null, offline: false,
+    };
+    const records = getAttendance(ownerId);
+    const updated = [...records, record];
+    saveAttendance(ownerId, updated);
+    setAllRecords(updated);
+    setTodayRecord(record);
+    setCheckedIn(true);
+    setLoading(false);
+    toast(`تم تسجيل حضورك ✓ — ${fmtTime(record.checkIn)}`, 'success');
+  };
+
+  const myRecords = allRecords.filter(r => r.workerId === user.id).sort((a,b) => new Date(b.checkIn) - new Date(a.checkIn));
+
+  // تنسيق العداد mm:ss
+  const fmtCountdown = (secs) => {
+    if (secs === null) return null;
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  };
+
+  const totalAllowedSecs = (geofence?.allowedOutMinutes || 15) * 60;
+  const quarterSecs = Math.floor(totalAllowedSecs * 0.25);
+  const isWarningZone = countdown !== null && countdown <= quarterSecs;
+  const countdownPct = countdown !== null ? (countdown / totalAllowedSecs) * 100 : 100;
+
+  const getGeofenceStatus = () => {
+    if (!geofence) return { cls: 'geofence-unknown', icon: '📍', txt: 'لم يتم تحديد نطاق المحطة بعد' };
+    if (gpsStatus === 'inside') return { cls: 'geofence-inside', icon: '✅', txt: `داخل نطاق المحطة (${distance} متر)` };
+    if (gpsStatus === 'outside') return { cls: 'geofence-outside', icon: '❌', txt: `خارج النطاق (${distance} متر)` };
+    if (gpsStatus === 'error') return { cls: 'geofence-outside', icon: '⚠️', txt: 'تعذّر تحديد الموقع' };
+    return { cls: 'geofence-unknown', icon: '📡', txt: 'اضغط لتسجيل الحضور' };
+  };
+  const geo = getGeofenceStatus();
+
+  return (
+    <div style={{ maxWidth: 700, margin: '0 auto', animation: 'fadeIn .3s ease' }}>
+      {loading && <Loader />}
+
+      {/* ── بطاقة طلب الحضور المكرر ── */}
+      {pendingRequest && !checkedIn && (
+        <div style={{
+          background: pendingRequest.status === 'approved'
+            ? 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))'
+            : pendingRequest.status === 'rejected'
+              ? 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))'
+              : 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))',
+          border: `2px solid ${pendingRequest.status === 'approved' ? 'rgba(16,185,129,0.4)' : pendingRequest.status === 'rejected' ? 'rgba(239,68,68,0.4)' : 'rgba(59,130,246,0.4)'}`,
+          borderRadius: 20, padding: '20px 24px', marginBottom: 20, textAlign: 'center',
+        }}>
+          {pendingRequest.status === 'pending' && (
+            <>
+              <div style={{ fontSize: 42, marginBottom: 10 }}>⏳</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#3b82f6', marginBottom: 6 }}>في انتظار موافقة المالك</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.8 }}>
+                تم إرسال طلب الحضور الساعة {fmtTime(pendingRequest.requestedAt)}<br/>
+                هيتسجل حضورك فور موافقة المالك
+              </div>
+              {geofence?.requestTimeoutMinutes && (
+                <div style={{ marginTop: 10, fontSize: 11, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', borderRadius: 8, padding: '6px 12px', display: 'inline-block' }}>
+                  ⌛ لو ماردش في {geofence.requestTimeoutMinutes} دقيقة، هيترفض تلقائياً
+                </div>
+              )}
+              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'blink 1.2s infinite' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'blink 1.2s infinite', animationDelay: '0.4s' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'blink 1.2s infinite', animationDelay: '0.8s' }} />
+              </div>
+            </>
+          )}
+          {pendingRequest.status === 'approved' && (
+            <>
+              <div style={{ fontSize: 42, marginBottom: 10 }}>✅</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981' }}>وافق المالك — جاري تسجيل الحضور</div>
+            </>
+          )}
+          {pendingRequest.status === 'rejected' && (
+            <>
+              <div style={{ fontSize: 42, marginBottom: 10 }}>❌</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#ef4444', marginBottom: 6 }}>
+                {pendingRequest.autoRejected ? 'انتهت مهلة الرد — تم رفض الطلب تلقائياً' : 'رفض المالك طلب الحضور'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                {pendingRequest.autoRejected ? 'لم يرد المالك في الوقت المحدد' : 'تواصل مع المالك لمعرفة السبب'}
+              </div>
+              <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => setPendingRequest(null)}>
+                إغلاق
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── عداد الخروج ── */}
+      {countdown !== null && (
+        <div style={{
+          background: isWarningZone
+            ? 'linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.08))'
+            : 'linear-gradient(135deg, rgba(245,158,11,0.18), rgba(245,158,11,0.06))',
+          border: `2px solid ${isWarningZone ? 'rgba(239,68,68,0.5)' : 'rgba(245,158,11,0.4)'}`,
+          borderRadius: 20,
+          padding: '20px 24px',
+          marginBottom: 20,
+          textAlign: 'center',
+          animation: isWarningZone ? 'warningPulse 1s ease-in-out infinite' : 'none',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: isWarningZone ? '#ef4444' : '#f59e0b', marginBottom: 8 }}>
+            {isWarningZone ? '🚨 تحذير! وقت عودتك على وشك ينتهي' : '⏳ أنت خارج نطاق المحطة'}
+          </div>
+          <div style={{
+            fontSize: 52, fontWeight: 900,
+            color: isWarningZone ? '#ef4444' : '#f59e0b',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: 2,
+          }}>
+            {fmtCountdown(countdown)}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+            {isWarningZone
+              ? '⚠️ لو ماجيتش هيتسجل انصرافك وهياخد غياب!'
+              : `عندك ${geofence?.allowedOutMinutes || 15} دقيقة تعود للمحطة`}
+          </div>
+          {/* شريط تقدم */}
+          <div style={{ marginTop: 14, height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${countdownPct}%`,
+              background: isWarningZone
+                ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                : 'linear-gradient(90deg, #f59e0b, #d97706)',
+              borderRadius: 4,
+              transition: 'width 1s linear',
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* Hero Check-in */}
+      <div className="attendance-hero">
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+          {new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </div>
+
+        <div style={{ position: 'relative', width: 130, margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {checkedIn && [1,2,3].map(i => (
+            <div key={i} className="gps-pulse-ring" style={{ width: 130 + i*30, height: 130 + i*30, top: -(i*15), right: -(i*15), borderColor: gpsStatus === 'outside' ? '#f59e0b' : '#10b981', opacity: 0.4, animationDelay: `${i*0.4}s` }} />
+          ))}
+          <button
+            className={`checkin-btn ${loading ? 'loading' : checkedIn ? 'checked-in' : 'idle'}`}
+            onClick={handleCheckIn}
+            disabled={checkedIn || loading}
+          >
+            <span style={{ fontSize: 34 }}>{loading ? '⏳' : checkedIn ? (gpsStatus === 'outside' ? '⚠️' : '✅') : '📍'}</span>
+            <span>{loading ? 'جاري التحقق...' : checkedIn ? 'تم تسجيل الحضور' : 'سجّل حضورك'}</span>
+          </button>
+        </div>
+
+        <div className={`geofence-indicator ${geo.cls}`}>
+          {geo.icon} {geo.txt}
+        </div>
+
+        <div className="attendance-status-bar" style={{ marginTop: 16 }}>
+          <div className={`status-dot ${checkedIn ? (gpsStatus === 'outside' ? 'red' : 'green') : 'gray'}`} />
+          <span style={{ color: checkedIn ? (gpsStatus === 'outside' ? '#f59e0b' : '#10b981') : 'var(--text-muted)' }}>
+            {checkedIn
+              ? gpsStatus === 'outside'
+                ? `خارج النطاق منذ ${fmtTime(outSince ? new Date(outSince).toISOString() : null)}`
+                : `حاضر منذ ${fmtTime(todayRecord?.checkIn)}`
+              : 'لم يتم التسجيل بعد'}
+          </span>
+          {todayRecord?.checkOut && (
+            <span style={{ color: '#ef4444', marginRight: 12 }}>· انصرف {fmtTime(todayRecord.checkOut)}</span>
+          )}
+        </div>
+        {!geofence && (
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--warning)', opacity: 0.8 }}>
+            ⚠️ اطلب من المالك تحديد نطاق المحطة لتفعيل التحقق من الموقع
+          </div>
+        )}
+        {geofence && checkedIn && gpsStatus === 'inside' && (
+          <div style={{ marginTop: 12, fontSize: 12, color: '#10b981', opacity: 0.9 }}>
+            🔒 المراقبة التلقائية شغالة — لو خرجت من النطاق هيبدأ عداد تنازلي
+          </div>
+        )}
+      </div>
+
+      {/* اليوم */}
+      {todayRecord && (
+        <div className="attendance-info-grid">
+          <div className="att-info-card">
+            <div className="att-info-icon">🟢</div>
+            <div className="att-info-val">{fmtTime(todayRecord.checkIn)}</div>
+            <div className="att-info-lbl">وقت الحضور</div>
+          </div>
+          <div className="att-info-card">
+            <div className="att-info-icon">🔴</div>
+            <div className="att-info-val">{todayRecord.checkOut ? fmtTime(todayRecord.checkOut) : '—'}</div>
+            <div className="att-info-lbl">وقت الانصراف</div>
+          </div>
+          <div className="att-info-card">
+            <div className="att-info-icon">⏱️</div>
+            <div className="att-info-val">{todayRecord.checkOut ? calcDuration(todayRecord.checkIn, todayRecord.checkOut) : '—'}</div>
+            <div className="att-info-lbl">مدة العمل</div>
+          </div>
+        </div>
+      )}
+
+      {/* سجل الحضور */}
+      <div className="table-container">
+        <div className="table-hdr">
+          <div style={{ fontSize: 15, fontWeight: 700 }}>📋 سجل حضوري</div>
+          <span className="badge badge-blue">{myRecords.length} يوم</span>
+        </div>
+        {myRecords.length === 0
+          ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">📭</div><div className="empty-title">لا يوجد سجل حضور بعد</div></div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="att-log-table">
+              <thead><tr><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>المدة</th><th>الحالة</th></tr></thead>
+              <tbody>
+                {myRecords.slice(0,30).map(r => (
+                  <tr key={r.id}>
+                    <td style={{ fontWeight: 600 }}>{r.date}</td>
+                    <td style={{ color: '#10b981', fontWeight: 700 }}>{fmtTime(r.checkIn)}</td>
+                    <td style={{ color: r.checkOut ? '#ef4444' : 'var(--text-muted)', fontWeight: 700 }}>{fmtTime(r.checkOut)}</td>
+                    <td>{calcDuration(r.checkIn, r.checkOut) || '—'}</td>
+                    <td>
+                      {r.checkOut
+                        ? r.autoCheckout
+                          ? <span className="badge badge-danger">🔴 انصراف تلقائي</span>
+                          : <span className="badge badge-success">مكتمل</span>
+                        : <span className="badge badge-warning">لم ينصرف</span>}
+                      {r.offline && <span className="offline-badge" style={{ marginRight: 4 }}>📵 أوفلاين</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>}
+      </div>
+    </div>
+  );
+};
+
+// ==================== OWNER ATTENDANCE DASHBOARD ====================
+const AttendanceDashboard = ({ workers, ownerId }) => {
+  const toast = useToast();
+  const [records, setRecords] = useState(() => getAttendance(ownerId));
+  const [geofence, setGeofence] = useState(() => getGeofence(ownerId));
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [radiusInput, setRadiusInput] = useState(geofence?.radius || 150);
+  const [filterDate, setFilterDate] = useState(todayStr());
+  const [confirm, setConfirm] = useState(null);
+  const [tab, setTab] = useState('live'); // live | history | setup
+  const [allowedOutInput, setAllowedOutInput] = useState(geofence?.allowedOutMinutes || 15);
+  const [requestTimeoutInput, setRequestTimeoutInput] = useState(geofence?.requestTimeoutMinutes || 30);
+  const [reCheckinReqs, setReCheckinReqs] = useState(() => getReCheckinRequests(ownerId).filter(r => r.date === todayStr()));
+
+  const refresh = () => {
+    setRecords(getAttendance(ownerId));
+    // تحقق من الطلبات المنتهية الوقت وارفضها تلقائياً
+    const geo = getGeofence(ownerId);
+    const timeoutMins = geo?.requestTimeoutMinutes || 30;
+    const allReqs = getReCheckinRequests(ownerId);
+    const now = Date.now();
+    const updated = allReqs.map(r => {
+      if (r.status === 'pending' && (now - r.requestedAt) / 60000 >= timeoutMins) {
+        return { ...r, status: 'rejected', autoRejected: true };
+      }
+      return r;
+    });
+    if (JSON.stringify(updated) !== JSON.stringify(allReqs)) saveReCheckinRequests(ownerId, updated);
+    setReCheckinReqs(updated.filter(r => r.date === todayStr()));
+  };
+
+  // تحديد موقع المحطة تلقائياً
+  const handleSetGeofence = () => {
+    if (!navigator.geolocation) { toast('GPS غير مدعوم', 'error'); return; }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const geo = { lat: pos.coords.latitude, lng: pos.coords.longitude, radius: +radiusInput, allowedOutMinutes: +allowedOutInput, requestTimeoutMinutes: +requestTimeoutInput };
+        saveGeofence(ownerId, geo);
+        setGeofence(geo);
+        toast(`تم تحديد موقع المحطة ✓ (دقة: ${Math.round(pos.coords.accuracy)} متر)`, 'success');
+        setGpsLoading(false);
+      },
+      () => { toast('تعذّر تحديد الموقع', 'error'); setGpsLoading(false); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // تسجيل الانصراف من المالك
+  const handleCheckOut = (recordId) => {
+    const updated = records.map(r => r.id === recordId
+      ? { ...r, checkOut: new Date().toISOString(), duration: calcDuration(r.checkIn, new Date().toISOString()) }
+      : r
+    );
+    saveAttendance(ownerId, updated);
+    setRecords(updated);
+    toast('تم تسجيل الانصراف ✓', 'success');
+    setConfirm(null);
+  };
+
+  // قبول / رفض طلب الحضور المكرر
+  const handleReCheckin = (reqId, action) => {
+    const all = getReCheckinRequests(ownerId);
+    const updated = all.map(r => r.id === reqId ? { ...r, status: action } : r);
+    saveReCheckinRequests(ownerId, updated);
+    setReCheckinReqs(updated.filter(r => r.date === todayStr()));
+    toast(action === 'approved' ? '✅ تمت الموافقة على الحضور' : '❌ تم رفض الطلب', action === 'approved' ? 'success' : 'error');
+  };
+
+  // العمال الحاضرين اليوم
+  const todayRecords = records.filter(r => r.date === todayStr());
+  const filteredRecords = records.filter(r => r.date === filterDate).sort((a,b)=>new Date(b.checkIn)-new Date(a.checkIn));
+  const presentIds = new Set(todayRecords.filter(r => !r.checkOut).map(r => r.workerId));
+
+  // إحصائيات
+  const totalPresent = todayRecords.filter(r => !r.checkOut).length;
+  const totalLeft = todayRecords.filter(r => r.checkOut).length;
+  const totalAbsent = workers.length - todayRecords.length;
+
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      {confirm && <ConfirmModal message={`هل تريد تسجيل انصراف "${confirm.workerName}"؟`} onConfirm={() => handleCheckOut(confirm.id)} onClose={() => setConfirm(null)} />}
+      {gpsLoading && <Loader />}
+
+      {/* Stats */}
+      <div className="stats-grid" style={{ marginBottom: 22 }}>
+        {[
+          { icon: '🟢', label: 'حاضرون الآن', value: totalPresent, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+          { icon: '🔴', label: 'انصرفوا', value: totalLeft, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+          { icon: '⚫', label: 'غائبون', value: Math.max(0, totalAbsent), color: '#94a3b8', bg: 'rgba(100,116,139,0.15)' },
+          { icon: '👷', label: 'إجمالي العمال', value: workers.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+        ].map((s,i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-icon" style={{ background: s.bg }}>{s.icon}</div>
+            <div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {[['live','🟢 الحضور اللحظي'],['history','📋 السجل'],['setup','⚙️ إعداد النطاق']].map(([id,lbl]) => (
+          <button key={id} className={`btn ${tab===id?'btn-primary':'btn-ghost'}`} onClick={() => setTab(id)}>{lbl}</button>
+        ))}
+      </div>
+
+      {/* TAB: LIVE */}
+      {tab === 'live' && (
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+            آخر تحديث: {new Date().toLocaleTimeString('ar-EG')} —
+            <button className="btn btn-ghost btn-xs" style={{ marginRight: 8 }} onClick={refresh}>🔄 تحديث</button>
+          </div>
+
+          {/* ── طلبات الحضور المكرر ── */}
+          {reCheckinReqs.filter(r => r.status === 'pending').length > 0 && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
+              border: '2px solid rgba(245,158,11,0.4)',
+              borderRadius: 16, padding: 20, marginBottom: 22,
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#f59e0b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                🔔 طلبات حضور تحتاج موافقتك
+                <span style={{ background: '#ef4444', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900 }}>
+                  {reCheckinReqs.filter(r => r.status === 'pending').length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {reCheckinReqs.filter(r => r.status === 'pending').map(req => (
+                  <div key={req.id} style={{
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                    borderRadius: 12, padding: '12px 16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>
+                        {req.workerName[0]}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>{req.workerName}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                          طلب الحضور الساعة {fmtTime(req.requestedAt)} · {req.inZone ? '✅ داخل النطاق' : '⚠️ خارج النطاق'}
+                          {geofence?.requestTimeoutMinutes && (
+                            <span style={{ marginRight: 8, color: '#f59e0b' }}>· ينتهي خلال {Math.max(0, Math.ceil(geofence.requestTimeoutMinutes - (Date.now() - req.requestedAt) / 60000))} د</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-success btn-sm" onClick={() => handleReCheckin(req.id, 'approved')}>✅ قبول</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleReCheckin(req.id, 'rejected')}>❌ رفض</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="live-workers-grid">
+            {workers.map(w => {
+              const rec = todayRecords.find(r => r.workerId === w.id && !r.checkOut);
+              const leftRec = todayRecords.find(r => r.workerId === w.id && r.checkOut);
+              const isPresent = !!rec;
+              const hasLeft = !!leftRec;
+              return (
+                <div key={w.id} className={`live-worker-card ${isPresent ? 'present' : 'absent'}`}>
+                  <div className="live-worker-top">
+                    <div className="w-avatar" style={{ width: 44, height: 44, fontSize: 18 }}>{w.avatar}</div>
+                    <div className="live-worker-info">
+                      <div className="live-worker-name">{w.name}</div>
+                      <div className="live-worker-pump">{w.pump}</div>
+                    </div>
+                    <span className={`presence-badge ${isPresent ? 'present' : 'absent'}`}>
+                      {isPresent ? '● حاضر' : hasLeft ? '◐ انصرف' : '○ غائب'}
+                    </span>
+                  </div>
+                  {isPresent && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>حضر الساعة <b style={{ color: '#10b981' }}>{fmtTime(rec.checkIn)}</b></span>
+                      <button className="checkout-btn" onClick={() => setConfirm(rec)}>🔴 انصراف</button>
+                    </div>
+                  )}
+                  {hasLeft && !isPresent && (
+                    <div style={{ fontSize: 12, paddingTop: 8, borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                      حضر {fmtTime(leftRec.checkIn)} · انصرف {fmtTime(leftRec.checkOut)} · {calcDuration(leftRec.checkIn, leftRec.checkOut)}
+                      {leftRec.autoCheckout && <span className="badge badge-danger" style={{ marginRight: 8, fontSize: 10 }}>🔴 تلقائي - تجاوز الوقت</span>}
+                    </div>
+                  )}
+                  {!isPresent && !hasLeft && (
+                    <div style={{ fontSize: 12, paddingTop: 8, borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                      لم يسجّل حضور اليوم
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: HISTORY */}
+      {tab === 'history' && (
+        <div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' }}>
+            <input type="date" className="form-input" style={{ width: 'auto' }} value={filterDate} max={todayStr()} onChange={e => setFilterDate(e.target.value)} />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{filteredRecords.length} سجل</span>
+          </div>
+          <div className="table-container">
+            {filteredRecords.length === 0
+              ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">📭</div><div className="empty-title">لا يوجد سجل لهذا اليوم</div></div>
+              : <div style={{ overflowX: 'auto' }}>
+                <table className="att-log-table">
+                  <thead><tr><th>العامل</th><th>وقت الحضور</th><th>وقت الانصراف</th><th>المدة</th><th>GPS</th><th className="no-print">انصراف</th></tr></thead>
+                  <tbody>
+                    {filteredRecords.map(r => (
+                      <tr key={r.id}>
+                        <td style={{ fontWeight: 700 }}>{r.workerName}</td>
+                        <td style={{ color: '#10b981', fontWeight: 700 }}>{fmtTime(r.checkIn)}</td>
+                        <td style={{ color: r.checkOut ? '#ef4444' : 'var(--text-muted)', fontWeight: 700 }}>{fmtTime(r.checkOut)}</td>
+                        <td>{calcDuration(r.checkIn, r.checkOut) || '—'}</td>
+                        <td>{r.inGeofence ? <span className="badge badge-success">داخل النطاق</span> : <span className="badge badge-warning">خارج</span>}</td>
+                        <td className="no-print">
+                          {!r.checkOut
+                            ? <button className="checkout-btn" onClick={() => setConfirm(r)}>🔴 انصراف</button>
+                            : <span className="badge badge-success">مكتمل</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: SETUP GEOFENCE */}
+      {tab === 'setup' && (
+        <div>
+          <div className="setup-geofence-card">
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>⚙️ إعداد نطاق تسجيل الحضور (Geofence)</div>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.8 }}>
+              اضغط الزر من داخل المحطة لتحديد موقعها. العمال سيقدروا يسجلوا حضور بس لما يكونوا جوا النطاق المحدد.
+            </p>
+            {geofence && (
+              <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13 }}>
+                <div style={{ fontWeight: 700, color: '#10b981', marginBottom: 6 }}>✅ النطاق الحالي</div>
+                <div style={{ color: 'var(--text-muted)' }}>
+                  خط العرض: <b>{geofence.lat.toFixed(6)}</b> · خط الطول: <b>{geofence.lng.toFixed(6)}</b> · النطاق: <b>{geofence.radius} متر</b> · وقت الخروج: <b>{geofence.allowedOutMinutes || 15} د</b> · مهلة الرد: <b>{geofence.requestTimeoutMinutes || 30} د</b>
+                </div>
+              </div>
+            )}
+            <div className="form-grid-2" style={{ marginBottom: 14 }}>
+              <div className="form-group">
+                <label className="form-label">نطاق الحضور (بالمتر)</label>
+                <input type="number" className="form-input" value={radiusInput} min={50} max={1000} onChange={e => setRadiusInput(+e.target.value)} placeholder="150" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">⏱️ وقت السماح بالخروج (دقيقة)</label>
+                <input type="number" className="form-input" value={allowedOutInput} min={1} max={120} onChange={e => setAllowedOutInput(+e.target.value)} placeholder="15" />
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>لو العامل خرج من الـ zone أكتر من كده يتسجل انصرافه وغياب</div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">⌛ مهلة رد طلب الحضور (دقيقة)</label>
+                <input type="number" className="form-input" value={requestTimeoutInput} min={5} max={120} onChange={e => setRequestTimeoutInput(+e.target.value)} placeholder="30" />
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>لو المالك ماردش في الوقت ده، الطلب يترفض تلقائياً</div>
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={handleSetGeofence}>
+              📍 تحديد موقع المحطة الآن
+            </button>
+          </div>
+
+          <div className="card">
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>💡 كيف يشتغل النظام؟</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 2.2 }}>
+              <div>📍 <b>تسجيل الحضور:</b> العامل يدخل الأبليكيشن ويضغط "سجّل حضورك" — الجهاز يأخذ الـ GPS تلقائياً</div>
+              <div>✅ <b>التحقق:</b> لو العامل جوا النطاق (مثلاً 150 متر)، يتسجل الحضور فوراً</div>
+              <div>❌ <b>خارج النطاق:</b> مينفعش يسجل حضور لو بعيد عن المحطة</div>
+              <div>🔴 <b>الانصراف:</b> المالك فقط يقدر يسجل الانصراف من لوحة التحكم</div>
+              <div>📵 <b>أوفلاين:</b> لو مفيش نت، يتسجل محلياً ويتزامن تلقائي لما الانترنت يرجع</div>
+              <div>📋 <b>التقارير:</b> كل السجلات محفوظة مع وقت الحضور والانصراف ومدة العمل</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== TOAST ====================
+let tid = 0;
+const ToastCtx = createContext(null);
+const ToastProvider = ({ children }) => {
+  const [toasts, setToasts] = useState([]);
+  const add = useCallback((msg, type = 'info') => {
+    const id = ++tid; setToasts(p => [...p, { id, msg, type }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3500);
+  }, []);
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  return (
+    <ToastCtx.Provider value={add}>
+      {children}
+      <div className="toast-container">
+        {toasts.map(t => <div key={t.id} className={`toast toast-${t.type}`}><span style={{ fontWeight: 800, fontSize: 16 }}>{icons[t.type]}</span>{t.msg}</div>)}
+      </div>
+    </ToastCtx.Provider>
+  );
+};
+const useToast = () => useContext(ToastCtx);
+
+// ==================== LOADER ====================
+const Loader = () => <div className="loader-overlay"><div className="spinner" /></div>;
+
+// ==================== CONFIRM ====================
+const ConfirmModal = ({ message, onConfirm, onClose }) => (
+  <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal" style={{ maxWidth: 400, animation: 'fadeIn .2s ease' }}>
+      <div className="modal-header"><div className="modal-title">⚠️ تأكيد</div><button className="close-btn" onClick={onClose}>×</button></div>
+      <div className="modal-body"><p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.8 }}>{message}</p></div>
+      <div className="modal-footer">
+        <button className="btn btn-danger" onClick={onConfirm}>✓ تأكيد</button>
+        <button className="btn btn-ghost" onClick={onClose}>إلغاء</button>
+      </div>
+    </div>
+  </div>
+);
+
+// ==================== WORK PLACES MANAGER ====================
+const WorkPlacesManager = ({ workPlaces, onAdd, onEdit, onDelete, onClose }) => {
+  const [newPlace, setNewPlace] = useState('');
+  const [editId, setEditId] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  
+  const handleAdd = () => {
+    if (newPlace.trim()) { onAdd(newPlace.trim()); setNewPlace(''); }
+  };
+
+  const handleEdit = (id, value) => {
+    if (value.trim()) { onEdit(id, value.trim()); setEditId(null); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 500, animation: 'fadeIn .2s ease' }}>
+        <div className="modal-header"><div className="modal-title">🏢 إدارة أماكن العمل</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="modal-body">
+          <div className="form-group" style={{ marginBottom: 20 }}>
+            <label className="form-label">إضافة مكان عمل جديد</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input type="text" className="form-input" placeholder="أدخل مكان العمل" value={newPlace} onChange={e => setNewPlace(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAdd()} />
+              <button className="btn btn-primary btn-sm" onClick={handleAdd}>➕</button>
+            </div>
+          </div>
+          <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            {workPlaces.map((place, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: 10, background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                {editId === idx ? (
+                  <>
+                    <input type="text" className="form-input" value={editValue} onChange={e => setEditValue(e.target.value)} style={{ flex: 1 }} />
+                    <button className="btn btn-success btn-xs" onClick={() => handleEdit(idx, editValue)}>✓</button>
+                    <button className="btn btn-ghost btn-xs" onClick={() => setEditId(null)}>✕</button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ flex: 1, fontWeight: 500 }}>{place}</span>
+                    <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(idx); setEditValue(place); }}>✏️</button>
+                    <button className="btn btn-danger btn-xs" onClick={() => onDelete(idx)}>🗑️</button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="modal-footer"><button className="btn btn-primary" onClick={onClose}>💾 حفظ وإغلاق</button></div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== WORKER MODAL ====================
+const WorkerModal = ({ worker, onSave, onClose }) => {
+  const [form, setForm] = useState(worker || { name: '', pump: '', workDays: '', salary: '', phone: '' });
+  const [errors, setErrors] = useState({});
+  const toast = useToast();
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'الاسم مطلوب';
+    if (!form.pump.trim()) e.pump = 'مكان العمل مطلوب';
+    const wdErr = validateNum(form.workDays, 'أيام العمل');
+    if (wdErr) e.workDays = wdErr;
+    const salErr = validateNum(form.salary, 'الراتب');
+    if (salErr) e.salary = salErr;
+    return e;
+  };
+  const submit = (e) => {
+    e.preventDefault(); const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    onSave({ ...form, workDays: +form.workDays, salary: +form.salary, phone: form.phone || '', id: worker?.id || Date.now(), avatar: form.name[0] || '؟', delays: worker?.delays || [], absences: worker?.absences || [], absences_no_reason: worker?.absences_no_reason || [], discipline: worker?.discipline || [] });
+    toast(worker ? 'تم تعديل البيانات' : 'تمت الإضافة', 'success');
+  };
+  const f = k => ({ value: form[k] || '', onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ animation: 'fadeIn .2s ease' }}>
+        <div className="modal-header"><div className="modal-title">{worker ? '✏️ تعديل العامل' : '➕ إضافة عامل جديد'}</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <form onSubmit={submit}>
+          <div className="modal-body">
+            <div className="form-grid-2">
+              <div className="form-group"><label className="form-label">الاسم الكامل</label><input placeholder="أدخل الاسم" {...f('name')} />{errors.name && <div className="form-error">{errors.name}</div>}</div>
+              <div className="form-group"><label className="form-label">مكان العمل</label><input type="text" placeholder="مثال: الطرمبة 1، المكتب..." {...f('pump')} />{errors.pump && <div className="form-error">{errors.pump}</div>}</div>
+              <div className="form-group"><label className="form-label">أيام العمل</label><input type="number" min="0" max="1000000" placeholder="28" {...f('workDays')} />{errors.workDays && <div className="form-error">{errors.workDays}</div>}</div>
+              <div className="form-group"><label className="form-label">الراتب (ج.م)</label><input type="number" min="0" max="1000000" placeholder="3500" {...f('salary')} />{errors.salary && <div className="form-error">{errors.salary}</div>}</div>
+            </div>
+            <div className="form-group"><label className="form-label">📱 رقم التليفون</label><input type="tel" placeholder="مثال: 01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} {...f('phone')} /></div>
+          </div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary">💾 حفظ</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ==================== ENTRY MODAL ====================
+const TODAY = new Date().toISOString().split('T')[0];
+const EntryModal = ({ type, onSave, onClose }) => {
+  const isDelay = type === 'delay';
+  const [form, setForm] = useState({ date: '', minutes: '', reason: '', deduction: '' });
+  const [errors, setErrors] = useState({});
+  const validate = () => {
+    const e = {};
+    if (!form.date) e.date = 'التاريخ مطلوب';
+    if (isDelay) { const err = validateNum(form.minutes, 'الدقائق'); if (err) e.minutes = err; }
+    if (!isDelay && !form.reason.trim()) e.reason = 'السبب مطلوب';
+    const dedErr = validateNum(form.deduction, 'قيمة الخصم'); if (dedErr) e.deduction = dedErr;
+    return e;
+  };
+  const submit = (e) => {
+    e.preventDefault(); const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    onSave({ id: Date.now(), date: form.date, ...(isDelay ? { minutes: +form.minutes } : { reason: form.reason }), deduction: +form.deduction });
+  };
+  const f = k => ({ value: form[k], onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
+        <div className="modal-header"><div className="modal-title">{isDelay ? '⏰ إضافة تأخير' : '❌ إضافة غياب'}</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <form onSubmit={submit}>
+          <div className="modal-body">
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            {isDelay
+              ? <div className="form-group"><label className="form-label">مدة التأخير (دقيقة)</label><input type="number" min="0" max="1000000" placeholder="30" {...f('minutes')} />{errors.minutes && <div className="form-error">{errors.minutes}</div>}</div>
+              : <div className="form-group"><label className="form-label">سبب الغياب</label><input placeholder="مرض / ظروف شخصية..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>}
+            <div className="form-group"><label className="form-label">قيمة الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
+          </div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ==================== ABSENCE NO REASON MODAL (العجز) ====================
+const AbsenceNoReasonModal = ({ onSave, onClose }) => {
+  const [form, setForm] = useState({ date: '', deduction: '' });
+  const [errors, setErrors] = useState({});
+  const validate = () => {
+    const e = {};
+    if (!form.date) e.date = 'التاريخ مطلوب';
+    const dedErr = validateNum(form.deduction, 'قيمة العجز'); if (dedErr) e.deduction = dedErr;
+    return e;
+  };
+  const submit = (e) => {
+    e.preventDefault(); const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    onSave({ id: Date.now(), date: form.date, deduction: +form.deduction });
+  };
+  const f = k => ({ value: form[k], onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
+        <div className="modal-header"><div className="modal-title">📦 إضافة عجز</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <form onSubmit={submit}>
+          <div className="modal-body">
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">قيمة العجز / الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
+          </div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ==================== DISCIPLINE MODAL ====================
+const DisciplineModal = ({ onSave, onClose }) => {
+  const [form, setForm] = useState({ date: '', stars: '5', reward: '' });
+  const [errors, setErrors] = useState({});
+  const validate = () => {
+    const e = {};
+    if (!form.date) e.date = 'التاريخ مطلوب';
+    if (!form.stars || isNaN(form.stars) || +form.stars < 1 || +form.stars > 5) e.stars = 'النجوم يجب أن تكون من 1 إلى 5';
+    const rewErr = validateNum(form.reward, 'قيمة الحافز'); if (rewErr) e.reward = rewErr;
+    return e;
+  };
+  const submit = (e) => {
+    e.preventDefault(); const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    onSave({ id: Date.now(), date: form.date, stars: +form.stars, reward: +form.reward });
+  };
+  const f = k => ({ value: form[k], onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
+        <div className="modal-header"><div className="modal-title">⭐ إضافة انضباط يومي</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <form onSubmit={submit}>
+          <div className="modal-body">
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">عدد النجوم (1-5)</label><input type="number" min="1" max="5" placeholder="5" {...f('stars')} />{errors.stars && <div className="form-error">{errors.stars}</div>}</div>
+            <div className="form-group"><label className="form-label">قيمة الحافز (ج.م)</label><input type="number" min="0" max="1000000" placeholder="100" {...f('reward')} />{errors.reward && <div className="form-error">{errors.reward}</div>}</div>
+          </div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ==================== CASH WITHDRAWAL MODAL ====================
+const CashWithdrawalModal = ({ onSave, onClose }) => {
+  const [form, setForm] = useState({ date: '', amount: '', note: '' });
+  const [errors, setErrors] = useState({});
+  const validate = () => {
+    const e = {};
+    if (!form.date) e.date = 'التاريخ مطلوب';
+    const amtErr = validateNum(form.amount, 'المبلغ'); if (amtErr) e.amount = amtErr;
+    if (+form.amount === 0) e.amount = 'المبلغ يجب أن يكون أكبر من صفر';
+    return e;
+  };
+  const submit = (ev) => {
+    ev.preventDefault(); const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    onSave({ id: Date.now(), date: form.date, amount: +form.amount, note: form.note.trim() });
+  };
+  const f = k => ({ value: form[k], onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
+        <div className="modal-header">
+          <div className="modal-title">💵 تسجيل سحب نقدي</div>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        <form onSubmit={submit}>
+          <div className="modal-body">
+            <div className="form-group">
+              <label className="form-label">التاريخ</label>
+              <input type="date" max={TODAY} {...f('date')} />
+              {errors.date && <div className="form-error">{errors.date}</div>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">المبلغ المسحوب (ج.م)</label>
+              <input type="number" min="1" max="1000000" placeholder="مثال: 500" {...f('amount')} />
+              {errors.amount && <div className="form-error">{errors.amount}</div>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">ملاحظة (اختياري)</label>
+              <input placeholder="مثال: سلفة — إيجار — طوارئ..." {...f('note')} />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="submit" className="btn btn-primary">💾 تسجيل</button>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ==================== WORKER DETAIL ====================
+const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }) => {
+  const toast = useToast();
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ name: worker.name, pump: worker.pump, workDays: worker.workDays, salary: worker.salary, phone: worker.phone || '' });
+  const [entryModal, setEntryModal] = useState(null);
+  const [absenceNoReasonModal, setAbsenceNoReasonModal] = useState(false);
+  const [disciplineModal, setDisciplineModal] = useState(false);
+  const [cashModal, setCashModal] = useState(false);
+  const [delEntry, setDelEntry] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const w = worker;
+  const ded = totalDed(w);
+  const net = calcNet(w);
+
+  const saveEdit = async () => {
+    if (isWorkerView) {
+      if (!editForm.name.trim()) { toast('الاسم مطلوب', 'error'); return; }
+      setLoading(true); await new Promise(r => setTimeout(r, 500));
+      onUpdate({ ...w, name: editForm.name });
+      setEditMode(false); setLoading(false); toast('تم حفظ اسمك ✓', 'success');
+    } else {
+      if (!editForm.name.trim() || !editForm.pump || !editForm.workDays || !editForm.salary) { toast('يرجى ملء جميع الحقول', 'error'); return; }
+      setLoading(true); await new Promise(r => setTimeout(r, 500));
+      onUpdate({ ...w, ...editForm, workDays: +editForm.workDays, salary: +editForm.salary });
+      setEditMode(false); setLoading(false); toast('تم حفظ التعديلات ✓', 'success');    }
+  };
+
+  const addEntry = async (type, entry) => {
+    setLoading(true); await new Promise(r => setTimeout(r, 400));
+    if (type === 'delay') onUpdate({ ...w, delays: [...w.delays, entry] });
+    else if (type === 'absence') onUpdate({ ...w, absences: [...w.absences, entry] });
+    else if (type === 'absence_no_reason') onUpdate({ ...w, absences_no_reason: [...(w.absences_no_reason || []), entry] });
+    else if (type === 'discipline') onUpdate({ ...w, discipline: [...(w.discipline || []), entry] });
+    else if (type === 'cash') onUpdate({ ...w, cash_withdrawals: [...(w.cash_withdrawals || []), entry] });
+    setEntryModal(null); setAbsenceNoReasonModal(false); setDisciplineModal(false); setCashModal(false); setLoading(false); toast('تم الإضافة ✓', 'success');
+  };
+
+  const removeEntry = async (type, id) => {
+    setLoading(true); await new Promise(r => setTimeout(r, 400));
+    if (type === 'delay') onUpdate({ ...w, delays: w.delays.filter(d => d.id !== id) });
+    else if (type === 'absence') onUpdate({ ...w, absences: w.absences.filter(a => a.id !== id) });
+    else if (type === 'absence_no_reason') onUpdate({ ...w, absences_no_reason: w.absences_no_reason.filter(a => a.id !== id) });
+    else if (type === 'discipline') onUpdate({ ...w, discipline: w.discipline.filter(d => d.id !== id) });
+    else if (type === 'cash') onUpdate({ ...w, cash_withdrawals: (w.cash_withdrawals || []).filter(c => c.id !== id) });
+    setDelEntry(null); setLoading(false); toast('تم الحذف', 'success');
+  };
+
+  const ef = k => ({ value: editForm[k], onChange: e => setEditForm({ ...editForm, [k]: e.target.value }), className: 'form-input' });
+
+  const absNoReasonDed = (w.absences_no_reason || []).reduce((s, a) => s + (a.deduction || 0), 0);
+
+  return (
+    <div className="worker-detail">
+      {loading && <Loader />}
+      {entryModal && <EntryModal type={entryModal} onSave={entry => addEntry(entryModal, entry)} onClose={() => setEntryModal(null)} />}
+      {absenceNoReasonModal && <AbsenceNoReasonModal onSave={entry => addEntry('absence_no_reason', entry)} onClose={() => setAbsenceNoReasonModal(false)} />}
+      {disciplineModal && <DisciplineModal onSave={entry => addEntry('discipline', entry)} onClose={() => setDisciplineModal(false)} />}
+      {cashModal && <CashWithdrawalModal onSave={entry => addEntry('cash', entry)} onClose={() => setCashModal(false)} />}
+      {delEntry && <ConfirmModal message="هل تريد حذف هذا السجل نهائياً؟" onConfirm={() => removeEntry(delEntry.type, delEntry.id)} onClose={() => setDelEntry(null)} />}
+
+      {/* Header */}
+      <div className="detail-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="detail-avatar">{w.avatar}</div>
+          <div>
+            {editMode
+              ? <input className="form-input" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ fontSize: 17, fontWeight: 700, marginBottom: 6, padding: '7px 12px' }} />
+              : <div style={{ fontSize: 21, fontWeight: 800 }}>{w.name}</div>}
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{w.pump} · عامل في المحطة</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {canEdit && (editMode ? (
+            <><button className="btn btn-success btn-sm" onClick={saveEdit}>💾 حفظ</button><button className="btn btn-ghost btn-sm" onClick={() => { setEditMode(false); setEditForm({ name: w.name, pump: w.pump, workDays: w.workDays, salary: w.salary }); }}>إلغاء</button></>
+          ) : (
+            <button className="btn btn-accent btn-sm" onClick={() => setEditMode(true)}>✏️ تعديل</button>
+          ))}
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(getPlan())) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري التحميل', 'info'); }}>📄{!planHasExcelAdv(getPlan()) && '🔒'}</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
+        </div>
+      </div>
+
+      {/* Basic Info */}
+      {!isWorkerView && <div className="detail-section">
+        <div className="detail-section-hdr"><div className="detail-section-title">⚙️ البيانات الأساسية</div></div>
+        <div className="detail-body">
+          <div className="form-grid-2" style={{ gap: 16 }}>
+            <div>
+              <div className="form-label">مكان العمل</div>
+              {editMode
+                ? <input type="text" {...ef('pump')} placeholder="مثال: الطرمبة 1، المكتب، الورشة" />
+                : <span className="badge badge-blue" style={{ fontSize: 13, padding: '5px 14px' }}>{w.pump}</span>}
+            </div>
+            <div>
+              <div className="form-label">أيام العمل</div>
+              {editMode ? <input type="number" min="0" max="1000000" {...ef('workDays')} /> : <span style={{ fontWeight: 700, fontSize: 16 }}>{w.workDays} يوم</span>}
+            </div>
+            <div>
+              <div className="form-label">الراتب الأساسي</div>
+              {editMode ? <input type="number" min="0" max="1000000" {...ef('salary')} /> : <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--accent)' }}>{fmt(w.salary)}</span>}
+            </div>
+            <div>
+              <div className="form-label">إجمالي الخصومات</div>
+              <span style={{ fontWeight: 700, fontSize: 16, color: ded > 0 ? '#ef4444' : 'var(--text-muted)' }}>{ded > 0 ? `-${fmt(ded)}` : 'لا يوجد'}</span>
+            </div>
+            <div>
+              <div className="form-label">📱 رقم التليفون</div>
+              {editMode
+                ? <input type="tel" {...ef('phone')} placeholder="01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} />
+                : <span style={{ fontWeight: 600, fontSize: 15, color: w.phone ? 'var(--text)' : 'var(--text-muted)' }}>{w.phone || '—'}</span>}
+            </div>
+          </div>
+        </div>
+      </div>}
+
+      {/* Delays */}
+      {!isWorkerView && <div className="detail-section">
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">⏰ التأخيرات <span className="badge badge-warning">{w.delays.length} مرة</span></div>
+          <button className="btn btn-warning btn-sm no-print" onClick={() => setEntryModal('delay')}>➕ إضافة تأخير</button>
+        </div>
+        {w.delays.length === 0
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد تأخيرات مسجلة</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>المدة</th><th>الخصم</th><th className="no-print">إجراء</th></tr></thead>
+              <tbody>
+                {w.delays.map((d, i) => (
+                  <tr key={d.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{d.date}</td>
+                    <td><span className="badge badge-warning">{d.minutes} دقيقة</span></td>
+                    <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(d.deduction)}</td>
+                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'delay', id: d.id })}>🗑️ حذف</button></td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
+                  <td colSpan={3} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي خصم التأخيرات</td>
+                  <td style={{ fontWeight: 800, color: '#ef4444' }}>-{fmt(w.delays.reduce((s, d) => s + d.deduction, 0))}</td>
+                  <td className="no-print" />
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>}
+
+      {/* Absences */}
+      {!isWorkerView && <div className="detail-section">
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">❌ الغيابات <span className="badge badge-danger">{w.absences.length} يوم</span></div>
+          <button className="btn btn-danger btn-sm no-print" onClick={() => setEntryModal('absence')}>➕ إضافة غياب</button>
+        </div>
+        {w.absences.length === 0
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد غيابات مسجلة</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>السبب</th><th>الخصم</th><th className="no-print">إجراء</th></tr></thead>
+              <tbody>
+                {w.absences.map((a, i) => (
+                  <tr key={a.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{a.date}</td>
+                    <td><span className="badge badge-danger">{a.reason}</span></td>
+                    <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
+                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence', id: a.id })}>🗑️ حذف</button></td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
+                  <td colSpan={3} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي خصم الغياب</td>
+                  <td style={{ fontWeight: 800, color: '#ef4444' }}>-{fmt(w.absences.reduce((s, a) => s + a.deduction, 0))}</td>
+                  <td className="no-print" />
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>}
+
+      {/* العجز - FIX: now shows deduction not reward */}
+      {!isWorkerView && <div className="detail-section">
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">📦 العجز <span className="badge badge-danger">{(w.absences_no_reason || []).length} مرة</span></div>
+          <button className="btn btn-blue btn-sm no-print" onClick={() => setAbsenceNoReasonModal(true)}>➕ إضافة عجز</button>
+        </div>
+        {(!w.absences_no_reason || w.absences_no_reason.length === 0)
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد عجز مسجل</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>قيمة العجز</th><th className="no-print">إجراء</th></tr></thead>
+              <tbody>
+                {w.absences_no_reason.map((a, i) => (
+                  <tr key={a.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{a.date}</td>
+                    <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
+                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence_no_reason', id: a.id })}>🗑️ حذف</button></td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
+                  <td colSpan={2} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي خصومات العجز</td>
+                  <td style={{ fontWeight: 800, color: '#ef4444' }}>-{fmt(absNoReasonDed)}</td>
+                  <td className="no-print" />
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>}
+
+      {/* Discipline */}
+      {!isWorkerView && <div className="detail-section">
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">⭐ الانضباط اليومي <span className="badge badge-warning">{(w.discipline || []).length} مرة</span></div>
+          <button className="btn btn-warning btn-sm no-print" onClick={() => setDisciplineModal(true)}>➕ إضافة انضباط</button>
+        </div>
+        {(!w.discipline || w.discipline.length === 0)
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سجل انضباط</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>النجوم</th><th>الحوافز</th><th className="no-print">إجراء</th></tr></thead>
+              <tbody>
+                {w.discipline.map((d, i) => (
+                  <tr key={d.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{d.date}</td>
+                    <td><span className="badge badge-warning">{'⭐'.repeat(d.stars)}</span></td>
+                    <td style={{ color: '#10b981', fontWeight: 700 }}>+{fmt(d.reward)}</td>
+                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'discipline', id: d.id })}>🗑️ حذف</button></td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
+                  <td colSpan={3} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي مكافآت الانضباط</td>
+                  <td style={{ fontWeight: 800, color: '#10b981' }}>+{fmt((w.discipline || []).reduce((s, d) => s + d.reward, 0))}</td>
+                  <td className="no-print" />
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>}
+
+      {/* السحب النقدي */}
+      {!isWorkerView && <div className="detail-section">
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">💵 السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
+          <button className="btn btn-primary btn-sm no-print" onClick={() => setCashModal(true)}>➕ تسجيل سحب</button>
+        </div>
+        {(!w.cash_withdrawals || w.cash_withdrawals.length === 0)
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سحب نقدي مسجل</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>ملاحظة</th><th className="no-print">إجراء</th></tr></thead>
+              <tbody>
+                {w.cash_withdrawals.map((c, i) => (
+                  <tr key={c.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{c.date}</td>
+                    <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
+                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'cash', id: c.id })}>🗑️ حذف</button></td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
+                  <td colSpan={2} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي السحوبات</td>
+                  <td style={{ fontWeight: 800, color: '#3b82f6' }}>−{fmt(totalCash(w))}</td>
+                  <td /><td className="no-print" />
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>}
+
+      {/* السحب النقدي - عرض للعامل */}
+      {isWorkerView && (w.cash_withdrawals || []).length > 0 && <div className="detail-section">
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">💵 السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="entries-tbl">
+            <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>ملاحظة</th></tr></thead>
+            <tbody>
+              {w.cash_withdrawals.map((c, i) => (
+                <tr key={c.id}>
+                  <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                  <td style={{ fontWeight: 600 }}>{c.date}</td>
+                  <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
+                </tr>
+              ))}
+              <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
+                <td colSpan={2} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي السحوبات</td>
+                <td style={{ fontWeight: 800, color: '#3b82f6' }}>−{fmt(totalCash(w))}</td>
+                <td />
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>}
+
+      {/* Net */}
+      <div className="net-card">
+        <div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>💰 صافي المدفوعات</div>
+          <div className="net-amount">{fmt(net)}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 2 }}>
+            <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{fmt(w.salary)} ← الراتب الأساسي</div>
+            <div style={{ color: '#ef4444' }}>−{fmt(ded)} ← إجمالي الخصومات</div>
+            <div style={{ color: '#10b981' }}>+{fmt(totalRewards(w))} ← الحوافز</div>
+            {totalCash(w) > 0 && <div style={{ color: '#3b82f6' }}>−{fmt(totalCash(w))} ← السحب النقدي</div>}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 4, fontWeight: 700, fontSize: 13, color: '#10b981' }}>= {fmt(net)} صافي المدفوعات</div>
+          </div>
+          <div style={{ marginTop: 10, width: 200 }}>
+            <div className="fuel-bar"><div className="fuel-fill" style={{ width: `${Math.max(0, Math.min(100, (net / w.salary) * 100))}%`, background: net >= w.salary * 0.9 ? '#10b981' : net >= w.salary * 0.75 ? '#f59e0b' : '#ef4444' }} /></div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{Math.round((net / w.salary) * 100)}% من الراتب الأساسي</div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 48 }}>💵</div>
+          <span className={`badge ${net >= w.salary * 0.9 ? 'badge-success' : net >= w.salary * 0.75 ? 'badge-warning' : 'badge-danger'}`} style={{ marginTop: 8, fontSize: 12 }}>
+            {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : '❗ خصومات عالية'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== WORKERS PAGE ====================
+const WorkersPage = ({ workers, setWorkers }) => {
+  const [selectedId, setSelectedId] = useState(null);
+  const [ddOpen, setDdOpen] = useState(false);
+  const [workerModal, setWorkerModal] = useState(null);
+  const [deleteW, setDeleteW] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+
+  const selected = workers.find(w => w.id === selectedId);
+
+  const saveWorker = async (data) => {
+    setLoading(true); await new Promise(r => setTimeout(r, 600));
+    if (workers.find(w => w.id === data.id)) setWorkers(workers.map(w => w.id === data.id ? data : w));
+    else { setWorkers([...workers, data]); setSelectedId(data.id); }
+    setWorkerModal(null); setLoading(false);
+  };
+
+  const deleteWorker = async () => {
+    setLoading(true); await new Promise(r => setTimeout(r, 500));
+    setWorkers(workers.filter(w => w.id !== deleteW.id));
+    if (selectedId === deleteW.id) setSelectedId(null);
+    toast('تم حذف العامل', 'success'); setDeleteW(null); setLoading(false);
+  };
+
+  const updateWorker = (updated) => setWorkers(workers.map(w => w.id === updated.id ? updated : w));
+
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      {loading && <Loader />}
+      {workerModal !== null && <WorkerModal worker={workerModal === 'add' ? null : workerModal} onSave={saveWorker} onClose={() => setWorkerModal(null)} />}
+      {deleteW && <ConfirmModal message={`هل تريد حذف "${deleteW.name}" نهائياً؟`} onConfirm={deleteWorker} onClose={() => setDeleteW(null)} />}
+
+      <div className="worker-selector">
+        <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
+          👷 اختر عاملاً لعرض بياناته التفصيلية
+        </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div className="worker-dropdown" style={{ flex: 1, minWidth: 240 }}>
+            <button className={`worker-dropdown-btn ${ddOpen ? 'open' : ''}`} onClick={() => setDdOpen(!ddOpen)}>
+              {selected ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div className="w-avatar" style={{ width: 34, height: 34, fontSize: 14 }}>{selected.avatar}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{selected.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{selected.pump} · صافي: {fmt(calcNet(selected))}</div>
+                  </div>
+                </div>
+              ) : <span style={{ color: 'var(--text-muted)' }}>— اختر عاملاً —</span>}
+              <span style={{ color: 'var(--text-muted)', display: 'inline-block', transition: 'transform .2s', transform: ddOpen ? 'rotate(180deg)' : 'none', fontSize: 12 }}>▾</span>
+            </button>
+            {ddOpen && (
+              <div className="worker-dropdown-menu">
+                {workers.map(w => (
+                  <div key={w.id} className={`worker-dropdown-item ${w.id === selectedId ? 'selected' : ''}`}
+                    onClick={() => { setSelectedId(w.id); setDdOpen(false); }}>
+                    <div className="w-avatar">{w.avatar}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{w.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{w.pump} · {w.delays.length} تأخير · {w.absences.length} غياب · صافي: {fmt(calcNet(w))}</div>
+                    </div>
+                    {w.id === selectedId && <span style={{ color: 'var(--primary-light)', fontWeight: 800, fontSize: 16 }}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={() => setWorkerModal('add')}>➕ عامل جديد</button>
+            {selected && <>
+              <button className="btn btn-ghost" onClick={() => setWorkerModal(selected)}>✏️ تعديل</button>
+              <button className="btn btn-danger" onClick={() => setDeleteW(selected)}>🗑️ حذف</button>
+            </>}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+          {workers.map(w => (
+            <button key={w.id} onClick={() => { setSelectedId(w.id); setDdOpen(false); }}
+              style={{ padding: '5px 13px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: '1px solid', transition: 'all .15s', fontFamily: 'Cairo,sans-serif', background: w.id === selectedId ? 'rgba(26,86,219,0.2)' : 'rgba(255,255,255,0.04)', borderColor: w.id === selectedId ? 'var(--primary-light)' : 'var(--border)', color: w.id === selectedId ? 'var(--primary-light)' : 'var(--text-muted)' }}>
+              {w.avatar} {w.name.split(' ')[0]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selected
+        ? <WorkerDetail key={selected.id} worker={selected} onUpdate={updateWorker} />
+        : <div className="empty-state">
+          <div className="empty-icon">👆</div>
+          <div className="empty-title">اختر عاملاً من القائمة أعلاه</div>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>سيتم عرض بياناته الكاملة</div>
+        </div>}
+    </div>
+  );
+};
+
+// ==================== OWNER DASHBOARD ====================
+const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDeletePlace }) => {
+  const [showPlacesManager, setShowPlacesManager] = useState(false);
+  const totalSal = workers.reduce((s, w) => s + w.salary, 0);
+  const allDed = workers.reduce((s, w) => s + totalDed(w), 0);
+  const totalRewardsVal = workers.reduce((s, w) => s + totalRewards(w), 0);
+  const allCash = workers.reduce((s, w) => s + totalCash(w), 0);
+  const totalNet = workers.reduce((s, w) => s + calcNet(w), 0);
+  const totalAbs = workers.reduce((s, w) => s + w.absences.length, 0);
+  const totalDel = workers.reduce((s, w) => s + w.delays.length, 0);
+  const totalAbsNoReason = workers.reduce((s, w) => s + (w.absences_no_reason || []).length, 0);
+  const avgDiscipline = workers.length > 0 ? (workers.reduce((s, w) => s + (w.discipline || []).reduce((ds, d) => ds + d.stars, 0), 0) / Math.max(workers.reduce((c, w) => c + (w.discipline || []).length, 0), 1)).toFixed(1) : 0;
+  
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      {showPlacesManager && <WorkPlacesManager workPlaces={workPlaces} onAdd={onAddPlace} onEdit={onEditPlace} onDelete={onDeletePlace} onClose={() => setShowPlacesManager(false)} />}
+      <div className="stats-grid">
+        {[
+          { icon: '👷', label: 'إجمالي العمال', value: workers.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+          { icon: '💵', label: 'إجمالي الرواتب', value: fmt(totalSal), color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+          { icon: '✅', label: 'صافي المدفوعات', value: fmt(totalNet), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+          { icon: '➖', label: 'إجمالي الخصومات', value: fmt(allDed), color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+          { icon: '💵', label: 'إجمالي السحوبات', value: fmt(allCash), color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+          { icon: '📦', label: 'حالات العجز', value: `${totalAbsNoReason}`, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+          { icon: '⭐', label: 'متوسط الانضباط', value: `${avgDiscipline} نجم`, color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+          { icon: '🎁', label: 'إجمالي الحوافز', value: fmt(totalRewardsVal), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+        ].map((s, i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-icon" style={{ background: s.bg }}>{s.icon}</div>
+            <div>
+              <div style={{ fontSize: s.value.toString().length > 9 ? '16px' : '22px', fontWeight: 800, color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 22 }}>
+        <div className="card">
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>💹 ملخص الرواتب</div>
+          {[
+            { label: 'إجمالي الرواتب', val: totalSal, color: '#3b82f6', pct: 100 },
+            { label: 'الخصومات', val: allDed, color: '#ef4444', pct: totalSal ? (allDed / totalSal) * 100 : 0 },
+            { label: 'الحوافز', val: totalRewardsVal, color: '#10b981', pct: totalSal ? (totalRewardsVal / totalSal) * 100 : 0 },
+            { label: 'السحب النقدي', val: allCash, color: '#3b82f6', pct: totalSal ? (allCash / totalSal) * 100 : 0 },
+            { label: 'صافي المدفوع', val: totalNet, color: '#10b981', pct: totalSal ? (totalNet / totalSal) * 100 : 0 }
+          ].map(item => (
+            <div key={item.label} style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, fontSize: 12 }}>
+                <span style={{ color: 'var(--text-muted)' }}>{item.label}</span>
+                <span style={{ fontWeight: 700, color: item.color }}>{fmt(item.val)}</span>
+              </div>
+              <div className="fuel-bar"><div className="fuel-fill" style={{ width: `${item.pct}%`, background: item.color }} /></div>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>👷 العمال بمكان العمل</span>
+            <button className="btn btn-primary btn-sm no-print" onClick={() => setShowPlacesManager(true)}>🏢 إدارة</button>
+          </div>
+          {workPlaces.map(p => { const c = workers.filter(w => w.pump === p).length; return (
+            <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 68, fontSize: 12, color: 'var(--text-muted)' }}>{p}</div>
+              <div className="fuel-bar" style={{ flex: 1 }}><div className="fuel-fill" style={{ width: workers.length > 0 ? `${(c / workers.length) * 100}%` : '0%' }} /></div>
+              <div style={{ width: 52, fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{c} عامل</div>
+            </div>
+          ); })}
+          {/* العمال اللي عندهم مكان عمل مش في القائمة */}
+          {[...new Set(workers.map(w => w.pump).filter(p => p && p !== 'غير محدد' && !workPlaces.includes(p)))].map(p => {
+            const c = workers.filter(w => w.pump === p).length;
+            return (
+              <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 68, fontSize: 12, color: 'var(--text-muted)' }}>{p}</div>
+                <div className="fuel-bar" style={{ flex: 1 }}><div className="fuel-fill" style={{ width: workers.length > 0 ? `${(c / workers.length) * 100}%` : '0%' }} /></div>
+                <div style={{ width: 52, fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{c} عامل</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="table-container">
+        <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>👷 ملخص جميع العمال</div></div>
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead><tr><th>العامل</th><th>مكان العمل</th><th>أيام العمل</th><th>تأخيرات</th><th>غيابات</th><th>عجز</th><th>انضباط</th><th>خصومات</th><th>سحب نقدي</th><th>صافي المدفوعات</th></tr></thead>
+            <tbody>
+              {workers.map(w => {
+                const discAvg = (w.discipline || []).length > 0 ? (w.discipline.reduce((s, d) => s + d.stars, 0) / w.discipline.length).toFixed(1) : '—';
+                return (
+                <tr key={w.id}>
+                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>{w.avatar}</div><span style={{ fontWeight: 600 }}>{w.name}</span></div></td>
+                  <td><span className="badge badge-blue">{w.pump}</span></td>
+                  <td>{w.workDays} يوم</td>
+                  <td>{w.delays.length > 0 ? <span className="badge badge-warning">{w.delays.length} مرة</span> : <span className="badge badge-success">لا يوجد</span>}</td>
+                  <td>{w.absences.length > 0 ? <span className="badge badge-danger">{w.absences.length} يوم</span> : <span className="badge badge-success">لا يوجد</span>}</td>
+                  <td>{(w.absences_no_reason || []).length > 0 ? <span className="badge badge-danger">{(w.absences_no_reason || []).length}</span> : <span className="badge badge-success">—</span>}</td>
+                  <td>{discAvg !== '—' ? <span className="badge badge-warning">{discAvg} ⭐</span> : <span className="badge badge-success">—</span>}</td>
+                  <td style={{ color: totalDed(w) > 0 ? '#ef4444' : 'var(--text-muted)', fontWeight: 700 }}>{totalDed(w) > 0 ? `-${fmt(totalDed(w))}` : '—'}</td>
+                  <td style={{ color: totalCash(w) > 0 ? '#3b82f6' : 'var(--text-muted)', fontWeight: 700 }}>{totalCash(w) > 0 ? `-${fmt(totalCash(w))}` : '—'}</td>
+                  <td style={{ fontWeight: 700, color: '#10b981', fontSize: 14 }}>{fmt(calcNet(w))}</td>
+                </tr>
+              );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== REPORTS ====================
+const generateMonthlyReport = (workers, month, year, monthName) => {
+  const C = (v, s, t) => ({ v, s: s ?? 0, t: t ?? (typeof v === 'number' ? 'n' : 's') });
+  const E = (s) => C('', s ?? 0);
+
+  const totalSal = workers.reduce((s, w) => s + w.salary, 0);
+  const allDed   = workers.reduce((s, w) => s + totalDed(w), 0);
+  const allRew   = workers.reduce((s, w) => s + totalRewards(w), 0);
+  const totalNet = workers.reduce((s, w) => s + calcNet(w), 0);
+
+  // ── Sheet 1: ملخص الشهر ──
+  const summaryRows = [
+    { cells: [C(`التقرير الشهري - ${monthName} ${year}`,1),E(1),E(1),E(1),E(1),E(1),E(1),E(1)], ht: 32 },
+    { cells: [C('محطة بترومين 10000',15),E(15),E(15),E(15),E(15),E(15),E(15),E(15)], ht: 26 },
+    { cells: Array(8).fill(E(0)) },
+    { cells: [C('العامل',1),C('مكان العمل',1),C('ايام العمل',1),C('التاخيرات',1),C('الغيابات',1),C('الخصومات',1),C('الحوافز',1),C('صافي المدفوع',1)], ht: 24 },
+    ...workers.map((w, i) => {
+      const ev = i % 2 === 0;
+      const net = calcNet(w);
+      return { cells: [
+        C(w.name, ev?6:7), C(w.pump, ev?6:7), C(w.workDays, ev?6:7, 'n'),
+        C(w.delays.length, ev?6:7, 'n'), C(w.absences.length, ev?6:7, 'n'),
+        C(totalDed(w), ev?10:12, 'n'), C(totalRewards(w), ev?11:13, 'n'),
+        C(net, net >= w.salary*0.9 ? (ev?11:13) : (ev?10:12), 'n'),
+      ]};
+    }),
+    { cells: Array(8).fill(E(0)) },
+    { cells: [
+      C('الاجمالي',8), E(8),
+      C(workers.reduce((s,w)=>s+w.workDays,0),8,'n'),
+      C(workers.reduce((s,w)=>s+w.delays.length,0),8,'n'),
+      C(workers.reduce((s,w)=>s+w.absences.length,0),8,'n'),
+      C(allDed,9,'n'), C(allRew,8,'n'), C(totalNet,8,'n'),
+    ], ht: 26 },
+  ];
+  const summarySheet = {
+    name: 'ملخص الشهر',
+    colWidths: [22,16,13,13,13,18,16,20],
+    merges: ['A1:H1','A2:H2'],
+    rows: summaryRows,
+  };
+
+  // ── Sheets per worker ──
+  const workerSheets = workers.map(w => {
+    const net = calcNet(w);
+    const absNR = w.absences_no_reason || [];
+    const disc  = w.discipline || [];
+    const delDed  = w.delays.reduce((s,d)=>s+d.deduction,0);
+    const absDed  = w.absences.reduce((s,a)=>s+a.deduction,0);
+    const absNRDed= absNR.reduce((s,a)=>s+a.deduction,0);
+    const rewTotal= disc.reduce((s,d)=>s+d.reward,0);
+
+    const rows = [
+      { cells: [C(`تقرير العامل: ${w.name}`,1),E(1),E(1),E(1)], ht: 30 },
+      { cells: [C(`${monthName} ${year} - ${w.pump}`,15),E(15),E(15),E(15)], ht: 24 },
+      { cells: [E(0),E(0),E(0),E(0)] },
+      { cells: [C('البيان',1),C('التفاصيل',1),E(1),E(1)], ht: 22 },
+      { cells: [C('ايام العمل',6),C(w.workDays,6,'n'),E(6),E(6)] },
+      { cells: [C('الراتب الاساسي',7),C(w.salary,14,'n'),E(7),E(7)] },
+      { cells: [C('اجمالي خصم التاخيرات',6),C(delDed,10,'n'),E(6),E(6)] },
+      { cells: [C('اجمالي خصم الغيابات',7),C(absDed,10,'n'),E(7),E(7)] },
+      { cells: [C('اجمالي خصم العجز',6),C(absNRDed,10,'n'),E(6),E(6)] },
+      { cells: [C('اجمالي الحوافز',7),C(rewTotal,11,'n'),E(7),E(7)] },
+      { cells: [C('صافي المدفوعات',16),C(net,16,'n'),E(16),E(16)], ht: 26 },
+      { cells: [E(0),E(0),E(0),E(0)] },
+      // delays section
+      { cells: [C('--- التاخيرات ---',5),E(5),E(5),E(5)], ht: 22 },
+      { cells: [C('#',1),C('التاريخ',1),C('المدة (دقيقة)',1),C('الخصم',1)], ht: 20 },
+      ...w.delays.map((d,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(d.date,ev?6:7),C(d.minutes,ev?6:7,'n'),C(d.deduction,ev?10:12,'n')] }; }),
+      { cells: [E(9),E(9),C('الاجمالي',9),C(delDed,9,'n')], ht: 20 },
+      { cells: [E(0),E(0),E(0),E(0)] },
+      // absences section
+      { cells: [C('--- الغيابات ---',2),E(2),E(2),E(2)], ht: 22 },
+      { cells: [C('#',1),C('التاريخ',1),C('السبب',1),C('الخصم',1)], ht: 20 },
+      ...w.absences.map((a,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(a.date,ev?6:7),C(a.reason,ev?6:7),C(a.deduction,ev?10:12,'n')] }; }),
+      { cells: [E(9),E(9),C('الاجمالي',9),C(absDed,9,'n')], ht: 20 },
+      { cells: [E(0),E(0),E(0),E(0)] },
+      // absNR section
+      { cells: [C('--- العجز ---',4),E(4),E(4),E(4)], ht: 22 },
+      { cells: [C('#',1),C('التاريخ',1),C('قيمة العجز',1),E(1)], ht: 20 },
+      ...absNR.map((a,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(a.date,ev?6:7),C(a.deduction,ev?10:12,'n'),E(ev?6:7)] }; }),
+      { cells: [E(9),E(9),C(absNRDed,9,'n'),E(9)], ht: 20 },
+      { cells: [E(0),E(0),E(0),E(0)] },
+      // discipline section
+      { cells: [C('--- الانضباط ---',3),E(3),E(3),E(3)], ht: 22 },
+      { cells: [C('#',1),C('التاريخ',1),C('النجوم',1),C('الحافز',1)], ht: 20 },
+      ...disc.map((d,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(d.date,ev?6:7),C('★'.repeat(d.stars)+'☆'.repeat(5-d.stars),ev?6:7),C(d.reward,ev?11:13,'n')] }; }),
+      { cells: [E(8),E(8),C('اجمالي الحوافز',8),C(rewTotal,8,'n')], ht: 20 },
+    ];
+
+    return {
+      name: w.name.slice(0,28),
+      colWidths: [26,16,18,16],
+      merges: ['A1:D1','A2:D2','A11:D11'],
+      rows,
+    };
+  });
+
+  const { runWithJSZip } = buildXlsxBlob([summarySheet, ...workerSheets]);
+  loadJSZip(JSZip => runWithJSZip(JSZip, `التقرير-الشهري-${monthName}-${year}.xlsx`));
+};
+
+
+const ReportsPage = ({ workers }) => {
+  const [month, setMonth] = useState(new Date().getMonth());
+  const [year, setYear] = useState(new Date().getFullYear());
+  const toast = useToast();
+  const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const totalSal = workers.reduce((s, w) => s + w.salary, 0);
+  const allDed = workers.reduce((s, w) => s + totalDed(w), 0);
+  const allRewards = workers.reduce((s, w) => s + totalRewards(w), 0);
+  const allCash = workers.reduce((s, w) => s + totalCash(w), 0);
+  const totalNet = workers.reduce((s, w) => s + calcNet(w), 0);
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }} className="no-print">
+        <select className="form-input" style={{ width: 'auto' }} value={month} onChange={e => setMonth(+e.target.value)}>{months.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>
+        <select className="form-input" style={{ width: 'auto' }} value={year} onChange={e => setYear(+e.target.value)}>{[2023, 2024, 2025, 2026].map(y => <option key={y}>{y}</option>)}</select>
+        <button className="btn btn-accent" onClick={() => { if (!planHasExcelAdv(getPlan())) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateMonthlyReport(workers, month, year, months[month]); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تحميل Excel {!planHasExcelAdv(getPlan()) && '🔒'}</button>
+        <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️ طباعة</button>
+      </div>
+      <div style={{ textAlign: 'center', marginBottom: 22 }}>
+        <div style={{ fontSize: 22, fontWeight: 800 }}>التقرير الشهري — {months[month]} {year}</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>محطة بترومين 10000</div>
+      </div>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', marginBottom: 22 }}>
+        {[
+          { label: 'العمال', value: workers.length, icon: '👷', color: '#3b82f6' },
+          { label: 'إجمالي الرواتب', value: fmt(totalSal), icon: '💵', color: '#f59e0b' },
+          { label: 'الخصومات', value: fmt(allDed), icon: '➖', color: '#ef4444' },
+          { label: 'الحوافز', value: fmt(allRewards), icon: '🎁', color: '#10b981' },
+          { label: 'السحب النقدي', value: fmt(allCash), icon: '💵', color: '#3b82f6' },
+          { label: 'صافي المدفوع', value: fmt(totalNet), icon: '✅', color: '#10b981' }
+        ].map((s, i) => (
+          <div key={i} className="stat-card" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8 }}>
+            <div style={{ fontSize: 28 }}>{s.icon}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="table-container">
+        <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>تفاصيل العمال</div></div>
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead><tr><th>العامل</th><th>مكان العمل</th><th>أيام العمل</th><th>التأخيرات</th><th>الغيابات</th><th>الخصومات</th><th>الحوافز</th><th>السحب النقدي</th><th>صافي المدفوع</th></tr></thead>
+            <tbody>
+              {workers.map(w => (
+                <tr key={w.id}>
+                  <td style={{ fontWeight: 600 }}>{w.name}</td>
+                  <td><span className="badge badge-blue">{w.pump}</span></td>
+                  <td>{w.workDays}</td>
+                  <td>{w.delays.length}</td>
+                  <td>{w.absences.length}</td>
+                  <td style={{ color: '#ef4444', fontWeight: 700 }}>{totalDed(w) > 0 ? `-${fmt(totalDed(w))}` : '—'}</td>
+                  <td style={{ color: '#10b981', fontWeight: 700 }}>{totalRewards(w) > 0 ? `+${fmt(totalRewards(w))}` : '—'}</td>
+                  <td style={{ color: '#3b82f6', fontWeight: 700 }}>{totalCash(w) > 0 ? `-${fmt(totalCash(w))}` : '—'}</td>
+                  <td style={{ fontWeight: 700, color: '#10b981', fontSize: 14 }}>{fmt(calcNet(w))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== WORKER PROFILE (self) ====================
+const WorkerProfile = ({ worker, onUpdate }) => {
+  const toast = useToast();
+  const w = worker;
+  const ded = totalDed(w);
+  const net = calcNet(w);
+  const absNoReasonDed = (w.absences_no_reason || []).reduce((s, a) => s + (a.deduction || 0), 0);
+
+  return (
+    <div style={{ maxWidth: 820, margin: '0 auto', animation: 'fadeIn .3s ease' }}>
+      {/* Header */}
+      <div className="detail-header" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="detail-avatar">{w.avatar}</div>
+          <div>
+            <div style={{ fontSize: 21, fontWeight: 800 }}>{w.name}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{w.pump} · عامل في المحطة</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(getPlan())) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تقريري Excel {!planHasExcelAdv(getPlan()) && '🔒'}</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
+        </div>
+      </div>
+
+      {/* البيانات الأساسية */}
+      <div className="detail-section" style={{ marginBottom: 18 }}>
+        <div className="detail-section-hdr"><div className="detail-section-title">⚙️ البيانات الأساسية</div></div>
+        <div className="detail-body">
+          <div className="form-grid-2" style={{ gap: 16 }}>
+            <div><div className="form-label">مكان العمل</div><span className="badge badge-blue" style={{ fontSize: 13, padding: '5px 14px' }}>{w.pump}</span></div>
+            <div><div className="form-label">أيام العمل</div><span style={{ fontWeight: 700, fontSize: 16 }}>{w.workDays} يوم</span></div>
+            <div><div className="form-label">الراتب الأساسي</div><span style={{ fontWeight: 700, fontSize: 16, color: 'var(--accent)' }}>{fmt(w.salary)}</span></div>
+            <div><div className="form-label">إجمالي الخصومات</div><span style={{ fontWeight: 700, fontSize: 16, color: ded > 0 ? '#ef4444' : 'var(--text-muted)' }}>{ded > 0 ? `-${fmt(ded)}` : 'لا يوجد'}</span></div>
+            <div><div className="form-label">📱 رقم التليفون</div><span style={{ fontWeight: 600, fontSize: 15, color: w.phone ? 'var(--text)' : 'var(--text-muted)' }}>{w.phone || '—'}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* التأخيرات */}
+      <div className="detail-section" style={{ marginBottom: 18 }}>
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">⏰ التأخيرات <span className="badge badge-warning">{w.delays.length} مرة</span></div>
+        </div>
+        {w.delays.length === 0
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد تأخيرات مسجلة</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>المدة</th><th>الخصم</th></tr></thead>
+              <tbody>
+                {w.delays.map((d, i) => (
+                  <tr key={d.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{d.date}</td>
+                    <td><span className="badge badge-warning">{d.minutes} دقيقة</span></td>
+                    <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(d.deduction)}</td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
+                  <td colSpan={3} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي خصم التأخيرات</td>
+                  <td style={{ fontWeight: 800, color: '#ef4444' }}>-{fmt(w.delays.reduce((s, d) => s + d.deduction, 0))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>
+
+      {/* الغيابات */}
+      <div className="detail-section" style={{ marginBottom: 18 }}>
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">❌ الغيابات <span className="badge badge-danger">{w.absences.length} يوم</span></div>
+        </div>
+        {w.absences.length === 0
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد غيابات مسجلة</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>السبب</th><th>الخصم</th></tr></thead>
+              <tbody>
+                {w.absences.map((a, i) => (
+                  <tr key={a.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{a.date}</td>
+                    <td><span className="badge badge-danger">{a.reason}</span></td>
+                    <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
+                  <td colSpan={3} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي خصم الغياب</td>
+                  <td style={{ fontWeight: 800, color: '#ef4444' }}>-{fmt(w.absences.reduce((s, a) => s + a.deduction, 0))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>
+
+      {/* العجز */}
+      <div className="detail-section" style={{ marginBottom: 18 }}>
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">📦 العجز <span className="badge badge-danger">{(w.absences_no_reason || []).length} مرة</span></div>
+        </div>
+        {(!w.absences_no_reason || w.absences_no_reason.length === 0)
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد عجز مسجل</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>قيمة العجز</th></tr></thead>
+              <tbody>
+                {w.absences_no_reason.map((a, i) => (
+                  <tr key={a.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{a.date}</td>
+                    <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
+                  <td colSpan={2} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي خصومات العجز</td>
+                  <td style={{ fontWeight: 800, color: '#ef4444' }}>-{fmt(absNoReasonDed)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>
+
+      {/* الانضباط */}
+      <div className="detail-section" style={{ marginBottom: 18 }}>
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">⭐ الانضباط اليومي <span className="badge badge-warning">{(w.discipline || []).length} مرة</span></div>
+        </div>
+        {(!w.discipline || w.discipline.length === 0)
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سجل انضباط</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>النجوم</th><th>الحوافز</th></tr></thead>
+              <tbody>
+                {w.discipline.map((d, i) => (
+                  <tr key={d.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{d.date}</td>
+                    <td><span className="badge badge-warning">{'⭐'.repeat(d.stars)}</span></td>
+                    <td style={{ color: '#10b981', fontWeight: 700 }}>+{fmt(d.reward)}</td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
+                  <td colSpan={3} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي مكافآت الانضباط</td>
+                  <td style={{ fontWeight: 800, color: '#10b981' }}>+{fmt((w.discipline || []).reduce((s, d) => s + d.reward, 0))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>}
+      </div>
+
+      {/* السحب النقدي */}
+      {(w.cash_withdrawals || []).length > 0 && <div className="detail-section" style={{ marginBottom: 18 }}>
+        <div className="detail-section-hdr">
+          <div className="detail-section-title">💵 السحب النقدي <span className="badge badge-blue">{w.cash_withdrawals.length} مرة</span></div>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="entries-tbl">
+            <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>ملاحظة</th></tr></thead>
+            <tbody>
+              {w.cash_withdrawals.map((c, i) => (
+                <tr key={c.id}>
+                  <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                  <td style={{ fontWeight: 600 }}>{c.date}</td>
+                  <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
+                </tr>
+              ))}
+              <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
+                <td colSpan={2} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي السحوبات</td>
+                <td style={{ fontWeight: 800, color: '#3b82f6' }}>−{fmt(totalCash(w))}</td>
+                <td />
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>}
+
+      {/* صافي المدفوعات */}
+      <div className="net-card">
+        <div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>💰 صافي المدفوعات</div>
+          <div className="net-amount">{fmt(net)}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 2 }}>
+            <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{fmt(w.salary)} ← الراتب الأساسي</div>
+            <div style={{ color: '#ef4444' }}>−{fmt(ded)} ← إجمالي الخصومات</div>
+            <div style={{ color: '#10b981' }}>+{fmt(totalRewards(w))} ← الحوافز</div>
+            {totalCash(w) > 0 && <div style={{ color: '#3b82f6' }}>−{fmt(totalCash(w))} ← السحب النقدي</div>}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 4, fontWeight: 700, fontSize: 13, color: '#10b981' }}>= {fmt(net)} صافي المدفوعات</div>
+          </div>
+          <div style={{ marginTop: 10, width: 200 }}>
+            <div className="fuel-bar"><div className="fuel-fill" style={{ width: `${Math.max(0, Math.min(100, (net / w.salary) * 100))}%`, background: net >= w.salary * 0.9 ? '#10b981' : net >= w.salary * 0.75 ? '#f59e0b' : '#ef4444' }} /></div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{Math.round((net / w.salary) * 100)}% من الراتب الأساسي</div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 48 }}>💵</div>
+          <span className={`badge ${net >= w.salary * 0.9 ? 'badge-success' : net >= w.salary * 0.75 ? 'badge-warning' : 'badge-danger'}`} style={{ marginTop: 8, fontSize: 12 }}>
+            {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : '❗ خصومات عالية'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== ACCOUNTS PAGE ====================
+// الآن تدعم: مالك، مدير، عامل
+// المالك يقدر يشيل المدير ويغير كلمة سره
+// لما تضيف عامل من هنا، يتضاف في قائمة العمال تلقائياً
+const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser, workers, onAddWorker }) => {
+  const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'manager' });
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [changePassId, setChangePassId] = useState(null);
+  const [newPass, setNewPass] = useState('');
+  const [newPassErr, setNewPassErr] = useState('');
+  const [inviteUsername, setInviteUsername] = useState('');
+  const [invites, setInvites] = useState(() => getInvites(currentUser.id));
+  const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
+  const toast = useToast();
+
+  const roleLabels = { owner: 'المالك', manager: 'مدير', worker: 'عامل' };
+
+  const validateUser = (u) => {
+    const e = {};
+    if (!u.username?.trim()) e.username = 'اسم المستخدم مطلوب';
+    if (!u.password || u.password.length < 6) e.password = 'كلمة المرور 6 أحرف على الأقل';
+    if (!u.name?.trim()) e.name = 'الاسم مطلوب';
+    if (users.find(x => x.username === u.username && x.id !== u.id)) e.username = 'اسم المستخدم موجود مسبقاً';
+    return e;
+  };
+
+  const handleAdd = () => {
+    const errs = validateUser(newUser);
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    const newId = Date.now();
+    const fullUser = { ...newUser, id: newId, roleLabel: roleLabels[newUser.role], ownerId: currentUser.id };
+    onAddUser(fullUser);
+    // احفظه في users_data عشان يقدر يسجل دخول
+    const savedGlobal = localStorage.getItem("users_data");
+    const globalUsers = savedGlobal ? JSON.parse(savedGlobal) : [];
+    localStorage.setItem("users_data", JSON.stringify([...globalUsers, fullUser]));
+    // لو role عامل، يتضاف في قائمة العمال بنفس الـ id
+    if (newUser.role === 'worker' && onAddWorker) {
+      onAddWorker({
+        id: newId,
+        name: newUser.name,
+        pump: 'غير محدد',
+        workDays: 0,
+        salary: 0,
+        phone: '',
+        avatar: newUser.name[0] || '؟',
+        delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
+      });
+    }
+    setNewUser({ username: '', password: '', name: '', role: 'manager' });
+    setErrors({});
+    toast('تم إضافة الحساب ✓', 'success');
+  };
+
+  const handleSaveEdit = () => {
+    const errs = validateUser({ ...editForm, id: editId });
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    onEditUser(editId, { ...editForm, roleLabel: roleLabels[editForm.role] });
+    setEditId(null); setEditForm(null); setErrors({});
+    toast('تم تحديث الحساب ✓', 'success');
+  };
+
+  const handleChangePassword = (userId) => {
+    if (!newPass || newPass.length < 6) { setNewPassErr('كلمة المرور 6 أحرف على الأقل'); return; }
+    const u = users.find(x => x.id === userId);
+    onEditUser(userId, { ...u, password: newPass });
+    setChangePassId(null); setNewPass(''); setNewPassErr('');
+    toast('تم تغيير كلمة المرور ✓', 'success');
+  };
+
+  const canDelete = (u) => {
+    // المالك لا يُحذف
+    if (u.role === 'owner') return false;
+    return true;
+  };
+
+  const handleAddInvite = () => {
+    const username = inviteUsername.trim();
+    if (!username) { toast('اكتب اسم المستخدم أولاً', 'error'); return; }
+    if (invites.includes(username)) { toast('هذا الاسم موجود في القائمة مسبقاً', 'warning'); return; }
+    const updated = [...invites, username];
+    setInvites(updated);
+    saveInvites(currentUser.id, updated);
+    setInviteUsername('');
+    toast(`تمت دعوة "${username}" ✓`, 'success');
+  };
+
+  const handleRemoveInvite = (username) => {
+    const updated = invites.filter(u => u !== username);
+    setInvites(updated);
+    saveInvites(currentUser.id, updated);
+    toast('تم حذف الدعوة', 'success');
+  };
+
+  return (
+    <div style={{ maxWidth: 900, margin: '0 auto', animation: 'fadeIn .3s ease' }}>
+      {/* Confirm Delete Modal */}
+      {confirmDelete && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ color: '#ef4444' }}>🗑️ تأكيد حذف الحساب</div>
+              <button className="close-btn" onClick={() => setConfirmDelete(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, padding: '16px', marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>⚠️ انتبه! هذا الإجراء لا يمكن التراجع عنه</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 2 }}>
+                  <div>• سيتم حذف حساب <b style={{ color: 'var(--text)' }}>{confirmDelete.name}</b> نهائياً</div>
+                  <div>• ستُحذف جميع بياناته — الرواتب، الحضور، الخصومات</div>
+                  <div>• لن يتمكن من تسجيل الدخول مرة أخرى</div>
+                  <div>• لإعادته يجب إنشاء حساب جديد له</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>هل أنت متأكد من حذف حساب "{confirmDelete.name}"؟</div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-danger" onClick={() => {
+                onDeleteUser(confirmDelete.id);
+                toast(`تم حذف حساب ${confirmDelete.name} وجميع بياناته`, 'success');
+                setConfirmDelete(null);
+              }}>🗑️ نعم، احذف نهائياً</button>
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Change Password Modal */}
+      {changePassId && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setChangePassId(null)}>
+          <div className="modal" style={{ maxWidth: 420, animation: 'fadeIn .2s ease' }}>
+            <div className="modal-header">
+              <div className="modal-title">🔑 تغيير كلمة المرور</div>
+              <button className="close-btn" onClick={() => setChangePassId(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">كلمة المرور الجديدة</label>
+                <input type="password" className={`form-input ${newPassErr ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newPass} onChange={e => { setNewPass(e.target.value); setNewPassErr(''); }} />
+                {newPassErr && <div className="form-error">{newPassErr}</div>}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={() => handleChangePassword(changePassId)}>💾 حفظ</button>
+              <button className="btn btn-ghost" onClick={() => setChangePassId(null)}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>➕ إضافة حساب جديد</div>
+        <div className="form-grid-2">
+          <div className="form-group">
+            <label className="form-label">اسم المستخدم</label>
+            <input type="text" className={`form-input ${errors.username ? 'error' : ''}`} placeholder="أدخل اسم المستخدم" value={newUser.username} onChange={e => { setNewUser({...newUser, username: e.target.value}); setErrors({...errors, username: ''});}} />
+            {errors.username && <div className="form-error">{errors.username}</div>}
+          </div>
+          <div className="form-group">
+            <label className="form-label">كلمة المرور</label>
+            <input type="password" className={`form-input ${errors.password ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newUser.password} onChange={e => { setNewUser({...newUser, password: e.target.value}); setErrors({...errors, password: ''});}} />
+            {errors.password && <div className="form-error">{errors.password}</div>}
+          </div>
+          <div className="form-group">
+            <label className="form-label">الاسم الكامل</label>
+            <input type="text" className={`form-input ${errors.name ? 'error' : ''}`} placeholder="أدخل الاسم الكامل" value={newUser.name} onChange={e => { setNewUser({...newUser, name: e.target.value}); setErrors({...errors, name: ''});}} />
+            {errors.name && <div className="form-error">{errors.name}</div>}
+          </div>
+          <div className="form-group">
+            <label className="form-label">الصلاحية</label>
+            <select className="form-input" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
+              <option value="manager">مدير</option>
+              <option value="worker">عامل</option>
+              <option value="owner">مالك</option>
+            </select>
+          </div>
+        </div>
+        <button className="btn btn-primary" onClick={handleAdd} style={{ marginTop: 12 }}>➕ إضافة الحساب</button>
+      </div>
+
+      <div className="table-container">
+        <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>👤 الحسابات الموجودة</div></div>
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead><tr><th>اسم المستخدم</th><th>الاسم الكامل</th><th>الصلاحية</th><th>الإجراءات</th></tr></thead>
+            <tbody>
+              {users.map(u => (
+                editId === u.id ? (
+                  <tr key={u.id} style={{ background: 'rgba(26,86,219,0.1)' }}>
+                    <td><input type="text" className="form-input" value={editForm.username} onChange={e => setEditForm({...editForm, username: e.target.value})} style={{ width: '100%' }} /></td>
+                    <td><input type="text" className="form-input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} style={{ width: '100%' }} /></td>
+                    <td>
+                      <select className="form-input" value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} style={{ width: '100%' }}
+                        disabled={u.role === 'owner'}>
+                        <option value="manager">مدير</option>
+                        <option value="worker">عامل</option>
+                        <option value="owner">مالك</option>
+                      </select>
+                    </td>
+                    <td style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-success btn-xs" onClick={handleSaveEdit}>✓ حفظ</button>
+                      <button className="btn btn-ghost btn-xs" onClick={() => setEditId(null)}>✕</button>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={u.id}>
+                    <td style={{ fontWeight: 600 }}>{u.username}</td>
+                    <td>{u.name}</td>
+                    <td>
+                      <span className={`badge ${u.role === 'owner' ? 'badge-success' : u.role === 'manager' ? 'badge-warning' : 'badge-blue'}`}>
+                        {roleLabels[u.role] || u.roleLabel}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(u.id); setEditForm({...u}); }}>✏️ تعديل</button>
+                        <button className="btn btn-blue btn-xs" onClick={() => { setChangePassId(u.id); setNewPass(''); setNewPassErr(''); }}>🔑 كلمة المرور</button>
+                        {canDelete(u) && (
+                          <button className="btn btn-danger btn-xs" onClick={() => setConfirmDelete({ id: u.id, name: u.name })}>🗑️ حذف</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ==================== قائمة الدعوات ==================== */}
+      <div className="card" style={{ marginTop: 24 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+          📩 دعوات العمال المعلقة
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+          أضف اسم المستخدم اللي هيسجل به العامل — مش هيقدر يسجل غير لو اسمه موجود هنا
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="اسم المستخدم اللي هيختاره العامل"
+            value={inviteUsername}
+            onChange={e => setInviteUsername(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleAddInvite()}
+          />
+          <button className="btn btn-primary" onClick={handleAddInvite} style={{ whiteSpace: 'nowrap' }}>📩 دعوة</button>
+        </div>
+        {invites.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: 13 }}>
+            لا توجد دعوات معلقة
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {invites.map((username) => (
+              <div key={username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 16 }}>👷</span>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{username}</span>
+                  <span className="badge badge-blue" style={{ fontSize: 10 }}>في الانتظار</span>
+                </div>
+                <button className="btn btn-danger btn-xs" onClick={() => handleRemoveInvite(username)}>🗑️ حذف</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==================== LOGIN (Firebase Auth) ====================
+const LoginPage = ({ onLogin, onRegisterWorker }) => {
+  const [tab, setTab] = useState('login');
+  const [loginForm, setLoginForm]   = useState({ email: '', password: '' });
+  const [regForm,   setRegForm]     = useState({ email: '', password: '', name: '', role: 'owner', ownerCode: '' });
+  const [errors,    setErrors]      = useState({});
+  const [loading,   setLoading]     = useState(false);
+  const toast = useToast();
+
+  // ---- تسجيل الدخول ----
+  const submitLogin = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!loginForm.email.trim())    errs.email    = 'البريد الإلكتروني مطلوب';
+    if (loginForm.password.length < 6) errs.password = 'كلمة المرور 6 أحرف على الأقل';
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setLoading(true);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, loginForm.email.trim(), loginForm.password);
+      const uid  = cred.user.uid;
+      // جيب بيانات المستخدم من Firestore
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (!userDoc.exists()) { setErrors({ form: 'بيانات المستخدم غير موجودة' }); setLoading(false); return; }
+      const userData = { id: uid, ...userDoc.data() };
+      // تحقق لو اتحذف
+      if (userData.deleted) {
+        await signOut(auth);
+        setErrors({ form: 'تم حذف حسابك من قِبل المالك. تواصل معه لإعادة التسجيل.' });
+        setLoading(false); return;
+      }
+      toast('مرحباً بك ' + userData.name, 'success');
+      onLogin(userData);
+    } catch (err) {
+      const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
+        ? 'البريد أو كلمة المرور غير صحيحة' : 'حدث خطأ، حاول مرة أخرى';
+      setErrors({ form: msg });
+    }
+    setLoading(false);
+  };
+
+  // ---- إنشاء حساب ----
+  const submitRegister = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!regForm.email.trim())       errs.reg_email    = 'البريد الإلكتروني مطلوب';
+    if (!regForm.name.trim())        errs.reg_name     = 'الاسم الكامل مطلوب';
+    if (regForm.password.length < 6) errs.reg_password = 'كلمة المرور 6 أحرف على الأقل';
+
+    let ownerData = null;
+    if (regForm.role === 'worker') {
+      if (!regForm.ownerCode.trim()) { errs.reg_ownerCode = 'كود المالك مطلوب'; }
+      else {
+        // ابحث عن المالك بالكود في Firestore
+        try {
+          const ownerSnap = await getDocs(collection(db, 'users'));
+          ownerData = null;
+          ownerSnap.forEach(d => {
+            const u = d.data();
+            if (u.role === 'owner' && u.ownerCode === regForm.ownerCode.trim()) {
+              ownerData = { id: d.id, ...u };
+            }
+          });
+          if (!ownerData) { errs.reg_ownerCode = 'كود المالك غير صحيح'; }
+          else {
+            // مزامنة الدعوات من Firestore ثم تحقق
+            await syncInvites(ownerData.id);
+            const inviteList = getInvites(ownerData.id);
+            if (!inviteList.includes(regForm.email.trim())) {
+              errs.reg_email = 'لم يتم دعوتك من قِبل هذا المالك';
+            }
+          }
+        } catch { errs.reg_ownerCode = 'حدث خطأ في التحقق من الكود'; }
+      }
+    }
+
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setLoading(true);
+    try {
+      const roleLabels = { owner: 'المالك', worker: 'عامل' };
+      const cred = await createUserWithEmailAndPassword(auth, regForm.email.trim(), regForm.password);
+      const uid  = cred.user.uid;
+      const newUser = {
+        id: uid,
+        email:     regForm.email.trim(),
+        name:      regForm.name.trim(),
+        role:      regForm.role,
+        roleLabel: roleLabels[regForm.role],
+        ...(regForm.role === 'owner'  ? { ownerCode: regForm.email.split('@')[0] } : {}),
+        ...(regForm.role === 'worker' && ownerData ? { ownerId: ownerData.id } : {}),
+      };
+      await setDoc(doc(db, 'users', uid), newUser);
+
+      // لو عامل، يتضاف في داتا المالك
+      if (regForm.role === 'worker' && ownerData && onRegisterWorker) {
+        await onRegisterWorker(newUser, ownerData.id);
+        // امسح الدعوة
+        const invites = getInvites(ownerData.id);
+        await saveInvites(ownerData.id, invites.filter(x => x !== regForm.email.trim()));
+      }
+
+      toast('تم إنشاء الحساب بنجاح ✓', 'success');
+      onLogin(newUser);
+    } catch (err) {
+      const msg = err.code === 'auth/email-already-in-use' ? 'البريد الإلكتروني مستخدم مسبقاً' : 'حدث خطأ، حاول مرة أخرى';
+      setErrors({ form: msg });
+    }
+    setLoading(false);
+  };
+
+  const lf = k => ({ value: loginForm[k], onChange: e => { setLoginForm({ ...loginForm, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
+  const rf = k => ({ value: regForm[k],   onChange: e => { setRegForm({ ...regForm, [k]: e.target.value });     setErrors({ ...errors, ['reg_'+k]: '' }); }, className: `form-input ${errors['reg_'+k] ? 'error' : ''}` });
+
+  const tabStyle = (t) => ({
+    flex: 1, padding: '10px', border: 'none', borderRadius: 10, cursor: 'pointer',
+    fontFamily: 'Cairo, sans-serif', fontSize: 14, fontWeight: 700, transition: 'all 0.2s',
+    background: tab === t ? 'linear-gradient(135deg, var(--primary), var(--primary-light))' : 'rgba(255,255,255,0.04)',
+    color: tab === t ? 'white' : 'var(--text-muted)',
+    boxShadow: tab === t ? '0 4px 12px rgba(26,86,219,0.3)' : 'none',
+  });
+
+  return (
+    <div className="login-page">
+      {loading && <Loader />}
+      <div className="login-bg" />
+      <div className="login-card" style={{ animation: 'fadeIn .4s ease' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div className="login-logo">⛽</div>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>محطة بترومين 10000</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>نظام إدارة العمال</div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 18, background: 'rgba(255,255,255,0.04)', padding: 6, borderRadius: 14, border: '1px solid var(--border)' }}>
+          <button style={tabStyle('login')}    onClick={() => { setTab('login');    setErrors({}); }}>🔐 تسجيل الدخول</button>
+          <button style={tabStyle('register')} onClick={() => { setTab('register'); setErrors({}); }}>✨ إنشاء حساب</button>
+        </div>
+
+        <div className="card">
+          {/* ---- تسجيل الدخول ---- */}
+          {tab === 'login' && (
+            <form onSubmit={submitLogin}>
+              {errors.form && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#ef4444', textAlign: 'center' }}>{errors.form}</div>}
+              <div className="form-group">
+                <label className="form-label">البريد الإلكتروني</label>
+                <input type="email" placeholder="example@email.com" {...lf('email')} />
+                {errors.email && <div className="form-error">{errors.email}</div>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">كلمة المرور</label>
+                <input type="password" placeholder="أدخل كلمة المرور" {...lf('password')} />
+                {errors.password && <div className="form-error">{errors.password}</div>}
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>🔐 دخول</button>
+            </form>
+          )}
+
+          {/* ---- إنشاء حساب ---- */}
+          {tab === 'register' && (
+            <form onSubmit={submitRegister}>
+              {errors.form && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#ef4444', textAlign: 'center' }}>{errors.form}</div>}
+              {/* اختيار النوع */}
+              <div style={{ marginBottom: 20 }}>
+                <div className="form-label" style={{ marginBottom: 10 }}>نوع الحساب</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {[
+                    { role: 'owner',  icon: '👑', label: 'مالك',  desc: 'صلاحيات كاملة',   color: '#10b981', bg: 'rgba(16,185,129,' },
+                    { role: 'worker', icon: '👷', label: 'عامل',  desc: 'أدخل كود المالك', color: '#3b82f6', bg: 'rgba(59,130,246,' },
+                  ].map(opt => (
+                    <button key={opt.role} type="button"
+                      onClick={() => { setRegForm({ ...regForm, role: opt.role, ownerCode: '' }); setErrors({}); }}
+                      style={{
+                        flex: 1, padding: '14px 10px', borderRadius: 12, cursor: 'pointer',
+                        border: `2px solid ${regForm.role === opt.role ? opt.color : 'var(--border)'}`,
+                        background: regForm.role === opt.role ? `${opt.bg}0.12)` : 'rgba(255,255,255,0.03)',
+                        color: regForm.role === opt.role ? opt.color : 'var(--text-muted)',
+                        transition: 'all 0.2s', fontFamily: 'Cairo, sans-serif',
+                        transform: regForm.role === opt.role ? 'scale(1.02)' : 'scale(1)',
+                      }}>
+                      <div style={{ fontSize: 26, marginBottom: 4 }}>{opt.icon}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800 }}>{opt.label}</div>
+                      <div style={{ fontSize: 11, marginTop: 3, opacity: 0.8 }}>{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* كود المالك — بس لو عامل */}
+              {regForm.role === 'worker' && (
+                <div className="form-group" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+                  <label className="form-label" style={{ color: '#3b82f6' }}>🔑 كود المالك</label>
+                  <input placeholder="اكتب كود المالك بتاعك" {...rf('ownerCode')} />
+                  {errors.reg_ownerCode && <div className="form-error">{errors.reg_ownerCode}</div>}
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>اطلب الكود من المالك</div>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">الاسم الكامل</label>
+                <input placeholder="أدخل اسمك الكامل" {...rf('name')} />
+                {errors.reg_name && <div className="form-error">{errors.reg_name}</div>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">البريد الإلكتروني</label>
+                <input type="email" placeholder="example@email.com" {...rf('email')} />
+                {errors.reg_email && <div className="form-error">{errors.reg_email}</div>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">كلمة المرور</label>
+                <input type="password" placeholder="6 أحرف على الأقل" {...rf('password')} />
+                {errors.reg_password && <div className="form-error">{errors.reg_password}</div>}
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>✨ إنشاء الحساب</button>
+            </form>
+          )}
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'var(--text-muted)', paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+          MADE BY ADHAM FATHY
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== SIDEBAR ====================
+const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
+  const navs = {
+    owner: [
+      { id: 'dashboard', icon: '📊', label: 'لوحة التحكم' },
+      { id: 'attendance', icon: '📍', label: 'الحضور والانصراف' },
+      { id: 'workers', icon: '👷', label: 'إدارة العمال' },
+      { id: 'reports', icon: '📋', label: 'التقارير' },
+      { id: 'accounts', icon: '🔐', label: 'إدارة الحسابات' }
+    ],
+    manager: [
+      { id: 'workers', icon: '👷', label: 'إدارة العمال' },
+      { id: 'reports', icon: '📋', label: 'التقارير' }
+    ],
+    worker: [
+      { id: 'attendance_worker', icon: '📍', label: 'تسجيل الحضور' },
+      { id: 'profile', icon: '👤', label: 'ملفي الشخصي' }
+    ],
+  };
+  return (
+    <>
+      <div className={`mobile-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
+      <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+        <div className="sidebar-logo"><div className="logo-icon">⛽</div><div><div className="logo-text">محطة بترومين</div><div className="logo-sub">نظام إدارة العمال</div></div></div>
+        <nav className="sidebar-nav">
+          <div className="nav-section-title">القائمة الرئيسية</div>
+          {(navs[user.role] || []).map(item => (
+            <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => { setPage(item.id); onClose(); }}>
+              <span className="nav-icon">{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-card">
+            <div className="user-avatar">{user.name[0]}</div>
+            <div>
+              <div className="user-name">{user.name}</div>
+              <div className="user-role">{user.roleLabel}</div>
+            </div>
+          </div>
+          <button className="logout-btn" onClick={onLogout}>🚪 تسجيل الخروج</button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// ==================== TRIAL SYSTEM ====================
+const TRIAL_DAYS = 15;
+const WHATSAPP_NUMBER = '201220523598';
+
+const getTrialInfo = () => {
+  let startDate = localStorage.getItem('app_trial_start');
+  if (!startDate) {
+    startDate = new Date().toISOString();
+    localStorage.setItem('app_trial_start', startDate);
+  }
+  const start = new Date(startDate);
+  const now = new Date();
+  const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
+  const expired = elapsedDays >= TRIAL_DAYS;
+  return { remaining, expired, elapsedDays, startDate };
+};
+
+// ==================== PLAN SYSTEM ====================
+// لتفعيل خطة: localStorage.setItem('app_plan', 'basic' | 'pro' | 'enterprise' | 'lifetime')
+const getPlan = () => localStorage.getItem('app_plan') || 'trial';
+const planHasGPS      = (plan) => ['pro', 'enterprise', 'lifetime'].includes(plan);
+const planHasExcelAdv = (plan) => ['enterprise', 'lifetime'].includes(plan);
+
+// ===== شاشة انتهاء التجربة / الخطط =====
+const PricingScreen = ({ onBack }) => {
+  const plans = [
+    {
+      id: 'basic',
+      emoji: '🚀',
+      name: 'الأساسية',
+      desc: 'مناسبة للمحطات الصغيرة',
+      price: '99',
+      period: 'شهرياً',
+      className: '',
+      features: [
+        { yes: true,  text: 'حتى 5 عمال' },
+        { yes: true,  text: 'إدارة الرواتب والخصومات' },
+        { yes: false, text: 'تسجيل الحضور بـ GPS' },
+        { yes: true,  text: 'تقارير شهرية' },
+        { yes: true,  text: 'سحب نقدي وسلف' },
+        { yes: false, text: 'عمال غير محدودين' },
+        { yes: false, text: 'تقارير Excel متقدمة' },
+        { yes: false, text: 'دعم فني أولوية' },
+        { yes: false, text: 'نسخة احتياطية تلقائية' },
+      ],
+      btnClass: 'btn-ghost',
+      btnLabel: 'اشترك الآن',
+    },
+    {
+      id: 'pro',
+      emoji: '⭐',
+      name: 'الاحترافية',
+      desc: 'الأكثر مبيعاً — للمحطات المتوسطة',
+      price: '199',
+      period: 'شهرياً',
+      className: 'popular',
+      popular: true,
+      features: [
+        { yes: true,  text: 'حتى 20 عاملاً' },
+        { yes: true,  text: 'إدارة الرواتب والخصومات' },
+        { yes: true,  text: 'تسجيل الحضور بـ GPS' },
+        { yes: true,  text: 'تقارير شهرية' },
+        { yes: true,  text: 'سحب نقدي وسلف' },
+        { yes: false, text: 'تقارير Excel متقدمة' },
+        { yes: true,  text: 'إشعارات فورية' },
+        { yes: false, text: 'عمال غير محدودين' },
+        { yes: false, text: 'نسخة احتياطية تلقائية' },
+      ],
+      btnClass: 'btn-primary',
+      btnLabel: '🔥 اشترك الآن',
+    },
+    {
+      id: 'enterprise',
+      emoji: '👑',
+      name: 'المميزة',
+      desc: 'للشركات والمحطات الكبيرة',
+      price: '349',
+      period: 'شهرياً',
+      className: 'gold',
+      features: [
+        { yes: true,  text: 'عمال غير محدودين' },
+        { yes: true,  text: 'إدارة الرواتب والخصومات' },
+        { yes: true,  text: 'تسجيل الحضور بـ GPS' },
+        { yes: true,  text: 'تقارير شهرية' },
+        { yes: true,  text: 'سحب نقدي وسلف' },
+        { yes: true,  text: 'تقارير Excel متقدمة' },
+        { yes: true,  text: 'إشعارات فورية' },
+        { yes: true,  text: 'نسخة احتياطية تلقائية' },
+        { yes: true,  text: 'دعم فني أولوية 24/7' },
+      ],
+      btnClass: 'btn-accent',
+      btnLabel: '👑 اشترك الآن',
+    },
+    {
+      id: 'lifetime',
+      emoji: '♾️',
+      name: 'مدى الحياة',
+      desc: 'ادفع مرة واحدة — استخدم للأبد',
+      price: '4,000',
+      period: 'دفعة واحدة فقط — بدون أي رسوم شهرية',
+      className: 'lifetime',
+      lifetime: true,
+      features: [
+        { yes: true, text: 'عمال غير محدودين' },
+        { yes: true, text: 'إدارة الرواتب والخصومات' },
+        { yes: true, text: 'تسجيل الحضور بـ GPS' },
+        { yes: true, text: 'تقارير شهرية' },
+        { yes: true, text: 'سحب نقدي وسلف' },
+        { yes: true, text: 'تقارير Excel متقدمة' },
+        { yes: true, text: 'إشعارات فورية' },
+        { yes: true, text: 'نسخة احتياطية تلقائية' },
+        { yes: true, text: 'دعم فني أولوية 24/7' },
+        { yes: true, text: '🎁 كل التحديثات القادمة مجاناً' },
+      ],
+      btnClass: 'btn-lifetime',
+      btnLabel: '♾️ اشتري مرة واحدة',
+    },
+  ];
+
+  const msg = encodeURIComponent(`مرحباً، أريد الاشتراك في تطبيق بترومين لإدارة المحطة 🚀`);
+  const wa = (plan) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في خطة "${plan}" — تطبيق بترومين ⛽`)}`;
+
+  return (
+    <div className="expired-screen">
+      <div className="pricing-wrap">
+        {/* Header */}
+        <div className="pricing-header">
+          {onBack && (
+            <button onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '8px 18px', borderRadius: 10, cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontSize: 13, fontWeight: 600, marginBottom: 24, transition: 'all .2s' }}
+              onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'}
+              onMouseOut={e => e.currentTarget.style.background='rgba(255,255,255,0.06)'}
+            >
+              ← رجوع للتطبيق
+            </button>
+          )}
+          <div className="pricing-icon">⛽</div>
+          <div className="pricing-title">انتهت فترة التجربة المجانية</div>
+          <div className="pricing-sub">
+            استمتعت بـ {TRIAL_DAYS} يوم مجاناً — اختر الخطة المناسبة لمحطتك وابقى متحكم في كل شيء
+          </div>
+        </div>
+
+        {/* Plans */}
+        <div className="plans-grid">
+          {plans.map(plan => (
+            <div key={plan.id} className={`plan-card ${plan.className}`}>
+              {plan.popular && <div className="popular-badge">⚡ الأكثر مبيعاً</div>}
+              {plan.lifetime && <div className="lifetime-badge">♾️ مدى الحياة</div>}
+              <div className="plan-emoji">{plan.emoji}</div>
+              <div className="plan-name">{plan.name}</div>
+              <div className="plan-desc">{plan.desc}</div>
+              <div className="plan-price">
+                <sup>ج.م </sup>{plan.price}
+                {!plan.lifetime && <sub> /شهر</sub>}
+              </div>
+              <div className="plan-period">{plan.period}</div>
+              <div className="plan-divider" />
+              <div className="plan-features">
+                {plan.features.map((f, i) => (
+                  <div key={i} className={`plan-feature ${f.yes ? 'yes' : 'no'}`}>
+                    <span className="feat-icon">{f.yes ? '✅' : '❌'}</span>
+                    <span>{f.text}</span>
+                  </div>
+                ))}
+              </div>
+              <a href={wa(plan.name)} target="_blank" rel="noreferrer" className={`btn ${plan.btnClass}`} style={{ justifyContent: 'center', textDecoration: 'none', marginTop: 'auto', paddingTop: plan.lifetime ? 20 : undefined }}>
+                {plan.btnLabel}
+              </a>
+            </div>
+          ))}
+        </div>
+
+        {/* Contact */}
+        <div className="contact-strip">
+          <p>مش متأكد إيه الخطة المناسبة؟ تواصل معنا على واتساب وهنساعدك تختار الأنسب لمحطتك</p>
+          <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`} target="_blank" rel="noreferrer" className="whatsapp-btn">
+            <span style={{ fontSize: 20 }}>💬</span>
+            تواصل معنا على واتساب
+          </a>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text-muted)' }}>
+          جميع الخطط تشمل: تشفير البيانات · دعم عربي كامل · تحديثات مجانية
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ===== شريط التجربة المجانية =====
+const TrialBanner = ({ remaining, onViewPlans }) => {
+  if (remaining <= 0) return null;
+  const urgent = remaining <= 3;
+  return (
+    <div className="trial-banner no-print">
+      <div className="trial-banner-text">
+        <span>{urgent ? '🔴' : '⏳'}</span>
+        <span>
+          {urgent
+            ? `تنتهي تجربتك المجانية خلال ${remaining} ${remaining === 1 ? 'يوم' : 'أيام'} فقط!`
+            : `أنت في فترة التجربة المجانية — متبقي ${remaining} يوم`}
+        </span>
+        <span className={`trial-days-badge ${urgent ? 'urgent' : ''}`}>{remaining} يوم</span>
+      </div>
+      <button className="btn btn-accent btn-sm" onClick={onViewPlans}>
+        💳 اشترك الآن
+      </button>
+    </div>
+  );
+};
+
+// ==================== NOTIFICATION BELL ====================
+const NotificationBell = ({ user, workers, onNavigate }) => {
+  const [open, setOpen] = useState(false);
+  const [readIds, setReadIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`notif_read_${user?.id}`) || '[]'); } catch { return []; }
+  });
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const ownerId = user ? (user.role === 'owner' ? user.id : user.ownerId) : null;
+
+  const buildNotifications = useCallback(() => {
+    if (!user || !ownerId) return [];
+    const notifs = [];
+    const now = Date.now();
+
+    if (user.role === 'owner' || user.role === 'manager') {
+      // 1) طلبات إعادة تسجيل الحضور
+      const reCheckins = getReCheckinRequests(ownerId).filter(r => r.status === 'pending');
+      reCheckins.forEach(r => {
+        notifs.push({
+          id: `recheckin_${r.id}`,
+          type: 'warning', icon: '🔄',
+          title: `طلب إعادة حضور من ${r.workerName}`,
+          sub: `الساعة ${fmtTime(r.requestedAt)} · ${r.inZone ? 'داخل النطاق' : 'خارج النطاق'}`,
+          time: r.requestedAt ? new Date(r.requestedAt).toLocaleString('ar-EG') : '',
+          ts: r.requestedAt || now,
+          page: 'attendance', hint: '← انتقل لصفحة الحضور للرد',
+        });
+      });
+
+      // 2) عمال لم يسجلوا حضور اليوم
+      const todayAtt = getAttendance(ownerId);
+      const today = todayStr();
+      const absentWorkers = workers.filter(w => !todayAtt.find(a => a.workerId === w.id && a.date === today));
+      if (absentWorkers.length > 0 && workers.length > 0) {
+        notifs.push({
+          id: `absent_today_${today}`,
+          type: 'danger', icon: '⚠️',
+          title: `${absentWorkers.length} عامل لم يسجل حضوره اليوم`,
+          sub: absentWorkers.slice(0, 3).map(w => w.name).join('، ') + (absentWorkers.length > 3 ? ' وآخرون...' : ''),
+          time: today, ts: now - 2000,
+          page: 'attendance', hint: '← انتقل لصفحة الحضور',
+        });
+      }
+
+      // 3) الحضور المعلق (offline)
+      const pending = getPendingAtt(ownerId);
+      if (pending.length > 0) {
+        notifs.push({
+          id: `pending_att`,
+          type: 'info', icon: '📍',
+          title: `${pending.length} سجل حضور أوفلاين معلق`,
+          sub: 'بيانات حضور تحتاج مراجعة',
+          time: '', ts: now - 1000,
+          page: 'attendance', hint: '← انتقل لصفحة الحضور',
+        });
+      }
+
+      // 4) عمال خصوماتهم عالية
+      workers.filter(w => totalDed(w) > w.salary * 0.3 && w.salary > 0).forEach(w => {
+        notifs.push({
+          id: `high_ded_${w.id}`,
+          type: 'danger', icon: '💸',
+          title: `خصومات عالية — ${w.name}`,
+          sub: `${fmt(totalDed(w))} خصومات (${Math.round((totalDed(w)/w.salary)*100)}% من الراتب)`,
+          time: '', ts: now - 5000,
+          page: 'workers', hint: '← انتقل لصفحة العمال',
+          workerId: w.id,
+        });
+      });
+
+      // 5) عمال بيانات ناقصة
+      workers.filter(w => w.salary === 0 || w.pump === 'غير محدد').forEach(w => {
+        notifs.push({
+          id: `incomplete_${w.id}`,
+          type: 'warning', icon: '👷',
+          title: `بيانات ${w.name} غير مكتملة`,
+          sub: 'الراتب أو مكان العمل غير محدد',
+          time: '', ts: now - 8000,
+          page: 'workers', hint: '← انتقل لصفحة العمال',
+          workerId: w.id,
+        });
+      });
+
+    } else if (user.role === 'worker') {
+      const workerRecord = workers.find(w => w.id === user.id);
+
+      // طلب إعادة الحضور المعلق
+      const myReq = getReCheckinRequests(ownerId).find(r => r.workerId === user.id && r.status === 'pending');
+      if (myReq) {
+        notifs.push({
+          id: `my_recheckin_pending`,
+          type: 'info', icon: '⏳',
+          title: 'طلب إعادة تسجيل الحضور معلق',
+          sub: 'في انتظار موافقة المالك',
+          time: '', ts: now - 500,
+          page: 'attendance_worker', hint: '← انتقل لصفحة الحضور',
+        });
+      }
+
+      // تأكيد الحضور اليوم
+      const todayAtt = getAttendance(ownerId);
+      const today = todayStr();
+      const checkedInToday = todayAtt.find(a => a.workerId === user.id && a.date === today && a.checkIn && !a.checkOut);
+      const completedToday = todayAtt.find(a => a.workerId === user.id && a.date === today && a.checkIn && a.checkOut);
+      if (checkedInToday) {
+        notifs.push({
+          id: `checked_in_today`,
+          type: 'success', icon: '✅',
+          title: 'أنت مسجل حضور الآن',
+          sub: `وقت الدخول: ${fmtTime(checkedInToday.checkIn)}`,
+          time: today, ts: new Date(checkedInToday.checkIn).getTime(),
+          page: 'attendance_worker', hint: '← عرض سجل حضورك',
+        });
+      } else if (!completedToday) {
+        notifs.push({
+          id: `not_checked_today`,
+          type: 'warning', icon: '🕐',
+          title: 'لم تسجل حضورك اليوم بعد',
+          sub: 'اضغط هنا لتسجيل الحضور',
+          time: today, ts: now - 100,
+          page: 'attendance_worker', hint: '← انتقل لتسجيل الحضور',
+        });
+      }
+
+      if (workerRecord) {
+        if (workerRecord.delays?.length > 0) {
+          notifs.push({
+            id: `worker_delays`,
+            type: 'warning', icon: '⏰',
+            title: `${workerRecord.delays.length} تأخير مسجل هذا الشهر`,
+            sub: `إجمالي الخصم: ${fmt(workerRecord.delays.reduce((s,d)=>s+(d.deduction||0),0))}`,
+            time: '', ts: now - 2000,
+            page: 'profile', hint: '← عرض ملفك الشخصي',
+          });
+        }
+        if (workerRecord.absences?.length > 0) {
+          notifs.push({
+            id: `worker_absences`,
+            type: 'danger', icon: '📅',
+            title: `${workerRecord.absences.length} غياب مسجل`,
+            sub: `إجمالي الخصم: ${fmt(workerRecord.absences.reduce((s,a)=>s+(a.deduction||0),0))}`,
+            time: '', ts: now - 3000,
+            page: 'profile', hint: '← عرض ملفك الشخصي',
+          });
+        }
+        const rewards = (workerRecord.discipline||[]).filter(d=>d.reward>0);
+        if (rewards.length > 0) {
+          notifs.push({
+            id: `worker_rewards`,
+            type: 'success', icon: '⭐',
+            title: `${rewards.length} مكافأة انضباط`,
+            sub: `إجمالي المكافآت: ${fmt(rewards.reduce((s,d)=>s+(d.reward||0),0))}`,
+            time: '', ts: now - 4000,
+            page: 'profile', hint: '← عرض ملفك الشخصي',
+          });
+        }
+        const net = calcNet(workerRecord);
+        const pct = workerRecord.salary > 0 ? Math.round((net/workerRecord.salary)*100) : 100;
+        if (pct < 80 && workerRecord.salary > 0) {
+          notifs.push({
+            id: `worker_net_low`,
+            type: 'danger', icon: '💰',
+            title: `صافي راتبك ${pct}% هذا الشهر`,
+            sub: `${fmt(net)} من أصل ${fmt(workerRecord.salary)}`,
+            time: '', ts: now - 10000,
+            page: 'profile', hint: '← عرض ملفك الشخصي',
+          });
+        }
+      }
+    }
+
+    return notifs.sort((a,b) => b.ts - a.ts);
+  }, [user, workers, ownerId]);
+
+  const notifications = buildNotifications();
+  const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
+
+  const markAllRead = () => {
+    const allIds = notifications.map(n => n.id);
+    setReadIds(allIds);
+    localStorage.setItem(`notif_read_${user?.id}`, JSON.stringify(allIds));
+  };
+
+  const handleNotifClick = (n) => {
+    // تعليم كمقروء
+    if (!readIds.includes(n.id)) {
+      const updated = [...readIds, n.id];
+      setReadIds(updated);
+      localStorage.setItem(`notif_read_${user?.id}`, JSON.stringify(updated));
+    }
+    // الانتقال للصفحة
+    if (n.page && onNavigate) {
+      onNavigate(n.page, n);
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="notif-bell-wrap" ref={ref}>
+      <button
+        className={`notif-bell-btn ${unreadCount > 0 ? 'has-notif' : ''}`}
+        onClick={() => setOpen(!open)}
+        title="الإشعارات"
+      >
+        🔔
+        {unreadCount > 0 && (
+          <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="notif-dropdown">
+          <div className="notif-hdr">
+            <div className="notif-hdr-title">
+              🔔 الإشعارات
+              {unreadCount > 0 && <span style={{ fontSize: 11, color: 'var(--primary-light)', fontWeight: 600, marginRight: 6 }}>({unreadCount} جديد)</span>}
+            </div>
+            {unreadCount > 0 && (
+              <button className="notif-clear-btn" onClick={markAllRead}>تحديد الكل كمقروء</button>
+            )}
+          </div>
+          <div className="notif-list">
+            {notifications.length === 0 ? (
+              <div className="notif-empty">
+                <div className="notif-empty-icon">🔕</div>
+                <div>لا توجد إشعارات حالياً</div>
+              </div>
+            ) : notifications.map(n => (
+              <div
+                key={n.id}
+                className={`notif-item ${!readIds.includes(n.id) ? 'unread' : ''} ${n.page ? 'clickable' : ''}`}
+                onClick={() => handleNotifClick(n)}
+              >
+                <div className={`notif-icon-wrap type-${n.type}`}>{n.icon}</div>
+                <div className="notif-text">
+                  <div className="notif-title">{n.title}</div>
+                  <div className="notif-sub">{n.sub}</div>
+                  {n.time && <div className="notif-time">🕐 {n.time}</div>}
+                  {n.page && <div className="notif-nav-hint">{n.hint} ↗</div>}
+                </div>
+                {!readIds.includes(n.id) && <div className="notif-dot" />}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== APP ====================
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [page, setPage] = useState('dashboard');
+  const [workers, setWorkers] = useState([]);
+  const [workPlaces, setWorkPlaces] = useState([]);
+  const [ownerUsers, setOwnerUsers] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const getOwnerId = (u) => u ? (u.role === 'owner' ? u.id : u.ownerId) : null;
+
+  // تابع حالة الـ Auth تلقائياً
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          const userData = { id: firebaseUser.uid, ...userDoc.data() };
+          setUser(userData);
+          const defaults = { owner: 'dashboard', manager: 'workers', worker: 'attendance_worker' };
+          setPage(defaults[userData.role] || 'dashboard');
+        }
+      } else {
+        setUser(null);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  // لما يتغير المستخدم، نحمل داتاه من Firestore
+  useEffect(() => {
+    if (!user) return;
+    const oid = getOwnerId(user);
+    if (!oid) return;
+
+    // workers — real-time listener
+    const unsubWorkers = onSnapshot(
+      collection(db, 'owners', oid, 'workers'),
+      (snap) => setWorkers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    // workplaces
+    const unsubPlaces = onSnapshot(
+      collection(db, 'owners', oid, 'workplaces'),
+      (snap) => setWorkPlaces(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    // users
+    const unsubUsers = onSnapshot(
+      collection(db, 'owners', oid, 'members'),
+      (snap) => {
+        const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setOwnerUsers(members.length > 0 ? members : [user]);
+      }
+    );
+    // مزامنة بيانات الـ GPS والحضور من Firestore للـ localStorage cache
+    syncAttendance(oid);
+    syncGeofence(oid);
+    syncReCheckin(oid);
+    syncInvites(oid);
+    return () => { unsubWorkers(); unsubPlaces(); unsubUsers(); };
+  }, [user]);
+
+  const saveWorkers = async (list, ownerId) => {
+    // حفظ كل عامل كـ document منفصل
+    for (const w of list) {
+      await setDoc(doc(db, 'owners', ownerId, 'workers', String(w.id)), w);
+    }
+  };
+
+  const setWorkersAndSave = async (updater) => {
+    const oid = getOwnerId(user);
+    if (!oid) return;
+    const newList = typeof updater === 'function' ? updater(workers) : updater;
+    setWorkers(newList);
+    for (const w of newList) {
+      await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+    }
+  };
+
+  const defaults = { owner: 'dashboard', manager: 'workers', worker: 'attendance_worker' };
+
+  const handleLogin = (u) => {
+    setUser(u);
+    setPage(defaults[u.role] || 'workers');
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setPage('dashboard');
+    setWorkers([]);
+    setWorkPlaces([]);
+    setOwnerUsers([]);
+  };
+
+  // حذف عامل/مدير بالكامل
+  const handleDeleteUser = async (userId) => {
+    const oid = getOwnerId(user);
+    if (!oid) return;
+    try {
+      // 1) علّم الحساب كـ deleted في Firestore
+      await updateDoc(doc(db, 'users', String(userId)), { deleted: true });
+      // 2) امسحه من workers
+      await deleteDoc(doc(db, 'owners', oid, 'workers', String(userId)));
+      // 3) امسحه من members
+      await deleteDoc(doc(db, 'owners', oid, 'members', String(userId)));
+      // 4) امسح سجلات الحضور
+      const att = await getAttendance(oid);
+      await saveAttendance(oid, att.filter(r => r.workerId !== userId));
+      // 5) امسح طلبات re-checkin
+      const reqs = await getReCheckinRequests(oid);
+      await saveReCheckinRequests(oid, reqs.filter(r => r.workerId !== userId));
+    } catch (err) { console.error('Error deleting user:', err); }
+  };
+
+  // لما عامل يسجل — يتضاف في داتا المالك
+  const handleRegisterWorker = async (newUser, ownerId) => {
+    const newWorker = {
+      id: newUser.id,
+      name: newUser.name,
+      pump: 'غير محدد',
+      workDays: 0,
+      salary: 0,
+      phone: '',
+      avatar: newUser.name[0] || '؟',
+      delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
+    };
+    await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker);
+    await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
+  };
+
+  const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', attendance: '📍 الحضور والانصراف', attendance_worker: '📍 تسجيل الحضور' };
+  const workerRecord = user?.role === 'worker' ? workers.find(w => w.id === user.id) : null;
+
+  const updateWorker = async (updated) => {
+    const oid = getOwnerId(user);
+    if (!oid) return;
+    await setDoc(doc(db, 'owners', oid, 'workers', String(updated.id)), updated);
+  };
+
+  const handleNavigate = (targetPage) => setPage(targetPage);
+
+  if (authLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)' }}>
+      <div className="spinner" />
+    </div>
+  );
+
+  if (!user) return <LoginPage onLogin={handleLogin} onRegisterWorker={handleRegisterWorker} />;
+
+  return (
+    <div className="app-shell">
+      <Sidebar user={user} page={page} setPage={setPage} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="main-content">
+        <div className="topbar no-print">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="hamburger" onClick={() => setSidebarOpen(true)}>☰</button>
+            <div className="topbar-title">{titles[page]}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <NotificationBell user={user} workers={workers} onNavigate={handleNavigate} />
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'left' }}>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{user.name}</div>
+              <div>{user.roleLabel}</div>
+            </div>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>{user.name[0]}</div>
+          </div>
+        </div>
+        <div className="page-content">
+          {page === 'dashboard' && user.role === 'owner' && (
+            <OwnerDashboard workers={workers} workPlaces={workPlaces}
+              onAddPlace={async (p) => {
+                const oid = getOwnerId(user);
+                const id = String(Date.now());
+                await setDoc(doc(db, 'owners', oid, 'workplaces', id), { ...p, id });
+              }}
+              onEditPlace={async (idx, val) => {
+                const oid = getOwnerId(user);
+                const place = workPlaces[idx];
+                if (place?.id) await setDoc(doc(db, 'owners', oid, 'workplaces', place.id), val);
+              }}
+              onDeletePlace={async (idx) => {
+                const oid = getOwnerId(user);
+                const place = workPlaces[idx];
+                if (place?.id) await deleteDoc(doc(db, 'owners', oid, 'workplaces', place.id));
+              }} />
+          )}
+          {page === 'attendance' && user.role === 'owner' && (
+            planHasGPS(getPlan())
+              ? <AttendanceDashboard workers={workers} ownerId={getOwnerId(user)} />
+              : <div style={{ textAlign: 'center', padding: 60 }}>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>الحضور بـ GPS غير متاح في باقتك</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة الاحترافية والمميزة فقط</div>
+                  <button className="btn btn-primary" onClick={() => { localStorage.setItem('app_trial_start', new Date(Date.now() - 99 * 864e5).toISOString()); window.location.reload(); }}>💳 ترقية الباقة</button>
+                </div>
+          )}
+          {page === 'attendance_worker' && user.role === 'worker' && (
+            planHasGPS(getPlan())
+              ? <AttendanceSystem user={user} ownerId={user.ownerId} />
+              : <div style={{ textAlign: 'center', padding: 60 }}>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تسجيل الحضور بـ GPS غير متاح</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>تواصل مع صاحب المحطة لترقية الباقة</div>
+                </div>
+          )}
+          {page === 'workers' && (user.role === 'owner' || user.role === 'manager') && (
+            <WorkersPage workers={workers} setWorkers={async (updater) => {
+              const oid = getOwnerId(user);
+              const newList = typeof updater === 'function' ? updater(workers) : updater;
+              setWorkers(newList);
+              for (const w of newList) {
+                await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+              }
+            }} />
+          )}
+          {page === 'reports' && <ReportsPage workers={workers} />}
+          {page === 'profile' && workerRecord && <WorkerProfile worker={workerRecord} onUpdate={updateWorker} />}
+          {page === 'profile' && !workerRecord && <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>لا توجد بيانات مرتبطة بحسابك</div>}
+          {page === 'accounts' && user.role === 'owner' && (
+            <AccountsPage
+              users={ownerUsers}
+              currentUser={user}
+              workers={workers}
+              onAddWorker={async (w) => {
+                const oid = getOwnerId(user);
+                await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+              }}
+              onAddUser={async (u) => {
+                const oid = getOwnerId(user);
+                await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
+                await setDoc(doc(db, 'users', String(u.id)), u);
+                setOwnerUsers(prev => [...prev, u]);
+              }}
+              onEditUser={async (id, updated) => {
+                const oid = getOwnerId(user);
+                await updateDoc(doc(db, 'owners', oid, 'members', String(id)), updated);
+                await updateDoc(doc(db, 'users', String(id)), updated);
+                setOwnerUsers(prev => prev.map(u => u.id === id ? { ...u, ...updated } : u));
+              }}
+              onDeleteUser={handleDeleteUser}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function Root() {
+  const [showPricing, setShowPricing] = useState(false);
+  const trial = getTrialInfo();
+
+  if (trial.expired || showPricing) {
+    return (
+      <>
+        <style>{globalStyles}</style>
+        <PricingScreen onBack={!trial.expired ? () => setShowPricing(false) : null} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <style>{globalStyles}</style>
+      <ToastProvider>
+        <TrialBanner remaining={trial.remaining} onViewPlans={() => setShowPricing(true)} />
+        <App />
+      </ToastProvider>
+    </>
+  );
+}
