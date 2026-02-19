@@ -287,6 +287,9 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .feat-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
 .plan-card.lifetime { border-color: rgba(168,85,247,0.6); background: linear-gradient(160deg, rgba(168,85,247,0.12), rgba(168,85,247,0.03)); box-shadow: 0 0 0 1px rgba(168,85,247,0.2), 0 20px 40px rgba(168,85,247,0.12); }
 .plan-card.lifetime:hover { box-shadow: 0 0 0 1px rgba(168,85,247,0.4), 0 24px 50px rgba(168,85,247,0.2); }
+.plan-card.free { border-color: rgba(16,185,129,0.4); background: linear-gradient(160deg, rgba(16,185,129,0.08), rgba(16,185,129,0.02)); }
+.plan-card.free:hover { box-shadow: 0 0 0 1px rgba(16,185,129,0.3), 0 20px 40px rgba(16,185,129,0.1); }
+.free-badge { position: absolute; top: -10px; right: 18px; background: linear-gradient(135deg, #10b981, #059669); color: white; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 20px; letter-spacing: 0.5px; }
 .lifetime-badge { position: absolute; top: -13px; right: 50%; transform: translateX(50%); background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; font-size: 11px; font-weight: 800; padding: 4px 16px; border-radius: 20px; white-space: nowrap; letter-spacing: 0.3px; }
 .btn-lifetime { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; }
 .btn-lifetime:hover { background: linear-gradient(135deg, #6d28d9, #9333ea); transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
@@ -2169,6 +2172,13 @@ const WorkersPage = ({ workers, setWorkers }) => {
   const selected = workers.find(w => w.id === selectedId);
 
   const saveWorker = async (data) => {
+    // تحقق من حد الباقة المجانية
+    const isNewWorker = !workers.find(w => w.id === data.id);
+    if (isNewWorker && planIsFree(getPlan()) && workers.length >= FREE_WORKER_LIMIT) {
+      toast(`الباقة المجانية تسمح بـ ${FREE_WORKER_LIMIT} عمال فقط — قم بالترقية لإضافة المزيد 🔒`, 'warning');
+      setWorkerModal(null);
+      return;
+    }
     setLoading(true); await new Promise(r => setTimeout(r, 600));
     if (workers.find(w => w.id === data.id)) setWorkers(workers.map(w => w.id === data.id ? data : w));
     else { setWorkers([...workers, data]); setSelectedId(data.id); }
@@ -3408,10 +3418,35 @@ const getTrialInfo = () => {
 const getPlan = () => localStorage.getItem('app_plan') || 'trial';
 const planHasGPS      = (plan) => ['pro', 'enterprise', 'lifetime'].includes(plan);
 const planHasExcelAdv = (plan) => ['enterprise', 'lifetime'].includes(plan);
+const planIsFree      = (plan) => plan === 'free';
+const FREE_WORKER_LIMIT = 5;
 
 // ===== شاشة انتهاء التجربة / الخطط =====
-const PricingScreen = ({ onBack }) => {
+const PricingScreen = ({ onBack, onSelectFree }) => {
   const plans = [
+    {
+      id: 'free',
+      emoji: '🆓',
+      name: 'المجانية',
+      desc: 'ابدأ مجاناً بدون أي التزام',
+      price: '0',
+      period: 'مجاناً للأبد',
+      className: 'free',
+      free: true,
+      features: [
+        { yes: true,  text: 'حتى 5 عمال' },
+        { yes: true,  text: 'إدارة الرواتب والخصومات' },
+        { yes: false, text: 'تسجيل الحضور بـ GPS' },
+        { yes: false, text: 'تقارير شهرية' },
+        { yes: false, text: 'سحب نقدي وسلف' },
+        { yes: false, text: 'تقارير Excel متقدمة' },
+        { yes: false, text: 'دعم فني' },
+        { yes: false, text: 'نسخة احتياطية تلقائية' },
+      ],
+      btnClass: 'btn-success',
+      btnLabel: '✅ استمر مجاناً',
+      isFreePlan: true,
+    },
     {
       id: 'basic',
       emoji: '🚀',
@@ -3534,6 +3569,7 @@ const PricingScreen = ({ onBack }) => {
             <div key={plan.id} className={`plan-card ${plan.className}`}>
               {plan.popular && <div className="popular-badge">⚡ الأكثر مبيعاً</div>}
               {plan.lifetime && <div className="lifetime-badge">♾️ مدى الحياة</div>}
+              {plan.free && <div className="free-badge">✅ مجاناً للأبد</div>}
               <div className="plan-emoji">{plan.emoji}</div>
               <div className="plan-name">{plan.name}</div>
               <div className="plan-desc">{plan.desc}</div>
@@ -3551,9 +3587,16 @@ const PricingScreen = ({ onBack }) => {
                   </div>
                 ))}
               </div>
-              <a href={wa(plan.name)} target="_blank" rel="noreferrer" className={`btn ${plan.btnClass}`} style={{ justifyContent: 'center', textDecoration: 'none', marginTop: 'auto', paddingTop: plan.lifetime ? 20 : undefined }}>
-                {plan.btnLabel}
-              </a>
+              {plan.isFreePlan ? (
+                <button className={`btn ${plan.btnClass}`} style={{ justifyContent: 'center', marginTop: 'auto' }}
+                  onClick={() => onSelectFree && onSelectFree()}>
+                  {plan.btnLabel}
+                </button>
+              ) : (
+                <a href={wa(plan.name)} target="_blank" rel="noreferrer" className={`btn ${plan.btnClass}`} style={{ justifyContent: 'center', textDecoration: 'none', marginTop: 'auto', paddingTop: plan.lifetime ? 20 : undefined }}>
+                  {plan.btnLabel}
+                </a>
+              )}
             </div>
           ))}
         </div>
@@ -4191,26 +4234,75 @@ export default function Root() {
 
   const trial = trialInfo || getTrialInfo();
   const userName = currentUser?.name || currentUser?.email?.split('@')[0] || '';
+  const currentPlan = trialInfo?.plan || getPlan();
 
-  if (trial.expired || showPricing) {
-    return (
-      <>
-        <style>{globalStyles}</style>
-        <PricingScreen onBack={!trial.expired ? () => setShowPricing(false) : null} />
-      </>
-    );
-  }
+  // لو الـ trial خلص وما اختارش خطة → حوّله تلقائياً للمجانية
+  useEffect(() => {
+    if (trial.expired && currentPlan === 'trial') {
+      const autoFree = async () => {
+        localStorage.setItem('app_plan', 'free');
+        if (currentUser) {
+          const ownerId = currentUser.role === 'owner' ? currentUser.id : currentUser.ownerId;
+          if (ownerId) await setPlanInDB(ownerId, 'free');
+        }
+        if (trialInfo) setTrialInfo({ ...trialInfo, plan: 'free', expired: false });
+      };
+      autoFree();
+    }
+  }, [trial.expired, currentPlan]);
 
+  const handleSelectFree = async () => {
+    localStorage.setItem('app_plan', 'free');
+    if (currentUser) {
+      const ownerId = currentUser.role === 'owner' ? currentUser.id : currentUser.ownerId;
+      if (ownerId) await setPlanInDB(ownerId, 'free');
+    }
+    setShowPricing(false);
+    if (trialInfo) setTrialInfo({ ...trialInfo, plan: 'free', expired: false });
+  };
+
+  // التطبيق دايماً شغال — مفيش قفل بأي حال
   return (
     <>
       <style>{globalStyles}</style>
       <ToastProvider>
-        <TrialBanner
-          remaining={trial.remaining}
-          onViewPlans={() => setShowPricing(true)}
-          userName={userName}
-        />
+        {/* أثناء الـ trial: بانر العد التنازلي */}
+        {currentPlan === 'trial' && trial.remaining > 0 && (
+          <TrialBanner
+            remaining={trial.remaining}
+            onViewPlans={() => setShowPricing(true)}
+            userName={userName}
+          />
+        )}
+
+        {/* بعد الـ trial: بانر ترقية خفيف */}
+        {(currentPlan === 'free' || (currentPlan === 'trial' && trial.expired)) && (
+          <div className="trial-banner no-print" style={{
+            background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.04))',
+            borderBottom: '1px solid rgba(59,130,246,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 12, padding: '8px 28px', flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>
+              🆓 أنت على الباقة المجانية — حتى 5 عمال
+            </span>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowPricing(true)}>
+              ⚡ ترقية الباقة
+            </button>
+          </div>
+        )}
+
         <App />
+
+        {/* شاشة الخطط كـ modal فوق التطبيق */}
+        {showPricing && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 500, overflowY: 'auto', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)' }}>
+            <PricingScreen
+              onBack={() => setShowPricing(false)}
+              onSelectFree={handleSelectFree}
+            />
+          </div>
+        )}
       </ToastProvider>
     </>
   );
