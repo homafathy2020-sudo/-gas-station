@@ -4031,7 +4031,9 @@ const App = () => {
     const unsubUsers = onSnapshot(
       collection(db, 'owners', oid, 'members'),
       (snap) => {
-        const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const members = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(m => !m.deleted); // فلتر المحذوفين
         setOwnerUsers(members.length > 0 ? members : [user]);
       }
     );
@@ -4080,22 +4082,25 @@ const App = () => {
   const handleDeleteUser = async (userId) => {
     const oid = getOwnerId(user);
     if (!oid) return;
+    const uid = String(userId);
     try {
-      // 1) علّم الحساب كـ deleted في Firestore
-      await updateDoc(doc(db, 'users', String(userId)), { deleted: true });
-      // 2) امسحه من workers
-      await deleteDoc(doc(db, 'owners', oid, 'workers', String(userId)));
-      // 3) امسحه من members
-      await deleteDoc(doc(db, 'owners', oid, 'members', String(userId)));
-      // 4) حدّث الـ state فوراً
-      setOwnerUsers(prev => prev.filter(u => String(u.id) !== String(userId)));
-      setWorkers(prev => prev.filter(w => String(w.id) !== String(userId)));
+      // 1) حدّث الـ state فوراً قبل أي حاجة
+      setOwnerUsers(prev => prev.filter(u => String(u.id) !== uid));
+      setWorkers(prev => prev.filter(w => String(w.id) !== uid));
+
+      // 2) علّم الـ member كـ deleted (أسرع وأضمن من الحذف)
+      try { await setDoc(doc(db, 'owners', oid, 'members', uid), { deleted: true }, { merge: true }); } catch(e) { console.warn('members mark deleted:', e); }
+      // وامسحه كمان
+      try { await deleteDoc(doc(db, 'owners', oid, 'members', uid)); } catch(e) { console.warn('members delete:', e); }
+      // 3) امسحه من workers
+      try { await deleteDoc(doc(db, 'owners', oid, 'workers', uid)); } catch(e) { console.warn('workers delete:', e); }
+      // 4) علّم الحساب كـ deleted في users collection
+      try { await updateDoc(doc(db, 'users', uid), { deleted: true }); } catch(e) { console.warn('users update:', e); }
       // 5) امسح سجلات الحضور
-      const att = await getAttendance(oid);
-      await saveAttendance(oid, att.filter(r => r.workerId !== userId));
-      // 6) امسح طلبات re-checkin
-      const reqs = await getReCheckinRequests(oid);
-      await saveReCheckinRequests(oid, reqs.filter(r => r.workerId !== userId));
+      try {
+        const att = await getAttendance(oid);
+        await saveAttendance(oid, att.filter(r => String(r.workerId) !== uid));
+      } catch(e) { console.warn('attendance delete:', e); }
     } catch (err) { console.error('Error deleting user:', err); }
   };
 
