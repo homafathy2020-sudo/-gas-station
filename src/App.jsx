@@ -1,6 +1,6 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
 
 // ==================== STYLES ====================
@@ -3096,6 +3096,8 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
   const [regForm,   setRegForm]     = useState({ email: '', password: '', name: '', role: 'owner', ownerCode: '' });
   const [errors,    setErrors]      = useState({});
   const [loading,   setLoading]     = useState(false);
+  const [verifyScreen, setVerifyScreen] = useState(null); // { email, password }
+  const [resendLoading, setResendLoading] = useState(false);
   const toast = useToast();
 
   // ---- تسجيل الدخول ----
@@ -3117,6 +3119,12 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       if (userData.deleted) {
         await signOut(auth);
         setErrors({ form: 'تم حذف حسابك من قِبل المالك. تواصل معه لإعادة التسجيل.' });
+        setLoading(false); return;
+      }
+      // تحقق من تأكيد الإيميل للمالك
+      if (userData.role === 'owner' && !cred.user.emailVerified) {
+        await signOut(auth);
+        setVerifyScreen({ email: loginForm.email.trim(), password: loginForm.password });
         setLoading(false); return;
       }
       toast('مرحباً بك ' + userData.name, 'success');
@@ -3204,6 +3212,15 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         } catch (e) { console.log('invite remove error', e); }
       }
 
+      // لو مالك، ابعتله إيميل تأكيد
+      if (regForm.role === 'owner') {
+        await sendEmailVerification(cred.user);
+        await signOut(auth);
+        setVerifyScreen({ email: regForm.email.trim(), password: regForm.password });
+        setLoading(false);
+        return;
+      }
+
       toast('تم إنشاء الحساب بنجاح ✓', 'success');
       onLogin(newUser);
     } catch (err) {
@@ -3223,6 +3240,76 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     color: tab === t ? 'white' : 'var(--text-muted)',
     boxShadow: tab === t ? '0 4px 12px rgba(26,86,219,0.3)' : 'none',
   });
+
+  // شاشة تأكيد الإيميل
+  if (verifyScreen) {
+    return (
+      <div className="login-page">
+        <div className="login-bg" />
+        {loading && <Loader />}
+        <div className="login-card" style={{ animation: 'fadeIn .4s ease' }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 64, marginBottom: 12 }}>📧</div>
+            <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>تأكيد البريد الإلكتروني</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 2 }}>
+              تم إرسال رسالة تأكيد على<br />
+              <strong style={{ color: 'var(--primary-light)' }}>{verifyScreen.email}</strong><br />
+              افتح بريدك واضغط على رابط التأكيد
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 12, padding: 14, marginBottom: 20, fontSize: 12, color: '#f59e0b', lineHeight: 2 }}>
+            ⚠️ تفقد فولدر الـ Spam لو مش لاقي الإيميل
+          </div>
+
+          {/* زرار دخول بعد التأكيد */}
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const cred = await signInWithEmailAndPassword(auth, verifyScreen.email, verifyScreen.password);
+                if (!cred.user.emailVerified) {
+                  setErrors({ verify: 'لم يتم تأكيد البريد بعد — تفقد إيميلك وانقر على الرابط' });
+                  await signOut(auth);
+                } else {
+                  const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+                  if (userDoc.exists()) {
+                    toast('مرحباً بك! تم تأكيد بريدك ✓', 'success');
+                    onLogin({ id: cred.user.uid, ...userDoc.data() });
+                  }
+                }
+              } catch { setErrors({ verify: 'حدث خطأ، حاول مرة أخرى' }); }
+              setLoading(false);
+            }}>
+            ✅ دخلت على إيميلي وأكدت — ادخلني
+          </button>
+
+          {errors.verify && <div className="form-error" style={{ textAlign: 'center', marginBottom: 10 }}>{errors.verify}</div>}
+
+          {/* إعادة إرسال */}
+          <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginBottom: 10 }}
+            disabled={resendLoading}
+            onClick={async () => {
+              setResendLoading(true);
+              try {
+                const cred = await signInWithEmailAndPassword(auth, verifyScreen.email, verifyScreen.password);
+                await sendEmailVerification(cred.user);
+                await signOut(auth);
+                toast('تم إعادة إرسال الإيميل ✓', 'success');
+              } catch { toast('حدث خطأ في إعادة الإرسال', 'error'); }
+              setResendLoading(false);
+            }}>
+            🔄 إعادة إرسال الإيميل
+          </button>
+
+          <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', fontSize: 12, color: 'var(--text-muted)' }}
+            onClick={() => { setVerifyScreen(null); setErrors({}); }}>
+            ← رجوع لتسجيل الدخول
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
