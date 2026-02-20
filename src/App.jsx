@@ -732,6 +732,7 @@ const generateReport = (worker) => {
         { cells: [C('خصم الغيابات', 6), C(worker.absences.reduce((s,a)=>s+a.deduction,0), 10, 'n')] },
         { cells: [C('خصم العجز', 7), C(totalAbsNoReasonDed, 10, 'n')] },
         { cells: [C('حوافز الانضباط', 6), C(totalDisciplineVal, 11, 'n')] },
+        { cells: [C('السحب النقدي', 7), C(totalCash(worker), 10, 'n')] },
         { cells: [E(0), E(0)] },
         { cells: [C('صافي المدفوعات', 16), C(net, 16, 'n')], ht: 28 },
       ],
@@ -2389,7 +2390,7 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
     { cells: [C(`التقرير الشهري - ${monthName} ${year}`,1),E(1),E(1),E(1),E(1),E(1),E(1),E(1)], ht: 32 },
     { cells: [C('محطة بترومين 10000',15),E(15),E(15),E(15),E(15),E(15),E(15),E(15)], ht: 26 },
     { cells: Array(8).fill(E(0)) },
-    { cells: [C('العامل',1),C('مكان العمل',1),C('ايام العمل',1),C('التاخيرات',1),C('الغيابات',1),C('الخصومات',1),C('الحوافز',1),C('صافي المدفوع',1)], ht: 24 },
+    { cells: [C('العامل',1),C('مكان العمل',1),C('ايام العمل',1),C('التاخيرات',1),C('الغيابات',1),C('الخصومات',1),C('الحوافز',1),C('السحب النقدي',1),C('صافي المدفوع',1)], ht: 24 },
     ...workers.map((w, i) => {
       const ev = i % 2 === 0;
       const net = calcNet(w);
@@ -2397,22 +2398,25 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
         C(w.name, ev?6:7), C(w.pump, ev?6:7), C(w.workDays, ev?6:7, 'n'),
         C(w.delays.length, ev?6:7, 'n'), C(w.absences.length, ev?6:7, 'n'),
         C(totalDed(w), ev?10:12, 'n'), C(totalRewards(w), ev?11:13, 'n'),
+        C(totalCash(w), ev?10:12, 'n'),
         C(net, net >= w.salary*0.9 ? (ev?11:13) : (ev?10:12), 'n'),
       ]};
     }),
-    { cells: Array(8).fill(E(0)) },
+    { cells: Array(9).fill(E(0)) },
     { cells: [
       C('الاجمالي',8), E(8),
       C(workers.reduce((s,w)=>s+w.workDays,0),8,'n'),
       C(workers.reduce((s,w)=>s+w.delays.length,0),8,'n'),
       C(workers.reduce((s,w)=>s+w.absences.length,0),8,'n'),
-      C(allDed,9,'n'), C(allRew,8,'n'), C(totalNet,8,'n'),
+      C(allDed,9,'n'), C(allRew,8,'n'),
+      C(workers.reduce((s,w)=>s+totalCash(w),0),9,'n'),
+      C(totalNet,8,'n'),
     ], ht: 26 },
   ];
   const summarySheet = {
     name: 'ملخص الشهر',
-    colWidths: [22,16,13,13,13,18,16,20],
-    merges: ['A1:H1','A2:H2'],
+    colWidths: [22,16,13,13,13,18,16,18,20],
+    merges: ['A1:I1','A2:I2'],
     rows: summaryRows,
   };
 
@@ -2437,6 +2441,7 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
       { cells: [C('اجمالي خصم الغيابات',7),C(absDed,10,'n'),E(7),E(7)] },
       { cells: [C('اجمالي خصم العجز',6),C(absNRDed,10,'n'),E(6),E(6)] },
       { cells: [C('اجمالي الحوافز',7),C(rewTotal,11,'n'),E(7),E(7)] },
+      { cells: [C('السحب النقدي',6),C(totalCash(w),10,'n'),E(6),E(6)] },
       { cells: [C('صافي المدفوعات',16),C(net,16,'n'),E(16),E(16)], ht: 26 },
       { cells: [E(0),E(0),E(0),E(0)] },
       // delays section
@@ -3176,6 +3181,17 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       };
       await setDoc(doc(db, 'users', uid), newUser);
 
+      // لو مالك، ابدأله الـ trial تلقائياً من لحظة التسجيل
+      if (regForm.role === 'owner') {
+        await setDoc(doc(db, 'owners', uid, 'settings', 'subscription'), {
+          trialStart: new Date().toISOString(),
+          plan: 'trial',
+        });
+        // احفظ في localStorage برضو
+        localStorage.setItem('app_trial_start', new Date().toISOString());
+        localStorage.removeItem('app_plan');
+      }
+
       // لو عامل، يتضاف في داتا المالك
       if (regForm.role === 'worker' && ownerData && onRegisterWorker) {
         await onRegisterWorker(newUser, ownerData.id);
@@ -3416,11 +3432,17 @@ const getTrialInfo = () => {
 
 // ==================== PLAN SYSTEM ====================
 const getPlan = () => {
+  // لو الـ trial لسه شغال، كل المميزات مفتوحة بغض النظر عن أي حاجة في localStorage
+  const trialStart = localStorage.getItem('app_trial_start');
+  if (trialStart) {
+    const elapsed = Math.floor((Date.now() - new Date(trialStart)) / (1000 * 60 * 60 * 24));
+    if (elapsed < 15) return 'trial'; // trial لسه شغال → كل المميزات
+  }
   const p = localStorage.getItem('app_plan');
-  if (!p || p === 'trial') return 'trial'; // default = trial = كل المميزات
+  if (!p || p === 'trial') return 'free'; // trial خلص بدون اختيار → مجاني
   return p;
 };
-// trial = كل المميزات مفتوحة
+// trial = كل المميزات مفتوحة، free = محدود
 const planHasGPS      = (plan) => plan !== 'free';
 const planHasExcelAdv = (plan) => plan !== 'free';
 const planIsFree      = (plan) => plan === 'free';
