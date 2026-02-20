@@ -2902,8 +2902,8 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
               <div style={{ fontSize: 14, fontWeight: 600 }}>هل أنت متأكد من حذف حساب "{confirmDelete.name}"؟</div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-danger" onClick={() => {
-                onDeleteUser(confirmDelete.id);
+              <button className="btn btn-danger" onClick={async () => {
+                await onDeleteUser(confirmDelete.id);
                 toast(`تم حذف حساب ${confirmDelete.name} وجميع بياناته`, 'success');
                 setConfirmDelete(null);
               }}>🗑️ نعم، احذف نهائياً</button>
@@ -4087,10 +4087,13 @@ const App = () => {
       await deleteDoc(doc(db, 'owners', oid, 'workers', String(userId)));
       // 3) امسحه من members
       await deleteDoc(doc(db, 'owners', oid, 'members', String(userId)));
-      // 4) امسح سجلات الحضور
+      // 4) حدّث الـ state فوراً
+      setOwnerUsers(prev => prev.filter(u => String(u.id) !== String(userId)));
+      setWorkers(prev => prev.filter(w => String(w.id) !== String(userId)));
+      // 5) امسح سجلات الحضور
       const att = await getAttendance(oid);
       await saveAttendance(oid, att.filter(r => r.workerId !== userId));
-      // 5) امسح طلبات re-checkin
+      // 6) امسح طلبات re-checkin
       const reqs = await getReCheckinRequests(oid);
       await saveReCheckinRequests(oid, reqs.filter(r => r.workerId !== userId));
     } catch (err) { console.error('Error deleting user:', err); }
