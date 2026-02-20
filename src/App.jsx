@@ -763,6 +763,22 @@ const generateReport = (worker) => {
 // ==================== WORKER ATTENDANCE (GPS CHECK-IN) ====================
 const AttendanceSystem = ({ user, ownerId }) => {
   const toast = useToast();
+
+  // ── إشعارات البراوزر ──
+  const sendBrowserNotification = useCallback((title, body, icon = '📍') => {
+    if (!('Notification' in window)) return;
+    const doSend = () => {
+      try {
+        new Notification(title, { body, icon: '/favicon.ico', tag: 'geofence-alert', renotify: true });
+      } catch(e) {}
+    };
+    if (Notification.permission === 'granted') {
+      doSend();
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().then(perm => { if (perm === 'granted') doSend(); });
+    }
+  }, []);
+
   const [gpsStatus, setGpsStatus] = useState('idle'); // idle | loading | inside | outside | error
   const [currentPos, setCurrentPos] = useState(null);
   const [distance, setDistance] = useState(null);
@@ -867,6 +883,10 @@ const AttendanceSystem = ({ user, ownerId }) => {
         setWarningSent(true);
         const mins = Math.ceil(remaining / 60);
         toast(`⚠️ تحذير! باقي ${mins} دقيقة فقط — لو ماجيتش هيتسجل انصرافك وهياخد غياب!`, 'error');
+        sendBrowserNotification(
+          `⏰ تحذير أخير — باقي ${mins} دقيقة!`,
+          'لو ماجيتش للمحطة هيتسجل عليك انصراف وغياب تلقائي'
+        );
       }
     };
     tick();
@@ -889,7 +909,16 @@ const AttendanceSystem = ({ user, ownerId }) => {
         } else {
           // برا الـ zone → ابدأ العداد لو مش شغال
           setGpsStatus('outside');
-          setOutSince(prev => prev === null ? Date.now() : prev);
+          setOutSince(prev => {
+            if (prev === null) {
+              const mins = geofence?.allowedOutMinutes || 15;
+              sendBrowserNotification(
+                '⚠️ خرجت من نطاق المحطة!',
+                `عندك ${mins} دقيقة ترجع فيها — لو ماجيتش هيتسجل عليك غياب وخصم`
+              );
+            }
+            return prev === null ? Date.now() : prev;
+          });
         }
       },
       () => setGpsStatus('error'),
@@ -930,6 +959,10 @@ const AttendanceSystem = ({ user, ownerId }) => {
         const absEntry = { id: Date.now(), date: todayStr(), reason: 'خروج تلقائي - تجاوز وقت الخروج المسموح', deduction: Math.round(dailySalary) };
         workers[wIdx] = { ...w, absences: [...(w.absences || []), absEntry] };
         localStorage.setItem(workerKey, JSON.stringify(workers));
+        sendBrowserNotification(
+          '💸 تم خصم من راتبك!',
+          `تم خصم ${Math.round(dailySalary)} جنيه بسبب تجاوز وقت الخروج المسموح`
+        );
       }
     } catch(e) {}
     toast('🔴 تم تسجيل انصرافك تلقائياً وسجّل عليك غياب لتجاوز وقت الخروج!', 'error');
@@ -1036,6 +1069,10 @@ const AttendanceSystem = ({ user, ownerId }) => {
     setCheckedIn(true);
     setLoading(false);
     toast(`تم تسجيل حضورك ✓ — ${fmtTime(record.checkIn)}`, 'success');
+    // اطلب صلاحية الإشعارات عند أول تسجيل حضور
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   };
 
   const myRecords = allRecords.filter(r => r.workerId === user.id).sort((a,b) => new Date(b.checkIn) - new Date(a.checkIn));
