@@ -3092,8 +3092,8 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
 // ==================== LOGIN (Firebase Auth) ====================
 const LoginPage = ({ onLogin, onRegisterWorker }) => {
   const [tab, setTab] = useState('login');
-  const [loginForm, setLoginForm]   = useState({ email: '', password: '' });
-  const [regForm,   setRegForm]     = useState({ email: '', password: '', name: '', role: 'owner', ownerCode: '' });
+  const [loginForm, setLoginForm]   = useState({ emailOrUsername: '', password: '', loginRole: 'owner' });
+  const [regForm,   setRegForm]     = useState({ email: '', username: '', password: '', name: '', role: 'owner', ownerCode: '' });
   const [errors,    setErrors]      = useState({});
   const [loading,   setLoading]     = useState(false);
   const [verifyScreen, setVerifyScreen] = useState(null); // { email, password }
@@ -3104,34 +3104,49 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
   const submitLogin = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!loginForm.email.trim())    errs.email    = 'البريد الإلكتروني مطلوب';
-    if (loginForm.password.length < 6) errs.password = 'كلمة المرور 6 أحرف على الأقل';
+    if (!loginForm.emailOrUsername.trim()) errs.emailOrUsername = 'هذا الحقل مطلوب';
+    if (loginForm.password.length < 6)     errs.password = 'كلمة المرور 6 أحرف على الأقل';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, loginForm.email.trim(), loginForm.password);
+      let emailToUse = loginForm.emailOrUsername.trim();
+
+      // لو عامل، حول الـ username لـ fake email
+      if (loginForm.loginRole === 'worker') {
+        const uname = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
+        emailToUse = `${uname}@petromin.worker`;
+      }
+
+      const cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
       const uid  = cred.user.uid;
-      // جيب بيانات المستخدم من Firestore
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (!userDoc.exists()) { setErrors({ form: 'بيانات المستخدم غير موجودة' }); setLoading(false); return; }
       const userData = { id: uid, ...userDoc.data() };
-      // تحقق لو اتحذف
+
       if (userData.deleted) {
         await signOut(auth);
         setErrors({ form: 'تم حذف حسابك من قِبل المالك. تواصل معه لإعادة التسجيل.' });
         setLoading(false); return;
       }
-      // تحقق من تأكيد الإيميل للمالك
       if (userData.role === 'owner' && !cred.user.emailVerified) {
         await signOut(auth);
-        setVerifyScreen({ email: loginForm.email.trim(), password: loginForm.password });
+        setVerifyScreen({ email: emailToUse, password: loginForm.password });
         setLoading(false); return;
       }
+
+      // ===== Single Session: سجّل الجلسة الحالية =====
+      if (userData.role === 'worker') {
+        const sessionId = Date.now().toString();
+        const sessionRef = doc(db, 'owners', userData.ownerId, 'sessions', uid);
+        await setDoc(sessionRef, { sessionId, lastLogin: new Date().toISOString() });
+        localStorage.setItem(`session_${uid}`, sessionId);
+      }
+
       toast('مرحباً بك ' + userData.name, 'success');
       onLogin(userData);
     } catch (err) {
       const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found'
-        ? 'البريد أو كلمة المرور غير صحيحة' : 'حدث خطأ، حاول مرة أخرى';
+        ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'حدث خطأ، حاول مرة أخرى';
       setErrors({ form: msg });
     }
     setLoading(false);
@@ -3141,7 +3156,14 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
   const submitRegister = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!regForm.email.trim())       errs.reg_email    = 'البريد الإلكتروني مطلوب';
+    // المالك يحتاج إيميل، العامل يحتاج username
+    if (regForm.role === 'owner') {
+      if (!regForm.email.trim())       errs.reg_email    = 'البريد الإلكتروني مطلوب';
+    } else {
+      if (!regForm.username.trim())    errs.reg_username = 'اسم المستخدم مطلوب';
+      else if (!/^[a-zA-Z0-9_؀-ۿ]+$/.test(regForm.username.trim()))
+        errs.reg_username = 'اسم المستخدم: حروف وأرقام بس (بدون مسافات)';
+    }
     if (!regForm.name.trim())        errs.reg_name     = 'الاسم الكامل مطلوب';
     if (regForm.password.length < 6) errs.reg_password = 'كلمة المرور 6 أحرف على الأقل';
 
@@ -3176,16 +3198,21 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     setLoading(true);
     try {
       const roleLabels = { owner: 'المالك', worker: 'عامل' };
-      const cred = await createUserWithEmailAndPassword(auth, regForm.email.trim(), regForm.password);
+      // العامل يستخدم fake email من username
+      const emailForAuth = regForm.role === 'worker'
+        ? `${regForm.username.trim().toLowerCase().replace(/\s+/g, '_')}@petromin.worker`
+        : regForm.email.trim();
+
+      const cred = await createUserWithEmailAndPassword(auth, emailForAuth, regForm.password);
       const uid  = cred.user.uid;
       const newUser = {
         id: uid,
-        email:     regForm.email.trim(),
+        email:     emailForAuth,
         name:      regForm.name.trim(),
         role:      regForm.role,
         roleLabel: roleLabels[regForm.role],
         ...(regForm.role === 'owner'  ? { ownerCode: 'STAT-' + Math.random().toString(36).substring(2,6).toUpperCase() } : {}),
-        ...(regForm.role === 'worker' && ownerData ? { ownerId: ownerData.id } : {}),
+        ...(regForm.role === 'worker' ? { username: regForm.username.trim().toLowerCase(), ownerId: ownerData?.id } : {}),
       };
       await setDoc(doc(db, 'users', uid), newUser);
 
@@ -3231,7 +3258,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
   };
 
   const lf = k => ({ value: loginForm[k], onChange: e => { setLoginForm({ ...loginForm, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
-  const rf = k => ({ value: regForm[k],   onChange: e => { setRegForm({ ...regForm, [k]: e.target.value });     setErrors({ ...errors, ['reg_'+k]: '' }); }, className: `form-input ${errors['reg_'+k] ? 'error' : ''}` });
+  const rf = k => ({ value: regForm[k] || '', onChange: e => { setRegForm({ ...regForm, [k]: e.target.value }); setErrors({ ...errors, ['reg_'+k]: '' }); }, className: `form-input ${errors['reg_'+k] ? 'error' : ''}` });
 
   const tabStyle = (t) => ({
     flex: 1, padding: '10px', border: 'none', borderRadius: 10, cursor: 'pointer',
@@ -3333,10 +3360,28 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
           {tab === 'login' && (
             <form onSubmit={submitLogin}>
               {errors.form && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#ef4444', textAlign: 'center' }}>{errors.form}</div>}
+
+              {/* اختيار نوع الحساب عند الدخول */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 18, background: 'rgba(255,255,255,0.03)', padding: 5, borderRadius: 12, border: '1px solid var(--border)' }}>
+                {[{ r: 'owner', label: '👑 مالك' }, { r: 'worker', label: '👷 عامل' }].map(opt => (
+                  <button key={opt.r} type="button"
+                    onClick={() => setLoginForm({ ...loginForm, loginRole: opt.r, emailOrUsername: '' })}
+                    style={{ flex: 1, padding: '8px', border: 'none', borderRadius: 9, cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
+                      background: loginForm.loginRole === opt.r ? 'linear-gradient(135deg, var(--primary), var(--primary-light))' : 'transparent',
+                      color: loginForm.loginRole === opt.r ? 'white' : 'var(--text-muted)' }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="form-group">
-                <label className="form-label">البريد الإلكتروني</label>
-                <input type="email" placeholder="example@email.com" {...lf('email')} />
-                {errors.email && <div className="form-error">{errors.email}</div>}
+                <label className="form-label">{loginForm.loginRole === 'owner' ? '📧 البريد الإلكتروني' : '👤 اسم المستخدم'}</label>
+                <input
+                  type={loginForm.loginRole === 'owner' ? 'email' : 'text'}
+                  placeholder={loginForm.loginRole === 'owner' ? 'example@email.com' : 'اكتب اسم المستخدم'}
+                  {...lf('emailOrUsername')}
+                />
+                {errors.emailOrUsername && <div className="form-error">{errors.emailOrUsername}</div>}
               </div>
               <div className="form-group">
                 <label className="form-label">كلمة المرور</label>
@@ -3392,11 +3437,24 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
                 <input placeholder="أدخل اسمك الكامل" {...rf('name')} />
                 {errors.reg_name && <div className="form-error">{errors.reg_name}</div>}
               </div>
-              <div className="form-group">
-                <label className="form-label">البريد الإلكتروني</label>
-                <input type="email" placeholder="example@email.com" {...rf('email')} />
-                {errors.reg_email && <div className="form-error">{errors.reg_email}</div>}
-              </div>
+
+              {/* المالك يسجل بإيميل، العامل بـ username */}
+              {regForm.role === 'owner' ? (
+                <div className="form-group">
+                  <label className="form-label">📧 البريد الإلكتروني</label>
+                  <input type="email" placeholder="example@email.com" {...rf('email')} />
+                  {errors.reg_email && <div className="form-error">{errors.reg_email}</div>}
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>⚠️ هيتبعتلك إيميل تأكيد — تأكد إنه حقيقي</div>
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">👤 اسم المستخدم</label>
+                  <input placeholder="مثال: ahmed_worker" {...rf('username')} />
+                  {errors.reg_username && <div className="form-error">{errors.reg_username}</div>}
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>حروف وأرقام بس — هيستخدمه للدخول</div>
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">كلمة المرور</label>
                 <input type="password" placeholder="6 أحرف على الأقل" {...rf('password')} />
@@ -4097,6 +4155,30 @@ const App = () => {
     });
     return () => unsub();
   }, []);
+
+  // Single Session: تحقق كل 30 ثانية إن الجلسة لسه صحيحة
+  useEffect(() => {
+    if (!user || user.role !== 'worker') return;
+    const checkSession = async () => {
+      try {
+        const sessionRef = doc(db, 'owners', user.ownerId, 'sessions', user.id);
+        const sessionDoc = await getDoc(sessionRef);
+        if (sessionDoc.exists()) {
+          const serverSessionId = sessionDoc.data().sessionId;
+          const localSessionId  = localStorage.getItem(`session_${user.id}`);
+          if (serverSessionId !== localSessionId) {
+            // جلسة جديدة فتحت — اطرد الجلسة الحالية
+            await signOut(auth);
+            setUser(null);
+            alert('⚠️ تم تسجيل الدخول من جهاز آخر. تم إنهاء جلستك تلقائياً.');
+          }
+        }
+      } catch {}
+    };
+    checkSession();
+    const interval = setInterval(checkSession, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   // لما يتغير المستخدم، نحمل داتاه من Firestore
   useEffect(() => {
