@@ -4191,7 +4191,13 @@ const App = () => {
             <WorkersPage workers={workers} setWorkers={async (updater) => {
               const oid = getOwnerId(user);
               const newList = typeof updater === 'function' ? updater(workers) : updater;
-              setWorkers(newList);
+              // اعرف مين اتحذف
+              const deletedWorkers = workers.filter(w => !newList.find(n => n.id === w.id));
+              // احذفهم من Firebase
+              for (const w of deletedWorkers) {
+                await deleteDoc(doc(db, 'owners', oid, 'workers', String(w.id)));
+              }
+              // حدّث الباقيين
               for (const w of newList) {
                 await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
               }
