@@ -3415,10 +3415,14 @@ const getTrialInfo = () => {
 };
 
 // ==================== PLAN SYSTEM ====================
-const getPlan = () => localStorage.getItem('app_plan') || 'trial';
-// أثناء الـ trial كل المميزات متاحة
-const planHasGPS      = (plan) => ['trial', 'pro', 'enterprise', 'lifetime'].includes(plan);
-const planHasExcelAdv = (plan) => ['trial', 'enterprise', 'lifetime'].includes(plan);
+const getPlan = () => {
+  const p = localStorage.getItem('app_plan');
+  if (!p || p === 'trial') return 'trial'; // default = trial = كل المميزات
+  return p;
+};
+// trial = كل المميزات مفتوحة
+const planHasGPS      = (plan) => plan !== 'free';
+const planHasExcelAdv = (plan) => plan !== 'free';
 const planIsFree      = (plan) => plan === 'free';
 const FREE_WORKER_LIMIT = 5;
 
