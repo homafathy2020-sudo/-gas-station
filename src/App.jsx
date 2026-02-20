@@ -4134,6 +4134,7 @@ const App = () => {
   const [workPlaces, setWorkPlaces] = useState([]);
   const [ownerUsers, setOwnerUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const unsubscribeListeners = useRef([]);
 
   const getOwnerId = (u) => u ? (u.role === 'owner' ? u.id : u.ownerId) : null;
 
@@ -4168,6 +4169,8 @@ const App = () => {
           const localSessionId  = localStorage.getItem(`session_${user.id}`);
           if (serverSessionId !== localSessionId) {
             // جلسة جديدة فتحت — اطرد الجلسة الحالية
+            unsubscribeListeners.current.forEach(unsub => unsub());
+            unsubscribeListeners.current = [];
             await signOut(auth);
             setUser(null);
             alert('⚠️ تم تسجيل الدخول من جهاز آخر. تم إنهاء جلستك تلقائياً.');
@@ -4206,12 +4209,17 @@ const App = () => {
         setOwnerUsers(members.length > 0 ? members : [user]);
       }
     );
+    // حفظ مراجع إلغاء الاشتراك عشان نقدر نوقفهم قبل تسجيل الخروج
+    unsubscribeListeners.current = [unsubWorkers, unsubPlaces, unsubUsers];
     // مزامنة بيانات الـ GPS والحضور من Firestore للـ localStorage cache
     syncAttendance(oid);
     syncGeofence(oid);
     syncReCheckin(oid);
     syncInvites(oid);
-    return () => { unsubWorkers(); unsubPlaces(); unsubUsers(); };
+    return () => {
+      unsubWorkers(); unsubPlaces(); unsubUsers();
+      unsubscribeListeners.current = [];
+    };
   }, [user]);
 
   const saveWorkers = async (list, ownerId) => {
@@ -4239,6 +4247,9 @@ const App = () => {
   };
 
   const handleLogout = async () => {
+    // إلغاء مستمعي Firestore أولاً قبل تسجيل الخروج لتجنب خطأ الصلاحيات
+    unsubscribeListeners.current.forEach(unsub => unsub());
+    unsubscribeListeners.current = [];
     await signOut(auth);
     setUser(null);
     setPage('dashboard');
