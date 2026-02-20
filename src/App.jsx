@@ -343,6 +343,21 @@ const totalCash = (w) => ((w.cash_withdrawals || []).reduce((s, e) => s + (e.amo
 const calcNet = (w) => w.salary - totalDed(w) + totalRewards(w) - totalCash(w);
 const fmt = (n) => `${Number(n).toLocaleString('ar-EG')} ج.م`;
 
+// إرسال Browser Notification للعامل
+const sendWorkerNotification = (workerName, type, amount, net) => {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const typeLabels = {
+    delay:             'تأخير',
+    absence:           'غياب',
+    absence_no_reason: 'عجز / غياب بدون سبب',
+    cash:              'سحب نقدي',
+  };
+  const label = typeLabels[type] || type;
+  const title = `💸 تنبيه مالي — ${workerName}`;
+  const body  = `تم خصم ${fmt(amount)} بسبب ${label}\nصافي الراتب المتبقي: ${fmt(net)}`;
+  new Notification(title, { body, icon: '/favicon.ico' });
+};
+
 // التحقق من الأرقام المُدخلة: بين 0 و 1,000,000
 const validateNum = (val, label) => {
   const n = Number(val);
@@ -1866,11 +1881,21 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
 
   const addEntry = async (type, entry) => {
     setLoading(true); await new Promise(r => setTimeout(r, 400));
-    if (type === 'delay') onUpdate({ ...w, delays: [...w.delays, entry] });
-    else if (type === 'absence') onUpdate({ ...w, absences: [...w.absences, entry] });
-    else if (type === 'absence_no_reason') onUpdate({ ...w, absences_no_reason: [...(w.absences_no_reason || []), entry] });
-    else if (type === 'discipline') onUpdate({ ...w, discipline: [...(w.discipline || []), entry] });
-    else if (type === 'cash') onUpdate({ ...w, cash_withdrawals: [...(w.cash_withdrawals || []), entry] });
+    let updatedWorker = w;
+    if (type === 'delay') updatedWorker = { ...w, delays: [...w.delays, entry] };
+    else if (type === 'absence') updatedWorker = { ...w, absences: [...w.absences, entry] };
+    else if (type === 'absence_no_reason') updatedWorker = { ...w, absences_no_reason: [...(w.absences_no_reason || []), entry] };
+    else if (type === 'discipline') updatedWorker = { ...w, discipline: [...(w.discipline || []), entry] };
+    else if (type === 'cash') updatedWorker = { ...w, cash_withdrawals: [...(w.cash_withdrawals || []), entry] };
+    onUpdate(updatedWorker);
+
+    // إرسال Browser Notification للعامل لو في خصم أو سحب
+    if (['delay', 'absence', 'absence_no_reason', 'cash'].includes(type)) {
+      const amount = entry.deduction || entry.amount || 0;
+      const net = calcNet(updatedWorker);
+      sendWorkerNotification(w.name, type, amount, net);
+    }
+
     setEntryModal(null); setAbsenceNoReasonModal(false); setDisciplineModal(false); setCashModal(false); setLoading(false); toast('تم الإضافة ✓', 'success');
   };
 
@@ -4052,6 +4077,13 @@ const App = () => {
   const [ownerUsers, setOwnerUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const unsubscribeListeners = useRef([]);
+
+  // طلب إذن التنبيهات عند بدء التطبيق
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   const getOwnerId = (u) => u ? (u.role === 'owner' ? u.id : u.ownerId) : null;
 
