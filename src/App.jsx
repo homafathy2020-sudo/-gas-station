@@ -3211,7 +3211,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         name:      regForm.name.trim(),
         role:      regForm.role,
         roleLabel: roleLabels[regForm.role],
-        ...(regForm.role === 'owner'  ? { ownerCode: 'STAT-' + Math.random().toString(36).substring(2,6).toUpperCase() } : {}),
+        ...(regForm.role === 'owner'  ? { ownerCode: 'STAT-' + Math.random().toString(36).substring(2,6).toUpperCase(), ownerId: uid } : {}),
         ...(regForm.role === 'worker' ? { username: regForm.username.trim().toLowerCase(), ownerId: ownerData?.id } : {}),
       };
       await setDoc(doc(db, 'users', uid), newUser);
