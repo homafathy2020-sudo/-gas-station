@@ -4624,7 +4624,6 @@ const App = () => {
                     let fbUid;
                     const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
                     fbUid = fbUser.uid;
-                    await secondaryAuth.signOut();
                     const fullUser = { ...u, id: fbUid, firebaseUid: fbUid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
                     await setDoc(doc(db, 'owners', oid, 'members', fbUid), fullUser);
                     await setDoc(doc(db, 'users', fbUid), fullUser);
