@@ -3044,19 +3044,6 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
     const savedGlobal = localStorage.getItem("users_data");
     const globalUsers = savedGlobal ? JSON.parse(savedGlobal) : [];
     localStorage.setItem("users_data", JSON.stringify([...globalUsers, fullUser]));
-    // لو role عامل، يتضاف في قائمة العمال بنفس الـ id
-    if (newUser.role === 'worker' && onAddWorker) {
-      onAddWorker({
-        id: newId,
-        name: newUser.name,
-        pump: 'غير محدد',
-        workDays: 0,
-        salary: 0,
-        phone: '',
-        avatar: newUser.name[0] || '؟',
-        delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
-      });
-    }
     setNewUser({ username: '', password: '', name: '', role: 'manager' });
     setErrors({});
     toast('تم إضافة الحساب ✓', 'success');
