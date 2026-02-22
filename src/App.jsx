@@ -1,5 +1,7 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
+import { initializeApp, getApps } from "firebase/app";
+import { getAuth } from "firebase/auth";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
 
@@ -3349,10 +3351,24 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     try {
       let emailToUse = loginForm.emailOrUsername.trim();
 
-      // لو عامل، حول الـ username لـ fake email
+      // لو عامل، دور على الـ fake email بتاعه من Firestore
       if (loginForm.loginRole === 'worker') {
         const uname = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
-        emailToUse = `${uname}@petromin.worker`;
+        // دور على المستخدم في كل الـ users عشان نلاقي الـ email الصح
+        try {
+          const usersSnap = await getDocs(collection(db, 'users'));
+          const found = usersSnap.docs.map(d => d.data()).find(u => 
+            u.role === 'worker' && (u.username === loginForm.emailOrUsername.trim() || u.username?.toLowerCase().replace(/\s+/g, '_') === uname)
+          );
+          if (found?.email) {
+            emailToUse = found.email;
+          } else {
+            // fallback للـ format القديم
+            emailToUse = `${uname}@petromin.worker`;
+          }
+        } catch {
+          emailToUse = `${uname}@petromin.worker`;
+        }
       }
 
       const cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
@@ -4572,9 +4588,30 @@ const App = () => {
               }}
               onAddUser={async (u) => {
                 const oid = getOwnerId(user);
-                await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
-                await setDoc(doc(db, 'users', String(u.id)), u);
-                setOwnerUsers(prev => [...prev, u]);
+                try {
+                  if (u.role === 'worker') {
+                    // secondary app instance عشان مش نعمل sign out للمالك
+                    const secondaryApp = getApps().find(a => a.name === 'secondary') 
+                      || initializeApp(auth.app.options, 'secondary');
+                    const secondaryAuth = getAuth(secondaryApp);
+                    const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}@${oid.substring(0,8)}.worker`;
+                    const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
+                    await secondaryAuth.signOut();
+                    const fullUser = { ...u, id: fbUser.uid, firebaseUid: fbUser.uid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
+                    await setDoc(doc(db, 'owners', oid, 'members', fbUser.uid), fullUser);
+                    await setDoc(doc(db, 'users', fbUser.uid), fullUser);
+                    setOwnerUsers(prev => [...prev, fullUser]);
+                  } else {
+                    await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
+                    await setDoc(doc(db, 'users', String(u.id)), u);
+                    setOwnerUsers(prev => [...prev, u]);
+                  }
+                } catch(e) {
+                  console.error('Error adding user:', e);
+                  await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
+                  await setDoc(doc(db, 'users', String(u.id)), u);
+                  setOwnerUsers(prev => [...prev, u]);
+                }
               }}
               onEditUser={async (id, updated) => {
                 const oid = getOwnerId(user);
