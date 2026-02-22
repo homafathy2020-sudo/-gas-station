@@ -3738,14 +3738,16 @@ const getTrialInfo = () => {
 
 // ==================== PLAN SYSTEM ====================
 const getPlan = () => {
-  // لو الـ trial لسه شغال، كل المميزات مفتوحة بغض النظر عن أي حاجة في localStorage
+  const p = localStorage.getItem('app_plan');
+  // لو في باقة مدفوعة محددة → احترمها دايماً بغض النظر عن الـ trial
+  if (p && p !== 'trial' && p !== 'free') return p;
+  // لو الـ trial لسه شغال
   const trialStart = localStorage.getItem('app_trial_start');
   if (trialStart) {
     const elapsed = Math.floor((Date.now() - new Date(trialStart)) / (1000 * 60 * 60 * 24));
-    if (elapsed < 15) return 'trial'; // trial لسه شغال → كل المميزات
+    if (elapsed < 15 && (!p || p === 'trial')) return 'trial';
   }
-  const p = localStorage.getItem('app_plan');
-  if (!p || p === 'trial') return 'free'; // trial خلص بدون اختيار → مجاني
+  if (!p || p === 'trial') return 'free';
   return p;
 };
 // trial = كل المميزات مفتوحة، free = محدود
