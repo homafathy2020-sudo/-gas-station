@@ -4608,22 +4608,17 @@ const App = () => {
                 const oid = getOwnerId(user);
                 try {
                   if (u.role === 'worker') {
-                    const firebaseConfig = {
-                      apiKey: "AIzaSyD-hbFNfXZHCEnJPiwavxwtCQoqNz6hTgc",
-                      authDomain: "gas-station-10000.firebaseapp.com",
-                      projectId: "gas-station-10000",
-                      storageBucket: "gas-station-10000.firebasestorage.app",
-                      messagingSenderId: "134512204371",
-                      appId: "1:134512204371:web:82bc0a29697fb4a7cc04a6",
-                    };
                     const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}@${oid.substring(0,8)}.worker`;
-                    // عمل Firebase Auth account في secondary app
-                    const secondaryApp = getApps().find(a => a.name === 'secondary')
-                      || initializeApp(firebaseConfig, 'secondary');
-                    const secondaryAuth = getAuth(secondaryApp);
-                    const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
-                    const fbUid = fbUser.uid;
-                    // اكتب في Firestore بـ auth المالك الحالي (مش اتغيرش)
+                    // إنشاء Firebase Auth account عن طريق REST API بدون ما نأثر على session المالك
+                    const apiKey = "AIzaSyD-hbFNfXZHCEnJPiwavxwtCQoqNz6hTgc";
+                    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: fakeEmail, password: u.password, returnSecureToken: false }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error?.message || 'فشل إنشاء الحساب');
+                    const fbUid = data.localId;
                     const fullUser = { ...u, id: fbUid, firebaseUid: fbUid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
                     await setDoc(doc(db, 'owners', oid, 'members', fbUid), fullUser);
                     await setDoc(doc(db, 'users', fbUid), fullUser);
