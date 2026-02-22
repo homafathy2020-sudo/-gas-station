@@ -824,7 +824,7 @@ const UserProfileDropdown = ({ user, plan }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const planLabels = { trial: '🎁 تجريبية', free: '🆓 مجانية', pro: '👑 مميزة' };
+  const planLabels = { trial: '🎁 تجريبية', free: '🆓 مجانية', basic: '🚀 الأساسية', pro: '⭐ الاحترافية', enterprise: '👑 المميزة', lifetime: '♾️ مدى الحياة' };
 
   const handleChangePass = async () => {
     setErr('');
@@ -3751,8 +3751,9 @@ const getPlan = () => {
   return p;
 };
 // trial = كل المميزات مفتوحة، free = محدود
-const planHasGPS      = (plan) => plan !== 'free';
-const planHasExcelAdv = (plan) => plan !== 'free';
+const PAID_PLANS = ['trial', 'basic', 'pro', 'enterprise', 'lifetime'];
+const planHasGPS      = (plan) => PAID_PLANS.includes(plan);
+const planHasExcelAdv = (plan) => PAID_PLANS.includes(plan);
 const planIsFree      = (plan) => plan === 'free';
 const FREE_WORKER_LIMIT = 5;
 
