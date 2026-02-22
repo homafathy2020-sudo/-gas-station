@@ -4381,8 +4381,9 @@ const App = () => {
         if (sessionDoc.exists()) {
           const serverSessionId = sessionDoc.data().sessionId;
           const localSessionId  = localStorage.getItem(`session_${user.id}`);
+          // لو مفيش local session → ده أول دخول، مش طرد
+          if (!localSessionId) return;
           if (serverSessionId !== localSessionId) {
-            // جلسة جديدة فتحت — اطرد الجلسة الحالية
             unsubscribeListeners.current.forEach(unsub => unsub());
             unsubscribeListeners.current = [];
             await signOut(auth);
