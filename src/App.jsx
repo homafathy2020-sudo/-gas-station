@@ -3703,12 +3703,17 @@ const getTrialInfoFromDB = async (ownerId) => {
     await setDoc(ref, { trialStart: startDate, plan: 'trial' });
     data = { trialStart: startDate, plan: 'trial' };
   }
+  // ✅ sync localStorage من Firebase دايماً
+  const planFromDB = data.plan || 'trial';
+  localStorage.setItem('app_plan', planFromDB);
+  if (data.trialStart) localStorage.setItem('app_trial_start', data.trialStart);
+
   const start = new Date(data.trialStart);
   const now = new Date();
   const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
   const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
   const expired = elapsedDays >= TRIAL_DAYS;
-  return { remaining, expired, elapsedDays, startDate: data.trialStart, plan: data.plan || 'trial' };
+  return { remaining, expired, elapsedDays, startDate: data.trialStart, plan: planFromDB };
 };
 
 const setPlanInDB = async (ownerId, plan) => {
@@ -4590,18 +4595,35 @@ export default function Root() {
 
   // تابع حالة Auth عشان نعرف المستخدم الحالي
   useEffect(() => {
+    let unsubPlan = null;
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      // إلغاء الـ listener القديم لو موجود
+      if (unsubPlan) { unsubPlan(); unsubPlan = null; }
+
       if (firebaseUser) {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = { id: firebaseUser.uid, ...userDoc.data() };
           setCurrentUser(userData);
-          // حمّل الـ trial من Firebase
           const ownerId = userData.role === 'owner' ? userData.id : userData.ownerId;
           if (ownerId) {
             await initTrialIfNeeded(ownerId);
-            const info = await getTrialInfoFromDB(ownerId);
-            setTrialInfo(info);
+            // ✅ real-time listener — أي تغيير على Firebase يتعكس فوراً
+            unsubPlan = onSnapshot(getOwnerTrialDoc(ownerId), (snap) => {
+              if (!snap.exists()) return;
+              const data = snap.data();
+              const planFromDB = data.plan || 'trial';
+              // sync localStorage
+              localStorage.setItem('app_plan', planFromDB);
+              if (data.trialStart) localStorage.setItem('app_trial_start', data.trialStart);
+              // حدّث الـ state
+              const start = new Date(data.trialStart);
+              const elapsedDays = Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24));
+              const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
+              const expired = elapsedDays >= TRIAL_DAYS;
+              setTrialInfo({ remaining, expired, elapsedDays, startDate: data.trialStart, plan: planFromDB });
+            });
           }
         }
       } else {
@@ -4609,7 +4631,8 @@ export default function Root() {
         setTrialInfo(null);
       }
     });
-    return () => unsub();
+
+    return () => { unsub(); if (unsubPlan) unsubPlan(); };
   }, []);
 
   const trial = trialInfo || getTrialInfo();
