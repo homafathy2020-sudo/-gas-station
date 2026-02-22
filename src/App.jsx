@@ -1,6 +1,6 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
@@ -4590,9 +4590,16 @@ const App = () => {
                 const oid = getOwnerId(user);
                 try {
                   if (u.role === 'worker') {
-                    // secondary app instance عشان مش نعمل sign out للمالك
-                    const secondaryApp = getApps().find(a => a.name === 'secondary') 
-                      || initializeApp(auth.app.options, 'secondary');
+                    const firebaseConfig = {
+                      apiKey: "AIzaSyD-hbFNfXZHCEnJPiwavxwtCQoqNz6hTgc",
+                      authDomain: "gas-station-10000.firebaseapp.com",
+                      projectId: "gas-station-10000",
+                      storageBucket: "gas-station-10000.firebasestorage.app",
+                      messagingSenderId: "134512204371",
+                      appId: "1:134512204371:web:82bc0a29697fb4a7cc04a6",
+                    };
+                    const secondaryApp = getApps().find(a => a.name === 'secondary')
+                      || initializeApp(firebaseConfig, 'secondary');
                     const secondaryAuth = getAuth(secondaryApp);
                     const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}@${oid.substring(0,8)}.worker`;
                     const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
@@ -4600,6 +4607,18 @@ const App = () => {
                     const fullUser = { ...u, id: fbUser.uid, firebaseUid: fbUser.uid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
                     await setDoc(doc(db, 'owners', oid, 'members', fbUser.uid), fullUser);
                     await setDoc(doc(db, 'users', fbUser.uid), fullUser);
+                    // ✅ عمل worker record بنفس الـ UID عشان يشوف بياناته
+                    const workerRecord = {
+                      id: fbUser.uid,
+                      name: u.name,
+                      pump: 'غير محدد',
+                      workDays: 26,
+                      salary: 0,
+                      phone: '',
+                      avatar: u.name[0] || '؟',
+                      delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
+                    };
+                    await setDoc(doc(db, 'owners', oid, 'workers', fbUser.uid), workerRecord);
                     setOwnerUsers(prev => [...prev, fullUser]);
                   } else {
                     await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
