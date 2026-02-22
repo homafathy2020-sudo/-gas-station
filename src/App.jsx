@@ -3387,6 +3387,20 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       if (userData.role === 'worker') {
         const sessionId = Date.now().toString();
         const sessionRef = doc(db, 'owners', userData.ownerId, 'sessions', uid);
+        const prevSession = await getDoc(sessionRef);
+        // لو في جلسة قديمة → بعت إشعار للمالك
+        if (prevSession.exists() && prevSession.data().sessionId) {
+          const notifRef = doc(db, 'owners', userData.ownerId, 'ownerNotifs', `new_device_${uid}_${sessionId}`);
+          await setDoc(notifRef, {
+            id: `new_device_${uid}_${sessionId}`,
+            type: 'warning',
+            icon: '📱',
+            title: `${userData.name} سجّل دخول من جهاز جديد`,
+            sub: `تم إنهاء الجلسة القديمة تلقائياً · ${new Date().toLocaleString('ar-EG')}`,
+            ts: Date.now(),
+            read: false,
+          });
+        }
         await setDoc(sessionRef, { sessionId, lastLogin: new Date().toISOString() });
         localStorage.setItem(`session_${uid}`, sessionId);
       }
@@ -4054,7 +4068,19 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
   const [readIds, setReadIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`notif_read_${user?.id}`) || '[]'); } catch { return []; }
   });
+  const [ownerNotifs, setOwnerNotifs] = useState([]);
   const ref = useRef(null);
+
+  // استمع على إشعارات المالك من Firebase
+  useEffect(() => {
+    if (!user || (user.role !== 'owner' && user.role !== 'manager')) return;
+    const ownerId = user.role === 'owner' ? user.id : user.ownerId;
+    const unsub = onSnapshot(collection(db, 'owners', ownerId, 'ownerNotifs'), (snap) => {
+      const notifs = snap.docs.map(d => d.data()).sort((a, b) => b.ts - a.ts);
+      setOwnerNotifs(notifs);
+    });
+    return () => unsub();
+  }, [user?.id]);
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -4226,8 +4252,13 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
       }
     }
 
+    // إشعارات الدخول من جهاز جديد
+    ownerNotifs.forEach(n => {
+      if (!notifs.find(x => x.id === n.id)) notifs.push(n);
+    });
+
     return notifs.sort((a,b) => b.ts - a.ts);
-  }, [user, workers, ownerId]);
+  }, [user, workers, ownerId, ownerNotifs]);
 
   const notifications = buildNotifications();
   const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
@@ -4637,8 +4668,8 @@ const App = () => {
               }}
               onEditUser={async (id, updated) => {
                 const oid = getOwnerId(user);
-                await updateDoc(doc(db, 'owners', oid, 'members', String(id)), updated);
-                await updateDoc(doc(db, 'users', String(id)), updated);
+                await setDoc(doc(db, 'owners', oid, 'members', String(id)), updated, { merge: true });
+                try { await setDoc(doc(db, 'users', String(id)), updated, { merge: true }); } catch {}
                 setOwnerUsers(prev => prev.map(u => u.id === id ? { ...u, ...updated } : u));
               }}
               onDeleteUser={handleDeleteUser}
