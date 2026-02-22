@@ -4386,8 +4386,9 @@ const App = () => {
           if (serverSessionId !== localSessionId) {
             unsubscribeListeners.current.forEach(unsub => unsub());
             unsubscribeListeners.current = [];
-            await signOut(auth);
+            localStorage.removeItem(`session_${user.id}`);
             setUser(null);
+            signOut(auth).catch(() => {});
             alert('⚠️ تم تسجيل الدخول من جهاز آخر. تم إنهاء جلستك تلقائياً.');
           }
         }
