@@ -1,6 +1,6 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
 
 // ==================== STYLES ====================
@@ -192,7 +192,30 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .geofence-outside { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
 .geofence-unknown { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
 
-/* Owner attendance dashboard */
+/* User Profile Dropdown */
+.user-profile-wrap { position: relative; }
+.user-profile-btn { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; background: none; transition: all 0.2s; color: var(--text); font-family: 'Cairo', sans-serif; }
+.user-profile-btn:hover { background: rgba(255,255,255,0.06); border-color: var(--border); }
+.user-profile-dropdown { position: absolute; top: calc(100% + 10px); left: 0; min-width: 260px; background: var(--dark-2); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 200; overflow: hidden; animation: fadeIn .2s ease; }
+.upd-header { padding: 18px 20px; background: linear-gradient(135deg, rgba(26,86,219,0.15), rgba(245,158,11,0.08)); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; }
+.upd-avatar { width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; flex-shrink: 0; }
+.upd-name { font-size: 15px; font-weight: 700; }
+.upd-email { font-size: 11px; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
+.upd-body { padding: 12px; }
+.upd-info-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.upd-info-row:hover { background: var(--card-hover); }
+.upd-info-label { color: var(--text-muted); font-size: 12px; }
+.upd-info-val { font-weight: 600; font-size: 13px; }
+.upd-divider { height: 1px; background: var(--border); margin: 8px 0; }
+.upd-change-pass-btn { width: 100%; padding: 10px; border-radius: 10px; background: rgba(26,86,219,0.1); border: 1px solid rgba(26,86,219,0.25); color: var(--primary-light); font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.upd-change-pass-btn:hover { background: rgba(26,86,219,0.2); }
+
+/* Show password eye toggle */
+.pass-input-wrap { position: relative; }
+.pass-input-wrap .form-input { padding-left: 40px; }
+.pass-eye-btn { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 17px; padding: 4px; transition: color 0.2s; line-height: 1; }
+.pass-eye-btn:hover { color: var(--text); }
+
 .live-workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 .live-worker-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s; }
 .live-worker-card:hover { background: var(--card-hover); transform: translateY(-2px); }
@@ -758,6 +781,160 @@ const generateReport = (worker) => {
   };
 
   buildExcel();
+};
+
+// ==================== PASSWORD INPUT WITH EYE ====================
+const PasswordInput = ({ className = '', style = {}, ...props }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="pass-input-wrap">
+      <input
+        {...props}
+        type={show ? 'text' : 'password'}
+        className={`form-input ${className}`}
+        style={style}
+      />
+      <button
+        type="button"
+        className="pass-eye-btn"
+        onClick={() => setShow(v => !v)}
+        tabIndex={-1}
+      >
+        {show ? '🙈' : '👁️'}
+      </button>
+    </div>
+  );
+};
+
+// ==================== USER PROFILE DROPDOWN ====================
+const UserProfileDropdown = ({ user, plan }) => {
+  const [open, setOpen] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [oldPass, setOldPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const planLabels = { trial: '🎁 تجريبية', free: '🆓 مجانية', pro: '👑 مميزة' };
+
+  const handleChangePass = async () => {
+    setErr('');
+    if (!oldPass) { setErr('أدخل كلمة المرور الحالية'); return; }
+    if (newPass.length < 6) { setErr('كلمة المرور الجديدة 6 أحرف على الأقل'); return; }
+    if (newPass !== confirmPass) { setErr('كلمتا المرور غير متطابقتين'); return; }
+    setLoading(true);
+    try {
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('غير مسجل دخول');
+      const credential = EmailAuthProvider.credential(firebaseUser.email, oldPass);
+      await reauthenticateWithCredential(firebaseUser, credential);
+      await updatePassword(firebaseUser, newPass);
+      toast('✅ تم تغيير كلمة المرور بنجاح', 'success');
+      setShowModal(false);
+      setOldPass(''); setNewPass(''); setConfirmPass('');
+    } catch(e) {
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        setErr('كلمة المرور الحالية غير صحيحة');
+      } else {
+        setErr('حدث خطأ — حاول مرة أخرى');
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <>
+      <div className="user-profile-wrap" ref={ref}>
+        <button className="user-profile-btn" onClick={() => setOpen(v => !v)}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'left' }}>
+            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{user.name}</div>
+            <div>{user.roleLabel}</div>
+          </div>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>{user.name[0]}</div>
+        </button>
+
+        {open && (
+          <div className="user-profile-dropdown">
+            <div className="upd-header">
+              <div className="upd-avatar">{user.name[0]}</div>
+              <div>
+                <div className="upd-name">{user.name}</div>
+                <div className="upd-email">{user.email || auth.currentUser?.email || '—'}</div>
+              </div>
+            </div>
+            <div className="upd-body">
+              <div className="upd-info-row">
+                <span className="upd-info-label">الصلاحية</span>
+                <span className="upd-info-val">{user.roleLabel}</span>
+              </div>
+              {plan && (
+                <div className="upd-info-row">
+                  <span className="upd-info-label">الباقة</span>
+                  <span className="upd-info-val">{planLabels[plan] || plan}</span>
+                </div>
+              )}
+              {user.role === 'owner' && (
+                <div className="upd-info-row">
+                  <span className="upd-info-label">كود الدعوة</span>
+                  <span className="upd-info-val" style={{ fontSize: 11, fontFamily: 'monospace', letterSpacing: 1 }}>{user.ownerCode || '—'}</span>
+                </div>
+              )}
+              <div className="upd-divider" />
+              <button className="upd-change-pass-btn" onClick={() => { setOpen(false); setShowModal(true); }}>
+                🔑 تغيير كلمة المرور
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Change Password Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="modal" style={{ maxWidth: 420, animation: 'fadeIn .2s ease' }}>
+            <div className="modal-header">
+              <div className="modal-title">🔑 تغيير كلمة المرور</div>
+              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              {err && (
+                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: '#ef4444' }}>
+                  ⚠️ {err}
+                </div>
+              )}
+              <div className="form-group">
+                <label className="form-label">كلمة المرور الحالية</label>
+                <PasswordInput placeholder="أدخل كلمة المرور الحالية" value={oldPass} onChange={e => { setOldPass(e.target.value); setErr(''); }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">كلمة المرور الجديدة</label>
+                <PasswordInput placeholder="6 أحرف على الأقل" value={newPass} onChange={e => { setNewPass(e.target.value); setErr(''); }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">تأكيد كلمة المرور الجديدة</label>
+                <PasswordInput placeholder="أعد كتابة كلمة المرور الجديدة" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setErr(''); }} />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={handleChangePass} disabled={loading}>
+                {loading ? '⏳ جاري الحفظ...' : '💾 حفظ'}
+              </button>
+              <button className="btn btn-ghost" onClick={() => { setShowModal(false); setOldPass(''); setNewPass(''); setConfirmPass(''); setErr(''); }}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 // ==================== WORKER ATTENDANCE (GPS CHECK-IN) ====================
@@ -2985,7 +3162,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
             <div className="modal-body">
               <div className="form-group">
                 <label className="form-label">كلمة المرور الجديدة</label>
-                <input type="password" className={`form-input ${newPassErr ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newPass} onChange={e => { setNewPass(e.target.value); setNewPassErr(''); }} />
+                <PasswordInput className={`${newPassErr ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newPass} onChange={e => { setNewPass(e.target.value); setNewPassErr(''); }} />
                 {newPassErr && <div className="form-error">{newPassErr}</div>}
               </div>
             </div>
@@ -3007,7 +3184,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
           </div>
           <div className="form-group">
             <label className="form-label">كلمة المرور</label>
-            <input type="password" className={`form-input ${errors.password ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newUser.password} onChange={e => { setNewUser({...newUser, password: e.target.value}); setErrors({...errors, password: ''});}} />
+            <PasswordInput className={`${errors.password ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newUser.password} onChange={e => { setNewUser({...newUser, password: e.target.value}); setErrors({...errors, password: ''});}} />
             {errors.password && <div className="form-error">{errors.password}</div>}
           </div>
           <div className="form-group">
@@ -3364,7 +3541,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
               </div>
               <div className="form-group">
                 <label className="form-label">كلمة المرور</label>
-                <input type="password" placeholder="أدخل كلمة المرور" {...lf('password')} />
+                <PasswordInput placeholder="أدخل كلمة المرور" {...lf('password')} />
                 {errors.password && <div className="form-error">{errors.password}</div>}
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>🔐 دخول</button>
@@ -3436,7 +3613,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 
               <div className="form-group">
                 <label className="form-label">كلمة المرور</label>
-                <input type="password" placeholder="6 أحرف على الأقل" {...rf('password')} />
+                <PasswordInput placeholder="6 أحرف على الأقل" {...rf('password')} />
                 {errors.reg_password && <div className="form-error">{errors.reg_password}</div>}
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>✨ إنشاء الحساب</button>
@@ -4316,11 +4493,7 @@ const App = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <NotificationBell user={user} workers={workers} onNavigate={handleNavigate} />
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'left' }}>
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{user.name}</div>
-              <div>{user.roleLabel}</div>
-            </div>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>{user.name[0]}</div>
+            <UserProfileDropdown user={user} plan={getPlan()} />
           </div>
         </div>
         <div className="page-content">
