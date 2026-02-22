@@ -4350,9 +4350,18 @@ const App = () => {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = { id: firebaseUser.uid, ...userDoc.data() };
-          setUser(userData);
-          const defaults = { owner: 'dashboard', manager: 'workers', worker: 'attendance_worker' };
-          setPage(defaults[userData.role] || 'dashboard');
+          // لو في مستخدم مالك/مدير مسجل، متبدلش بحساب عامل جديد
+          setUser(prev => {
+            if (prev && (prev.role === 'owner' || prev.role === 'manager') && userData.role === 'worker') {
+              return prev;
+            }
+            return userData;
+          });
+          setPage(prev => {
+            if (prev) return prev;
+            const defaults = { owner: 'dashboard', manager: 'workers', worker: 'attendance_worker' };
+            return defaults[userData.role] || 'dashboard';
+          });
         }
       } else {
         setUser(null);
