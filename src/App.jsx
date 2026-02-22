@@ -4602,14 +4602,28 @@ const App = () => {
                       || initializeApp(firebaseConfig, 'secondary');
                     const secondaryAuth = getAuth(secondaryApp);
                     const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}@${oid.substring(0,8)}.worker`;
-                    const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
-                    await secondaryAuth.signOut();
-                    const fullUser = { ...u, id: fbUser.uid, firebaseUid: fbUser.uid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
-                    await setDoc(doc(db, 'owners', oid, 'members', fbUser.uid), fullUser);
-                    await setDoc(doc(db, 'users', fbUser.uid), fullUser);
+                    
+                    let fbUid;
+                    try {
+                      const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
+                      fbUid = fbUser.uid;
+                      await secondaryAuth.signOut();
+                    } catch(authErr) {
+                      if (authErr.code === 'auth/email-already-in-use') {
+                        // الحساب موجود — سجل دخول بيه عشان نجيب الـ UID
+                        const { user: fbUser } = await signInWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
+                        fbUid = fbUser.uid;
+                        await secondaryAuth.signOut();
+                      } else {
+                        throw authErr;
+                      }
+                    }
+                    const fullUser = { ...u, id: fbUid, firebaseUid: fbUid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
+                    await setDoc(doc(db, 'owners', oid, 'members', fbUid), fullUser);
+                    await setDoc(doc(db, 'users', fbUid), fullUser);
                     // ✅ عمل worker record بنفس الـ UID عشان يشوف بياناته
                     const workerRecord = {
-                      id: fbUser.uid,
+                      id: fbUid,
                       name: u.name,
                       pump: 'غير محدد',
                       workDays: 26,
@@ -4618,7 +4632,7 @@ const App = () => {
                       avatar: u.name[0] || '؟',
                       delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
                     };
-                    await setDoc(doc(db, 'owners', oid, 'workers', fbUser.uid), workerRecord);
+                    await setDoc(doc(db, 'owners', oid, 'workers', fbUid), workerRecord);
                     setOwnerUsers(prev => [...prev, fullUser]);
                   } else {
                     await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
