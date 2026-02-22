@@ -4601,23 +4601,12 @@ const App = () => {
                     const secondaryApp = getApps().find(a => a.name === 'secondary')
                       || initializeApp(firebaseConfig, 'secondary');
                     const secondaryAuth = getAuth(secondaryApp);
-                    const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}@${oid.substring(0,8)}.worker`;
+                    const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}@${oid.substring(0,8)}.worker`;
                     
                     let fbUid;
-                    try {
-                      const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
-                      fbUid = fbUser.uid;
-                      await secondaryAuth.signOut();
-                    } catch(authErr) {
-                      if (authErr.code === 'auth/email-already-in-use') {
-                        // الحساب موجود — سجل دخول بيه عشان نجيب الـ UID
-                        const { user: fbUser } = await signInWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
-                        fbUid = fbUser.uid;
-                        await secondaryAuth.signOut();
-                      } else {
-                        throw authErr;
-                      }
-                    }
+                    const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
+                    fbUid = fbUser.uid;
+                    await secondaryAuth.signOut();
                     const fullUser = { ...u, id: fbUid, firebaseUid: fbUid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
                     await setDoc(doc(db, 'owners', oid, 'members', fbUid), fullUser);
                     await setDoc(doc(db, 'users', fbUid), fullUser);
