@@ -4616,26 +4616,20 @@ const App = () => {
                       messagingSenderId: "134512204371",
                       appId: "1:134512204371:web:82bc0a29697fb4a7cc04a6",
                     };
+                    const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}@${oid.substring(0,8)}.worker`;
+                    // عمل Firebase Auth account في secondary app
                     const secondaryApp = getApps().find(a => a.name === 'secondary')
                       || initializeApp(firebaseConfig, 'secondary');
                     const secondaryAuth = getAuth(secondaryApp);
-                    const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}@${oid.substring(0,8)}.worker`;
-                    
-                    let fbUid;
                     const { user: fbUser } = await createUserWithEmailAndPassword(secondaryAuth, fakeEmail, u.password);
-                    fbUid = fbUser.uid;
+                    const fbUid = fbUser.uid;
+                    // اكتب في Firestore بـ auth المالك الحالي (مش اتغيرش)
                     const fullUser = { ...u, id: fbUid, firebaseUid: fbUid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
                     await setDoc(doc(db, 'owners', oid, 'members', fbUid), fullUser);
                     await setDoc(doc(db, 'users', fbUid), fullUser);
-                    // ✅ عمل worker record بنفس الـ UID عشان يشوف بياناته
                     const workerRecord = {
-                      id: fbUid,
-                      name: u.name,
-                      pump: 'غير محدد',
-                      workDays: 26,
-                      salary: 0,
-                      phone: '',
-                      avatar: u.name[0] || '؟',
+                      id: fbUid, name: u.name, pump: 'غير محدد', workDays: 26, salary: 0,
+                      phone: '', avatar: u.name[0] || '؟',
                       delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
                     };
                     await setDoc(doc(db, 'owners', oid, 'workers', fbUid), workerRecord);
