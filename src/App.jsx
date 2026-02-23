@@ -706,6 +706,7 @@ const generateReport = (worker) => {
         { cells: [C('الراتب الاساسي', 6), C(worker.salary, 14, 'n')] },
         { cells: [C('اجمالي الخصومات', 7), C(totalDed_val, 10, 'n')] },
         { cells: [C('اجمالي الحوافز', 6), C(totalDisciplineVal, 11, 'n')] },
+        { cells: [C('السحب النقدي', 7), C(totalCash(worker), 10, 'n')] },
         { cells: [C('صافي المدفوعات', 16), C(net, 16, 'n')], ht: 28 },
         { cells: [E(0), E(0)] },
         { cells: [C('تاريخ الاصدار', 0), C(new Date().toLocaleDateString('ar-EG'), 0)] },
