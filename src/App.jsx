@@ -2731,7 +2731,7 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
     return {
       name: w.name.slice(0,28),
       colWidths: [26,16,18,16],
-      merges: ['A1:D1','A2:D2','A11:D11'],
+      merges: ['A1:D1','A2:D2'],
       rows,
     };
   });
