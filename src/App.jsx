@@ -1923,10 +1923,10 @@ const WorkerModal = ({ worker, onSave, onClose }) => {
 };
 
 // ==================== ENTRY MODAL ====================
-const TODAY = new Date().toISOString().split('T')[0];
+const TODAY = () => new Date().toISOString().split('T')[0];
 const EntryModal = ({ type, onSave, onClose }) => {
   const isDelay = type === 'delay';
-  const [form, setForm] = useState({ date: '', minutes: '', reason: '', deduction: '' });
+  const [form, setForm] = useState({ date: TODAY(), minutes: '', reason: '', deduction: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -1948,7 +1948,7 @@ const EntryModal = ({ type, onSave, onClose }) => {
         <div className="modal-header"><div className="modal-title">{isDelay ? '⏰ إضافة تأخير' : '❌ إضافة غياب'}</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
-            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY()} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             {isDelay
               ? <div className="form-group"><label className="form-label">مدة التأخير (دقيقة)</label><input type="number" min="0" max="1000000" placeholder="30" {...f('minutes')} />{errors.minutes && <div className="form-error">{errors.minutes}</div>}</div>
               : <div className="form-group"><label className="form-label">سبب الغياب</label><input placeholder="مرض / ظروف شخصية..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>}
@@ -1963,7 +1963,7 @@ const EntryModal = ({ type, onSave, onClose }) => {
 
 // ==================== ABSENCE NO REASON MODAL (العجز) ====================
 const AbsenceNoReasonModal = ({ onSave, onClose }) => {
-  const [form, setForm] = useState({ date: '', deduction: '' });
+  const [form, setForm] = useState({ date: TODAY(), deduction: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -1983,7 +1983,7 @@ const AbsenceNoReasonModal = ({ onSave, onClose }) => {
         <div className="modal-header"><div className="modal-title">📦 إضافة عجز</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
-            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY()} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             <div className="form-group"><label className="form-label">قيمة العجز / الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
           </div>
           <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
@@ -1995,7 +1995,7 @@ const AbsenceNoReasonModal = ({ onSave, onClose }) => {
 
 // ==================== DISCIPLINE MODAL ====================
 const DisciplineModal = ({ onSave, onClose }) => {
-  const [form, setForm] = useState({ date: '', stars: '5', reward: '' });
+  const [form, setForm] = useState({ date: TODAY(), stars: '5', reward: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -2016,7 +2016,7 @@ const DisciplineModal = ({ onSave, onClose }) => {
         <div className="modal-header"><div className="modal-title">⭐ إضافة انضباط يومي</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
-            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY()} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             <div className="form-group"><label className="form-label">عدد النجوم (1-5)</label><input type="number" min="1" max="5" placeholder="5" {...f('stars')} />{errors.stars && <div className="form-error">{errors.stars}</div>}</div>
             <div className="form-group"><label className="form-label">قيمة الحافز (ج.م)</label><input type="number" min="0" max="1000000" placeholder="100" {...f('reward')} />{errors.reward && <div className="form-error">{errors.reward}</div>}</div>
           </div>
@@ -2029,7 +2029,7 @@ const DisciplineModal = ({ onSave, onClose }) => {
 
 // ==================== CASH WITHDRAWAL MODAL ====================
 const CashWithdrawalModal = ({ onSave, onClose }) => {
-  const [form, setForm] = useState({ date: '', amount: '', note: '' });
+  const [form, setForm] = useState({ date: TODAY(), amount: '', note: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -2055,7 +2055,7 @@ const CashWithdrawalModal = ({ onSave, onClose }) => {
           <div className="modal-body">
             <div className="form-group">
               <label className="form-label">التاريخ</label>
-              <input type="date" max={TODAY} {...f('date')} />
+              <input type="date" max={TODAY()} {...f('date')} />
               {errors.date && <div className="form-error">{errors.date}</div>}
             </div>
             <div className="form-group">
