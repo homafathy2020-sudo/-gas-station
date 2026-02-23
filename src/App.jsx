@@ -758,7 +758,19 @@ const generateReport = (worker) => {
     ];
     const discSheet = { name: 'الانضباط', colWidths: [6,16,18,16,18], rows: discRows2 };
 
-    // ── Sheet 6: الملخص المالي ──
+    // ── Sheet 6: السحب النقدي ──
+    const cash = worker.cash_withdrawals || [];
+    const cashRows = [
+      { cells: [C('#',3),C('التاريخ',3),C('المبلغ',3),C('السبب',3)], ht: 22 },
+      ...cash.map((c, i) => {
+        const ev = i % 2 === 0;
+        return { cells: [C(i+1,ev?6:7,'n'), C(c.date,ev?6:7), C(c.amount,ev?11:13,'n'), C(c.note||'-',ev?6:7)] };
+      }),
+      { cells: [E(9),E(9),C(totalCash(worker),9,'n'),C('الاجمالي',9)], ht: 22 },
+    ];
+    const cashSheet = { name: 'السحب النقدي', colWidths: [6,16,18,30], rows: cashRows };
+
+    // ── Sheet 7: الملخص المالي ──
     const summSheet = {
       name: 'الملخص المالي',
       colWidths: [30, 24],
@@ -778,7 +790,7 @@ const generateReport = (worker) => {
       ],
     };
 
-    const { runWithJSZip } = buildXlsxBlob([infoSheet, delaySheet, absSheet, absNRSheet, discSheet, summSheet]);
+    const { runWithJSZip } = buildXlsxBlob([infoSheet, delaySheet, absSheet, absNRSheet, discSheet, cashSheet, summSheet]);
     loadJSZip(JSZip => runWithJSZip(JSZip, `تقرير-${worker.name}.xlsx`));
   };
 
@@ -2708,6 +2720,12 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
       { cells: [C('#',1),C('التاريخ',1),C('النجوم',1),C('الحافز',1)], ht: 20 },
       ...disc.map((d,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(d.date,ev?6:7),C('★'.repeat(d.stars)+'☆'.repeat(5-d.stars),ev?6:7),C(d.reward,ev?11:13,'n')] }; }),
       { cells: [E(8),E(8),C('اجمالي الحوافز',8),C(rewTotal,8,'n')], ht: 20 },
+      { cells: [E(0),E(0),E(0),E(0)] },
+      // cash withdrawals section
+      { cells: [C('--- السحب النقدي ---',3),E(3),E(3),E(3)], ht: 22 },
+      { cells: [C('#',1),C('التاريخ',1),C('المبلغ',1),C('السبب',1)], ht: 20 },
+      ...(w.cash_withdrawals||[]).map((c,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(c.date,ev?6:7),C(c.amount,ev?11:13,'n'),C(c.note||'-',ev?6:7)] }; }),
+      { cells: [E(9),E(9),C(totalCash(w),9,'n'),C('الاجمالي',9)], ht: 20 },
     ];
 
     return {
