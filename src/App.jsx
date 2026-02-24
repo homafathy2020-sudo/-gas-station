@@ -1,8 +1,6 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
 
 // ==================== STYLES ====================
@@ -194,30 +192,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .geofence-outside { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
 .geofence-unknown { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
 
-/* User Profile Dropdown */
-.user-profile-wrap { position: relative; }
-.user-profile-btn { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; cursor: pointer; border: 1px solid transparent; background: none; transition: all 0.2s; color: var(--text); font-family: 'Cairo', sans-serif; }
-.user-profile-btn:hover { background: rgba(255,255,255,0.06); border-color: var(--border); }
-.user-profile-dropdown { position: absolute; top: calc(100% + 10px); left: 0; min-width: 260px; background: var(--dark-2); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); z-index: 200; overflow: hidden; animation: fadeIn .2s ease; }
-.upd-header { padding: 18px 20px; background: linear-gradient(135deg, rgba(26,86,219,0.15), rgba(245,158,11,0.08)); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; }
-.upd-avatar { width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; flex-shrink: 0; }
-.upd-name { font-size: 15px; font-weight: 700; }
-.upd-email { font-size: 11px; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
-.upd-body { padding: 12px; }
-.upd-info-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
-.upd-info-row:hover { background: var(--card-hover); }
-.upd-info-label { color: var(--text-muted); font-size: 12px; }
-.upd-info-val { font-weight: 600; font-size: 13px; }
-.upd-divider { height: 1px; background: var(--border); margin: 8px 0; }
-.upd-change-pass-btn { width: 100%; padding: 10px; border-radius: 10px; background: rgba(26,86,219,0.1); border: 1px solid rgba(26,86,219,0.25); color: var(--primary-light); font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.upd-change-pass-btn:hover { background: rgba(26,86,219,0.2); }
-
-/* Show password eye toggle */
-.pass-input-wrap { position: relative; }
-.pass-input-wrap .form-input { padding-left: 40px; }
-.pass-eye-btn { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 17px; padding: 4px; transition: color 0.2s; line-height: 1; }
-.pass-eye-btn:hover { color: var(--text); }
-
+/* Owner attendance dashboard */
 .live-workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
 .live-worker-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s; }
 .live-worker-card:hover { background: var(--card-hover); transform: translateY(-2px); }
@@ -238,6 +213,48 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .checkout-btn:hover { background: rgba(239,68,68,0.3); }
 .setup-geofence-card { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.3); border-radius: 16px; padding: 22px; margin-bottom: 22px; }
 .offline-badge { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+
+/* ===== SALARY PAYMENT REPORT ===== */
+.payment-row { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); transition: background .15s; }
+.payment-row:last-child { border-bottom: none; }
+.payment-row:hover { background: rgba(255,255,255,0.02); }
+.payment-row.paid { background: rgba(16,185,129,0.04); }
+.payment-worker-info { flex: 1; display: flex; align-items: center; gap: 12px; }
+.payment-net { font-size: 17px; font-weight: 800; color: #10b981; min-width: 120px; text-align: left; }
+.pay-btn { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.1)); border: 1px solid rgba(16,185,129,0.4); color: #10b981; padding: 8px 18px; border-radius: 10px; font-family: 'Cairo',sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.pay-btn:hover { background: rgba(16,185,129,0.3); transform: translateY(-1px); }
+.pay-btn.paid-btn { background: rgba(100,116,139,0.1); border-color: rgba(100,116,139,0.2); color: #64748b; cursor: default; }
+.pay-btn.paid-btn:hover { transform: none; }
+.paid-stamp { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.salary-summary-bar { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03)); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 18px 24px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.progress-bar-wrap { height: 10px; background: rgba(255,255,255,0.07); border-radius: 5px; overflow: hidden; flex: 1; min-width: 120px; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 5px; transition: width .5s ease; }
+
+/* ===== MONTH RESET ===== */
+.month-reset-card { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.03)); border: 2px solid rgba(239,68,68,0.2); border-radius: 18px; padding: 22px 26px; }
+.month-archive-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+
+/* ===== ADMIN PANEL ===== */
+.admin-wrap { max-width: 780px; margin: 0 auto; animation: fadeIn .3s ease; }
+.admin-header { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04)); border: 2px solid rgba(239,68,68,0.3); border-radius: 20px; padding: 26px 30px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; }
+.admin-badge { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+.announce-form { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 22px; }
+.announce-preview { background: linear-gradient(135deg, rgba(26,86,219,0.1), rgba(245,158,11,0.05)); border: 1px solid rgba(26,86,219,0.25); border-radius: 14px; padding: 18px 22px; margin: 16px 0; }
+.owner-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.owner-row:last-child { border-bottom: none; }
+.owner-row:hover { background: rgba(255,255,255,0.02); }
+.admin-stat { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; text-align: center; }
+.admin-tab { padding: 9px 20px; border-radius: 10px; border: 1px solid var(--border); background: none; color: var(--text-muted); font-family: 'Cairo',sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.admin-tab.active { background: linear-gradient(135deg,rgba(26,86,219,0.25),rgba(26,86,219,0.1)); color: var(--primary-light); border-color: rgba(26,86,219,0.4); }
+
+/* ===== OWNER PHONE BANNER ===== */
+.owner-phone-banner { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04)); border-bottom: 2px solid rgba(245,158,11,0.3); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.owner-phone-banner-text { font-size: 13px; font-weight: 600; color: #f59e0b; display: flex; align-items: center; gap: 8px; }
+
+/* ===== WHATSAPP NOTIFY ===== */
+.wa-btn { display: inline-flex; align-items: center; gap: 7px; background: #25d366; color: white; border: none; padding: 7px 16px; border-radius: 9px; font-family: 'Cairo',sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.wa-btn:hover { background: #1da851; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,211,102,0.3); }
+.wa-btn-sm { padding: 5px 11px; font-size: 11px; border-radius: 7px; }
 
 /* ===== NOTIFICATION BELL ===== */
 .notif-bell-wrap { position: relative; }
@@ -381,6 +398,73 @@ const sendWorkerNotification = (workerName, type, amount, net) => {
   const title = `💸 تنبيه مالي — ${workerName}`;
   const body  = `تم خصم ${fmt(amount)} بسبب ${label}\nصافي الراتب المتبقي: ${fmt(net)}`;
   new Notification(title, { body, icon: '/favicon.ico' });
+};
+
+// ==================== WHATSAPP NOTIFY ====================
+const sendWhatsAppNotify = (worker, type, entry) => {
+  if (!worker.phone) return;
+  const typeLabels = {
+    delay:             'تأخير',
+    absence:           'غياب',
+    absence_no_reason: 'عجز / غياب بدون سبب',
+    cash:              'سحب نقدي',
+    discipline:        'مكافأة انضباط',
+  };
+  const label = typeLabels[type] || type;
+  const amount = entry.deduction || entry.amount || entry.reward || 0;
+  const net = calcNet(worker);
+  const isPositive = type === 'discipline';
+
+  let msg = '⛽ محطة بترومين
+';
+  msg += '─────────────────
+';
+  msg += 'مرحباً يا ' + worker.name + ' 👋
+
+';
+  if (isPositive) {
+    msg += '🎉 تم تسجيل مكافأة انضباط بتاريخ ' + entry.date + '
+';
+    msg += '💰 المكافأة: +' + amount + ' ج.م
+';
+  } else {
+    msg += '⚠️ تم تسجيل ' + label + ' بتاريخ ' + entry.date + '
+';
+    if (type === 'delay') msg += '⏰ المدة: ' + entry.minutes + ' دقيقة
+';
+    if (type === 'absence') msg += '📝 السبب: ' + entry.reason + '
+';
+    msg += '💸 الخصم: -' + amount + ' ج.م
+';
+  }
+  msg += '─────────────────
+';
+  msg += '💵 صافي راتبك المتبقي: ' + fmt(net) + '
+';
+  msg += '─────────────────
+';
+  msg += 'للاستفسار تواصل مع المالك مباشرة.';
+
+  const phone = worker.phone.startsWith('0') ? '2' + worker.phone : worker.phone;
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+};
+
+// ==================== MONTH ARCHIVE UTILS ====================
+const getMonthArchives = (ownerId) => {
+  try { return JSON.parse(localStorage.getItem('owner_' + ownerId + '_month_archives') || '[]'); } catch { return []; }
+};
+const saveMonthArchives = async (ownerId, list) => {
+  localStorage.setItem('owner_' + ownerId + '_month_archives', JSON.stringify(list));
+  try { await setDoc(doc(db, 'owners', ownerId, 'meta', 'monthArchives'), { list }); } catch {}
+};
+
+// ==================== SALARY PAYMENT UTILS ====================
+const getPaymentRecords = (ownerId) => {
+  try { return JSON.parse(localStorage.getItem('owner_' + ownerId + '_payments') || '[]'); } catch { return []; }
+};
+const savePaymentRecords = async (ownerId, list) => {
+  localStorage.setItem('owner_' + ownerId + '_payments', JSON.stringify(list));
+  try { await setDoc(doc(db, 'owners', ownerId, 'meta', 'payments'), { list }); } catch {}
 };
 
 // التحقق من الأرقام المُدخلة: بين 0 و 1,000,000
@@ -706,7 +790,6 @@ const generateReport = (worker) => {
         { cells: [C('الراتب الاساسي', 6), C(worker.salary, 14, 'n')] },
         { cells: [C('اجمالي الخصومات', 7), C(totalDed_val, 10, 'n')] },
         { cells: [C('اجمالي الحوافز', 6), C(totalDisciplineVal, 11, 'n')] },
-        { cells: [C('السحب النقدي', 7), C(totalCash(worker), 10, 'n')] },
         { cells: [C('صافي المدفوعات', 16), C(net, 16, 'n')], ht: 28 },
         { cells: [E(0), E(0)] },
         { cells: [C('تاريخ الاصدار', 0), C(new Date().toLocaleDateString('ar-EG'), 0)] },
@@ -759,19 +842,7 @@ const generateReport = (worker) => {
     ];
     const discSheet = { name: 'الانضباط', colWidths: [6,16,18,16,18], rows: discRows2 };
 
-    // ── Sheet 6: السحب النقدي ──
-    const cash = worker.cash_withdrawals || [];
-    const cashRows = [
-      { cells: [C('#',3),C('التاريخ',3),C('المبلغ',3),C('السبب',3)], ht: 22 },
-      ...cash.map((c, i) => {
-        const ev = i % 2 === 0;
-        return { cells: [C(i+1,ev?6:7,'n'), C(c.date,ev?6:7), C(c.amount,ev?11:13,'n'), C(c.note||'-',ev?6:7)] };
-      }),
-      { cells: [E(9),E(9),C(totalCash(worker),9,'n'),C('الاجمالي',9)], ht: 22 },
-    ];
-    const cashSheet = { name: 'السحب النقدي', colWidths: [6,16,18,30], rows: cashRows };
-
-    // ── Sheet 7: الملخص المالي ──
+    // ── Sheet 6: الملخص المالي ──
     const summSheet = {
       name: 'الملخص المالي',
       colWidths: [30, 24],
@@ -791,165 +862,11 @@ const generateReport = (worker) => {
       ],
     };
 
-    const { runWithJSZip } = buildXlsxBlob([infoSheet, delaySheet, absSheet, absNRSheet, discSheet, cashSheet, summSheet]);
+    const { runWithJSZip } = buildXlsxBlob([infoSheet, delaySheet, absSheet, absNRSheet, discSheet, summSheet]);
     loadJSZip(JSZip => runWithJSZip(JSZip, `تقرير-${worker.name}.xlsx`));
   };
 
   buildExcel();
-};
-
-// ==================== PASSWORD INPUT WITH EYE ====================
-const PasswordInput = ({ className = '', style = {}, ...props }) => {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="pass-input-wrap">
-      <input
-        {...props}
-        type={show ? 'text' : 'password'}
-        className={`form-input ${className}`}
-        style={style}
-      />
-      <button
-        type="button"
-        className="pass-eye-btn"
-        onClick={() => setShow(v => !v)}
-        tabIndex={-1}
-      >
-        {show ? '🙈' : '👁️'}
-      </button>
-    </div>
-  );
-};
-
-// ==================== USER PROFILE DROPDOWN ====================
-const UserProfileDropdown = ({ user, plan }) => {
-  const [open, setOpen] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [oldPass, setOldPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [confirmPass, setConfirmPass] = useState('');
-  const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(false);
-  const toast = useToast();
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const planLabels = { trial: '🎁 تجريبية', free: '🆓 مجانية', basic: '🚀 الأساسية', pro: '⭐ الاحترافية', enterprise: '👑 المميزة', lifetime: '♾️ مدى الحياة' };
-
-  const handleChangePass = async () => {
-    setErr('');
-    if (!oldPass) { setErr('أدخل كلمة المرور الحالية'); return; }
-    if (newPass.length < 6) { setErr('كلمة المرور الجديدة 6 أحرف على الأقل'); return; }
-    if (newPass !== confirmPass) { setErr('كلمتا المرور غير متطابقتين'); return; }
-    setLoading(true);
-    try {
-      const firebaseUser = auth.currentUser;
-      if (!firebaseUser) throw new Error('غير مسجل دخول');
-      const credential = EmailAuthProvider.credential(firebaseUser.email, oldPass);
-      await reauthenticateWithCredential(firebaseUser, credential);
-      await updatePassword(firebaseUser, newPass);
-      toast('✅ تم تغيير كلمة المرور بنجاح', 'success');
-      setShowModal(false);
-      setOldPass(''); setNewPass(''); setConfirmPass('');
-    } catch(e) {
-      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
-        setErr('كلمة المرور الحالية غير صحيحة');
-      } else {
-        setErr('حدث خطأ — حاول مرة أخرى');
-      }
-    }
-    setLoading(false);
-  };
-
-  return (
-    <>
-      <div className="user-profile-wrap" ref={ref}>
-        <button className="user-profile-btn" onClick={() => setOpen(v => !v)}>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'left' }}>
-            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{user.name}</div>
-            <div>{user.roleLabel}</div>
-          </div>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>{user.name[0]}</div>
-        </button>
-
-        {open && (
-          <div className="user-profile-dropdown">
-            <div className="upd-header">
-              <div className="upd-avatar">{user.name[0]}</div>
-              <div>
-                <div className="upd-name">{user.name}</div>
-                <div className="upd-email">{user.email || auth.currentUser?.email || '—'}</div>
-              </div>
-            </div>
-            <div className="upd-body">
-              <div className="upd-info-row">
-                <span className="upd-info-label">الصلاحية</span>
-                <span className="upd-info-val">{user.roleLabel}</span>
-              </div>
-              {plan && (
-                <div className="upd-info-row">
-                  <span className="upd-info-label">الباقة</span>
-                  <span className="upd-info-val">{planLabels[plan] || plan}</span>
-                </div>
-              )}
-              {user.role === 'owner' && (
-                <div className="upd-info-row">
-                  <span className="upd-info-label">كود الدعوة</span>
-                  <span className="upd-info-val" style={{ fontSize: 11, fontFamily: 'monospace', letterSpacing: 1 }}>{user.ownerCode || '—'}</span>
-                </div>
-              )}
-              <div className="upd-divider" />
-              <button className="upd-change-pass-btn" onClick={() => { setOpen(false); setShowModal(true); }}>
-                🔑 تغيير كلمة المرور
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Change Password Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal" style={{ maxWidth: 420, animation: 'fadeIn .2s ease' }}>
-            <div className="modal-header">
-              <div className="modal-title">🔑 تغيير كلمة المرور</div>
-              <button className="close-btn" onClick={() => setShowModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              {err && (
-                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: '#ef4444' }}>
-                  ⚠️ {err}
-                </div>
-              )}
-              <div className="form-group">
-                <label className="form-label">كلمة المرور الحالية</label>
-                <PasswordInput placeholder="أدخل كلمة المرور الحالية" value={oldPass} onChange={e => { setOldPass(e.target.value); setErr(''); }} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">كلمة المرور الجديدة</label>
-                <PasswordInput placeholder="6 أحرف على الأقل" value={newPass} onChange={e => { setNewPass(e.target.value); setErr(''); }} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">تأكيد كلمة المرور الجديدة</label>
-                <PasswordInput placeholder="أعد كتابة كلمة المرور الجديدة" value={confirmPass} onChange={e => { setConfirmPass(e.target.value); setErr(''); }} />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" onClick={handleChangePass} disabled={loading}>
-                {loading ? '⏳ جاري الحفظ...' : '💾 حفظ'}
-              </button>
-              <button className="btn btn-ghost" onClick={() => { setShowModal(false); setOldPass(''); setNewPass(''); setConfirmPass(''); setErr(''); }}>إلغاء</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
 };
 
 // ==================== WORKER ATTENDANCE (GPS CHECK-IN) ====================
@@ -1924,10 +1841,10 @@ const WorkerModal = ({ worker, onSave, onClose }) => {
 };
 
 // ==================== ENTRY MODAL ====================
-const TODAY = () => new Date().toISOString().split('T')[0];
+const TODAY = new Date().toISOString().split('T')[0];
 const EntryModal = ({ type, onSave, onClose }) => {
   const isDelay = type === 'delay';
-  const [form, setForm] = useState({ date: TODAY(), minutes: '', reason: '', deduction: '' });
+  const [form, setForm] = useState({ date: '', minutes: '', reason: '', deduction: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -1949,7 +1866,7 @@ const EntryModal = ({ type, onSave, onClose }) => {
         <div className="modal-header"><div className="modal-title">{isDelay ? '⏰ إضافة تأخير' : '❌ إضافة غياب'}</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
-            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY()} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             {isDelay
               ? <div className="form-group"><label className="form-label">مدة التأخير (دقيقة)</label><input type="number" min="0" max="1000000" placeholder="30" {...f('minutes')} />{errors.minutes && <div className="form-error">{errors.minutes}</div>}</div>
               : <div className="form-group"><label className="form-label">سبب الغياب</label><input placeholder="مرض / ظروف شخصية..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>}
@@ -1964,7 +1881,7 @@ const EntryModal = ({ type, onSave, onClose }) => {
 
 // ==================== ABSENCE NO REASON MODAL (العجز) ====================
 const AbsenceNoReasonModal = ({ onSave, onClose }) => {
-  const [form, setForm] = useState({ date: TODAY(), deduction: '' });
+  const [form, setForm] = useState({ date: '', deduction: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -1984,7 +1901,7 @@ const AbsenceNoReasonModal = ({ onSave, onClose }) => {
         <div className="modal-header"><div className="modal-title">📦 إضافة عجز</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
-            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY()} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             <div className="form-group"><label className="form-label">قيمة العجز / الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
           </div>
           <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
@@ -1996,7 +1913,7 @@ const AbsenceNoReasonModal = ({ onSave, onClose }) => {
 
 // ==================== DISCIPLINE MODAL ====================
 const DisciplineModal = ({ onSave, onClose }) => {
-  const [form, setForm] = useState({ date: TODAY(), stars: '5', reward: '' });
+  const [form, setForm] = useState({ date: '', stars: '5', reward: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -2017,7 +1934,7 @@ const DisciplineModal = ({ onSave, onClose }) => {
         <div className="modal-header"><div className="modal-title">⭐ إضافة انضباط يومي</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
-            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY()} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             <div className="form-group"><label className="form-label">عدد النجوم (1-5)</label><input type="number" min="1" max="5" placeholder="5" {...f('stars')} />{errors.stars && <div className="form-error">{errors.stars}</div>}</div>
             <div className="form-group"><label className="form-label">قيمة الحافز (ج.م)</label><input type="number" min="0" max="1000000" placeholder="100" {...f('reward')} />{errors.reward && <div className="form-error">{errors.reward}</div>}</div>
           </div>
@@ -2030,7 +1947,7 @@ const DisciplineModal = ({ onSave, onClose }) => {
 
 // ==================== CASH WITHDRAWAL MODAL ====================
 const CashWithdrawalModal = ({ onSave, onClose }) => {
-  const [form, setForm] = useState({ date: TODAY(), amount: '', note: '' });
+  const [form, setForm] = useState({ date: '', amount: '', note: '' });
   const [errors, setErrors] = useState({});
   const validate = () => {
     const e = {};
@@ -2056,7 +1973,7 @@ const CashWithdrawalModal = ({ onSave, onClose }) => {
           <div className="modal-body">
             <div className="form-group">
               <label className="form-label">التاريخ</label>
-              <input type="date" max={TODAY()} {...f('date')} />
+              <input type="date" max={TODAY} {...f('date')} />
               {errors.date && <div className="form-error">{errors.date}</div>}
             </div>
             <div className="form-group">
@@ -2125,7 +2042,16 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
       sendWorkerNotification(w.name, type, amount, net);
     }
 
-    setEntryModal(null); setAbsenceNoReasonModal(false); setDisciplineModal(false); setCashModal(false); setLoading(false); toast('تم الإضافة ✓', 'success');
+    setEntryModal(null); setAbsenceNoReasonModal(false); setDisciplineModal(false); setCashModal(false); setLoading(false);
+    // لو العامل عنده تليفون — اعرض toast بزرار واتساب
+    if (updatedWorker.phone && ['delay','absence','absence_no_reason','cash','discipline'].includes(type)) {
+      const amount = entry.deduction || entry.amount || entry.reward || 0;
+      toast('تم الإضافة ✓ — ' + (updatedWorker.phone ? 'يمكنك إبلاغ العامل عبر واتساب' : ''), 'success');
+      // حفظ entry الأخيرة عشان يبعتها لو ضغط الزرار
+      window.__lastWaEntry = { worker: updatedWorker, type, entry };
+    } else {
+      toast('تم الإضافة ✓', 'success');
+    }
   };
 
   const removeEntry = async (type, id) => {
@@ -2224,7 +2150,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
                     <td style={{ fontWeight: 600 }}>{d.date}</td>
                     <td><span className="badge badge-warning">{d.minutes} دقيقة</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(d.deduction)}</td>
-                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'delay', id: d.id })}>🗑️ حذف</button></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'delay', id: d.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w, delays:[...w.delays]}, 'delay', d)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
@@ -2255,7 +2181,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
                     <td style={{ fontWeight: 600 }}>{a.date}</td>
                     <td><span className="badge badge-danger">{a.reason}</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
-                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence', id: a.id })}>🗑️ حذف</button></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence', a)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
@@ -2285,7 +2211,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
                     <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{a.date}</td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
-                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence_no_reason', id: a.id })}>🗑️ حذف</button></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence_no_reason', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence_no_reason', a)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
@@ -2347,7 +2273,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
                     <td style={{ fontWeight: 600 }}>{c.date}</td>
                     <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
-                    <td className="no-print"><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'cash', id: c.id })}>🗑️ حذف</button></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'cash', id: c.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'cash', c)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
@@ -2721,18 +2647,12 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
       { cells: [C('#',1),C('التاريخ',1),C('النجوم',1),C('الحافز',1)], ht: 20 },
       ...disc.map((d,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(d.date,ev?6:7),C('★'.repeat(d.stars)+'☆'.repeat(5-d.stars),ev?6:7),C(d.reward,ev?11:13,'n')] }; }),
       { cells: [E(8),E(8),C('اجمالي الحوافز',8),C(rewTotal,8,'n')], ht: 20 },
-      { cells: [E(0),E(0),E(0),E(0)] },
-      // cash withdrawals section
-      { cells: [C('--- السحب النقدي ---',3),E(3),E(3),E(3)], ht: 22 },
-      { cells: [C('#',1),C('التاريخ',1),C('المبلغ',1),C('السبب',1)], ht: 20 },
-      ...(w.cash_withdrawals||[]).map((c,i) => { const ev=i%2===0; return { cells:[C(i+1,ev?6:7,'n'),C(c.date,ev?6:7),C(c.amount,ev?11:13,'n'),C(c.note||'-',ev?6:7)] }; }),
-      { cells: [E(9),E(9),C(totalCash(w),9,'n'),C('الاجمالي',9)], ht: 20 },
     ];
 
     return {
       name: w.name.slice(0,28),
       colWidths: [26,16,18,16],
-      merges: ['A1:D1','A2:D2'],
+      merges: ['A1:D1','A2:D2','A11:D11'],
       rows,
     };
   });
@@ -2742,9 +2662,412 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
 };
 
 
-const ReportsPage = ({ workers }) => {
+// ==================== MONTH RESET MODAL ====================
+const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
+  const [confirm, setConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const now = new Date();
+  const monthLabel = months[now.getMonth()] + ' ' + now.getFullYear();
+
+  const totalDedAll = workers.reduce((s,w) => s + totalDed(w), 0);
+  const totalCashAll = workers.reduce((s,w) => s + totalCash(w), 0);
+  const totalRewAll = workers.reduce((s,w) => s + totalRewards(w), 0);
+  const totalNetAll = workers.reduce((s,w) => s + calcNet(w), 0);
+
+  const handleReset = async () => {
+    setLoading(true);
+    // أرشفة الشهر الحالي
+    const archive = {
+      id: Date.now(),
+      month: now.getMonth(),
+      year: now.getFullYear(),
+      label: monthLabel,
+      archivedAt: new Date().toISOString(),
+      summary: {
+        workers: workers.length,
+        totalSalary: workers.reduce((s,w) => s+w.salary, 0),
+        totalDeductions: totalDedAll,
+        totalRewards: totalRewAll,
+        totalCash: totalCashAll,
+        totalNet: totalNetAll,
+      },
+      workerSnapshots: workers.map(w => ({
+        id: w.id, name: w.name, pump: w.pump, salary: w.salary,
+        delays: w.delays || [], absences: w.absences || [],
+        absences_no_reason: w.absences_no_reason || [],
+        discipline: w.discipline || [],
+        cash_withdrawals: w.cash_withdrawals || [],
+        net: calcNet(w),
+      })),
+    };
+    const archives = getMonthArchives(ownerId);
+    await saveMonthArchives(ownerId, [...archives, archive]);
+    // مسح كل البيانات الشهرية لكل العمال
+    await onReset(workers.map(w => ({
+      ...w,
+      delays: [],
+      absences: [],
+      absences_no_reason: [],
+      discipline: [],
+      cash_withdrawals: [],
+    })));
+    setLoading(false);
+    toast('تم إغلاق الشهر وحفظ الأرشيف ✓', 'success');
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 540, animation: 'fadeIn .2s ease' }}>
+        <div className="modal-header">
+          <div className="modal-title">🔄 إغلاق الشهر وبدء شهر جديد</div>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          {loading && <Loader />}
+          <div style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.1),rgba(59,130,246,0.03))', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 14, padding: '16px 20px', marginBottom: 18 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12, color: '#3b82f6' }}>📊 ملخص شهر {monthLabel}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[
+                { label: 'إجمالي الرواتب', val: workers.reduce((s,w)=>s+w.salary,0), color: '#f59e0b' },
+                { label: 'إجمالي الخصومات', val: totalDedAll, color: '#ef4444' },
+                { label: 'إجمالي الحوافز', val: totalRewAll, color: '#10b981' },
+                { label: 'إجمالي السحوبات', val: totalCashAll, color: '#3b82f6' },
+              ].map((item,i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: item.color }}>{fmt(item.val)}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(16,185,129,0.1)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 700 }}>💵 إجمالي صافي المدفوعات</span>
+              <span style={{ fontSize: 18, fontWeight: 900, color: '#10b981' }}>{fmt(totalNetAll)}</span>
+            </div>
+          </div>
+          {!confirm ? (
+            <div className="month-reset-card">
+              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>⚠️ ماذا سيحدث؟</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 2.2 }}>
+                <div>📦 <b>حفظ الأرشيف:</b> كل بيانات الشهر هتتحفظ في الأرشيف</div>
+                <div>🗑️ <b>مسح الشهري:</b> التأخيرات، الغيابات، العجز، الحوافز، والسحوبات</div>
+                <div>✅ <b>البيانات الثابتة:</b> الراتب، أيام العمل، ومكان العمل — هتفضل</div>
+                <div>🔄 <b>شهر جديد:</b> يبدأ بصفحة بيضاء نظيفة</div>
+              </div>
+              <button className="btn btn-danger" style={{ marginTop: 16, width: '100%', justifyContent: 'center' }} onClick={() => setConfirm(true)}>
+                🔄 متابعة إغلاق الشهر
+              </button>
+            </div>
+          ) : (
+            <div style={{ background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.4)', borderRadius: 14, padding: '18px 20px', textAlign: 'center' }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>⚠️</div>
+              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>تأكيد إغلاق شهر {monthLabel}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18 }}>هذا الإجراء لا يمكن التراجع عنه — تأكد من تحميل تقرير Excel قبل المتابعة</div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                <button className="btn btn-danger" style={{ justifyContent: 'center' }} onClick={handleReset} disabled={loading}>
+                  {loading ? '⏳ جاري الإغلاق...' : '✅ نعم، أغلق الشهر'}
+                </button>
+                <button className="btn btn-ghost" onClick={() => setConfirm(false)}>رجوع</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== MONTH ARCHIVE PAGE ====================
+const MonthArchivePage = ({ ownerId }) => {
+  const [archives, setArchives] = useState(() => getMonthArchives(ownerId));
+  const [selected, setSelected] = useState(null);
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      {archives.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📦</div>
+          <div className="empty-title">لا يوجد أرشيف بعد</div>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>بعد إغلاق الشهر الأول هيظهر هنا</div>
+        </div>
+      ) : (
+        <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+            {[...archives].reverse().map(arch => (
+              <div key={arch.id} className="month-archive-item" onClick={() => setSelected(selected?.id === arch.id ? null : arch)} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📅</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{arch.label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>أُغلق {new Date(arch.archivedAt).toLocaleDateString('ar-EG')} · {arch.summary.workers} عامل</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>صافي المدفوع</div>
+                    <div style={{ fontWeight: 800, color: '#10b981', fontSize: 14 }}>{fmt(arch.summary.totalNet)}</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>الخصومات</div>
+                    <div style={{ fontWeight: 800, color: '#ef4444', fontSize: 14 }}>{fmt(arch.summary.totalDeductions)}</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>السحوبات</div>
+                    <div style={{ fontWeight: 800, color: '#3b82f6', fontSize: 14 }}>{fmt(arch.summary.totalCash)}</div>
+                  </div>
+                </div>
+                <span style={{ color: 'var(--text-muted)', fontSize: 18 }}>{selected?.id === arch.id ? '▲' : '▼'}</span>
+              </div>
+            ))}
+          </div>
+          {/* تفاصيل الشهر المختار */}
+          {selected && (
+            <div className="table-container" style={{ animation: 'fadeIn .2s ease' }}>
+              <div className="table-hdr">
+                <div style={{ fontSize: 15, fontWeight: 700 }}>📋 تفاصيل {selected.label}</div>
+                <button className="btn btn-accent btn-sm" onClick={() => {
+                  const workers = selected.workerSnapshots || [];
+                  const months2 = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+                  generateMonthlyReport(workers, selected.month, selected.year, months2[selected.month]);
+                }}>📊 تحميل Excel</button>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table>
+                  <thead><tr><th>العامل</th><th>مكان العمل</th><th>الراتب</th><th>الخصومات</th><th>الحوافز</th><th>السحوبات</th><th>صافي المدفوع</th></tr></thead>
+                  <tbody>
+                    {(selected.workerSnapshots || []).map(w => (
+                      <tr key={w.id}>
+                        <td style={{ fontWeight: 700 }}>{w.name}</td>
+                        <td><span className="badge badge-blue">{w.pump}</span></td>
+                        <td style={{ color: '#f59e0b', fontWeight: 700 }}>{fmt(w.salary)}</td>
+                        <td style={{ color: '#ef4444', fontWeight: 700 }}>{totalDed(w) > 0 ? `-${fmt(totalDed(w))}` : '—'}</td>
+                        <td style={{ color: '#10b981', fontWeight: 700 }}>{totalRewards(w) > 0 ? `+${fmt(totalRewards(w))}` : '—'}</td>
+                        <td style={{ color: '#3b82f6', fontWeight: 700 }}>{totalCash(w) > 0 ? `-${fmt(totalCash(w))}` : '—'}</td>
+                        <td style={{ color: '#10b981', fontWeight: 800, fontSize: 14 }}>{fmt(w.net)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== SALARY PAYMENT PAGE ====================
+const SalaryPaymentPage = ({ workers, ownerId }) => {
+  const toast = useToast();
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const [payments, setPayments] = useState(() => getPaymentRecords(ownerId));
+  const [confirmPay, setConfirmPay] = useState(null);
+  const [confirmUnpay, setConfirmUnpay] = useState(null);
+  const [payAllConfirm, setPayAllConfirm] = useState(false);
+
+  const getPaidKey = (workerId) => `${currentMonthKey}_${workerId}`;
+  const isPaid = (workerId) => payments.some(p => p.key === getPaidKey(workerId));
+  const getPaidRecord = (workerId) => payments.find(p => p.key === getPaidKey(workerId));
+
+  const markPaid = async (worker) => {
+    const newRec = {
+      key: getPaidKey(worker.id),
+      workerId: worker.id,
+      workerName: worker.name,
+      month: currentMonthKey,
+      net: calcNet(worker),
+      paidAt: new Date().toISOString(),
+    };
+    const updated = [...payments.filter(p => p.key !== getPaidKey(worker.id)), newRec];
+    setPayments(updated);
+    await savePaymentRecords(ownerId, updated);
+    toast(`تم تسجيل صرف راتب ${worker.name} ✓`, 'success');
+    setConfirmPay(null);
+  };
+
+  const unmarkPaid = async (worker) => {
+    const updated = payments.filter(p => p.key !== getPaidKey(worker.id));
+    setPayments(updated);
+    await savePaymentRecords(ownerId, updated);
+    toast(`تم إلغاء تسجيل الصرف لـ ${worker.name}`, 'info');
+    setConfirmUnpay(null);
+  };
+
+  const markAllPaid = async () => {
+    const newRecs = workers.filter(w => !isPaid(w.id)).map(w => ({
+      key: getPaidKey(w.id),
+      workerId: w.id,
+      workerName: w.name,
+      month: currentMonthKey,
+      net: calcNet(w),
+      paidAt: new Date().toISOString(),
+    }));
+    const updated = [...payments, ...newRecs];
+    setPayments(updated);
+    await savePaymentRecords(ownerId, updated);
+    toast('تم تسجيل صرف جميع الرواتب ✓', 'success');
+    setPayAllConfirm(false);
+  };
+
+  const paidCount = workers.filter(w => isPaid(w.id)).length;
+  const unpaidCount = workers.length - paidCount;
+  const totalPaid = workers.filter(w => isPaid(w.id)).reduce((s,w) => s + calcNet(w), 0);
+  const totalUnpaid = workers.filter(w => !isPaid(w.id)).reduce((s,w) => s + calcNet(w), 0);
+  const paidPct = workers.length > 0 ? Math.round((paidCount / workers.length) * 100) : 0;
+
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      {/* Confirm single pay */}
+      {confirmPay && (
+        <ConfirmModal
+          message={`تأكيد صرف راتب "${confirmPay.name}" — ${fmt(calcNet(confirmPay))} ج.م ؟`}
+          onConfirm={() => markPaid(confirmPay)}
+          onClose={() => setConfirmPay(null)}
+        />
+      )}
+      {confirmUnpay && (
+        <ConfirmModal
+          message={`إلغاء تسجيل صرف راتب "${confirmUnpay.name}"؟`}
+          onConfirm={() => unmarkPaid(confirmUnpay)}
+          onClose={() => setConfirmUnpay(null)}
+        />
+      )}
+      {payAllConfirm && (
+        <ConfirmModal
+          message={`صرف رواتب جميع العمال غير المصروفين (${unpaidCount} عامل — ${fmt(totalUnpaid)})؟`}
+          onConfirm={markAllPaid}
+          onClose={() => setPayAllConfirm(false)}
+        />
+      )}
+
+      {/* Summary bar */}
+      <div className="salary-summary-bar">
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>شهر {months[now.getMonth()]} {now.getFullYear()}</div>
+          <div style={{ fontSize: 18, fontWeight: 900 }}>{paidCount} من {workers.length} عامل تم صرف رواتبهم</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+            تم الصرف: <b style={{ color: '#10b981' }}>{fmt(totalPaid)}</b> · متبقي: <b style={{ color: '#f59e0b' }}>{fmt(totalUnpaid)}</b>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', minWidth: 200 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{paidPct}%</span>
+            <div className="progress-bar-wrap">
+              <div className="progress-bar-fill" style={{ width: `${paidPct}%` }} />
+            </div>
+          </div>
+          {unpaidCount > 0 && (
+            <button className="btn btn-success btn-sm" onClick={() => setPayAllConfirm(true)}>
+              ✅ صرف الكل ({unpaidCount} عامل)
+            </button>
+          )}
+          {paidCount === workers.length && workers.length > 0 && (
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>🎉 تم صرف جميع الرواتب!</div>
+          )}
+        </div>
+      </div>
+
+      {/* Workers list */}
+      <div className="table-container">
+        <div className="table-hdr">
+          <div style={{ fontSize: 15, fontWeight: 700 }}>💵 سجل صرف الرواتب</div>
+          <span className="badge badge-blue">{workers.length} عامل</span>
+        </div>
+        {workers.length === 0 ? (
+          <div className="empty-state" style={{ padding: 40 }}>
+            <div className="empty-icon">👷</div>
+            <div className="empty-title">لا يوجد عمال بعد</div>
+          </div>
+        ) : (
+          <div>
+            {/* غير مصروف أولاً */}
+            {workers.filter(w => !isPaid(w.id)).map(w => (
+              <div key={w.id} className="payment-row">
+                <div className="payment-worker-info">
+                  <div style={{ width: 42, height: 42, borderRadius: 11, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>{w.avatar}</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{w.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{w.pump} · {w.delays.length} تأخير · {w.absences.length} غياب</div>
+                  </div>
+                </div>
+                <div className="payment-net">{fmt(calcNet(w))}</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {w.phone && planHasWhatsApp(getPlan()) && (
+                    <button className="wa-btn wa-btn-sm" onClick={() => {
+                      const net = calcNet(w);
+                      const phone = w.phone.startsWith('0') ? '2' + w.phone : w.phone;
+                      const msg = encodeURIComponent(
+                        'مرحباً يا ' + w.name + ' 👋
+
+⛽ محطة بترومين
+─────────────────
+' +
+                        '💵 راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '
+' +
+                        '─────────────────
+' +
+                        '💰 الراتب الأساسي: ' + fmt(w.salary) + '
+' +
+                        '➖ الخصومات: -' + fmt(totalDed(w)) + '
+' +
+                        (totalRewards(w) > 0 ? '🎁 الحوافز: +' + fmt(totalRewards(w)) + '
+' : '') +
+                        (totalCash(w) > 0 ? '💸 السحوبات: -' + fmt(totalCash(w)) + '
+' : '') +
+                        '─────────────────
+' +
+                        '✅ صافي المدفوع: ' + fmt(net) + '
+─────────────────
+شكراً على مجهودك! 🙏'
+                      );
+                      window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
+                    }}>💬 أبلغه</button>
+                  )}
+                  <button className="pay-btn" onClick={() => setConfirmPay(w)}>✅ تم الصرف</button>
+                </div>
+              </div>
+            ))}
+            {/* مصروف */}
+            {workers.filter(w => isPaid(w.id)).map(w => {
+              const rec = getPaidRecord(w.id);
+              return (
+                <div key={w.id} className="payment-row paid">
+                  <div className="payment-worker-info">
+                    <div style={{ width: 42, height: 42, borderRadius: 11, background: 'linear-gradient(135deg,rgba(16,185,129,0.4),rgba(16,185,129,0.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, flexShrink: 0 }}>{w.avatar}</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-muted)' }}>{w.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {w.pump} · صُرف {rec ? new Date(rec.paidAt).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="payment-net" style={{ color: 'var(--text-muted)' }}>{fmt(calcNet(w))}</div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className="paid-stamp">✅ تم الصرف</span>
+                    <button className="btn btn-ghost btn-xs" onClick={() => setConfirmUnpay(w)}>↩️</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+
+const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
   const [month, setMonth] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
+  const [showReset, setShowReset] = useState(false);
   const toast = useToast();
   const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   const totalSal = workers.reduce((s, w) => s + w.salary, 0);
@@ -2759,7 +3082,9 @@ const ReportsPage = ({ workers }) => {
         <select className="form-input" style={{ width: 'auto' }} value={year} onChange={e => setYear(+e.target.value)}>{[2023, 2024, 2025, 2026].map(y => <option key={y}>{y}</option>)}</select>
         <button className="btn btn-accent" onClick={() => { if (!planHasExcelAdv(getPlan())) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateMonthlyReport(workers, month, year, months[month]); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تحميل Excel {!planHasExcelAdv(getPlan()) && '🔒'}</button>
         <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️ طباعة</button>
+        {onResetMonth && planHasMonthReset(getPlan()) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>🔄 إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(getPlan()) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط 👑','warning')}>🔄 إغلاق الشهر 🔒</button>}
       </div>
+      {showReset && <MonthResetModal workers={workers} ownerId={ownerId} onReset={onResetMonth} onClose={() => setShowReset(false)} />}
       <div style={{ textAlign: 'center', marginBottom: 22 }}>
         <div style={{ fontSize: 22, fontWeight: 800 }}>التقرير الشهري — {months[month]} {year}</div>
         <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>محطة بترومين 10000</div>
@@ -3063,6 +3388,19 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
     const savedGlobal = localStorage.getItem("users_data");
     const globalUsers = savedGlobal ? JSON.parse(savedGlobal) : [];
     localStorage.setItem("users_data", JSON.stringify([...globalUsers, fullUser]));
+    // لو role عامل، يتضاف في قائمة العمال بنفس الـ id
+    if (newUser.role === 'worker' && onAddWorker) {
+      onAddWorker({
+        id: newId,
+        name: newUser.name,
+        pump: 'غير محدد',
+        workDays: 0,
+        salary: 0,
+        phone: '',
+        avatar: newUser.name[0] || '؟',
+        delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
+      });
+    }
     setNewUser({ username: '', password: '', name: '', role: 'manager' });
     setErrors({});
     toast('تم إضافة الحساب ✓', 'success');
@@ -3170,7 +3508,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
             <div className="modal-body">
               <div className="form-group">
                 <label className="form-label">كلمة المرور الجديدة</label>
-                <PasswordInput className={`${newPassErr ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newPass} onChange={e => { setNewPass(e.target.value); setNewPassErr(''); }} />
+                <input type="password" className={`form-input ${newPassErr ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newPass} onChange={e => { setNewPass(e.target.value); setNewPassErr(''); }} />
                 {newPassErr && <div className="form-error">{newPassErr}</div>}
               </div>
             </div>
@@ -3192,7 +3530,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
           </div>
           <div className="form-group">
             <label className="form-label">كلمة المرور</label>
-            <PasswordInput className={`${errors.password ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newUser.password} onChange={e => { setNewUser({...newUser, password: e.target.value}); setErrors({...errors, password: ''});}} />
+            <input type="password" className={`form-input ${errors.password ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newUser.password} onChange={e => { setNewUser({...newUser, password: e.target.value}); setErrors({...errors, password: ''});}} />
             {errors.password && <div className="form-error">{errors.password}</div>}
           </div>
           <div className="form-group">
@@ -3357,24 +3695,10 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     try {
       let emailToUse = loginForm.emailOrUsername.trim();
 
-      // لو عامل، دور على الـ fake email بتاعه من Firestore
+      // لو عامل، حول الـ username لـ fake email
       if (loginForm.loginRole === 'worker') {
         const uname = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
-        // دور على المستخدم في كل الـ users عشان نلاقي الـ email الصح
-        try {
-          const usersSnap = await getDocs(collection(db, 'users'));
-          const found = usersSnap.docs.map(d => d.data()).find(u => 
-            u.role === 'worker' && (u.username === loginForm.emailOrUsername.trim() || u.username?.toLowerCase().replace(/\s+/g, '_') === uname)
-          );
-          if (found?.email) {
-            emailToUse = found.email;
-          } else {
-            // fallback للـ format القديم
-            emailToUse = `${uname}@petromin.worker`;
-          }
-        } catch {
-          emailToUse = `${uname}@petromin.worker`;
-        }
+        emailToUse = `${uname}@petromin.worker`;
       }
 
       const cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
@@ -3387,28 +3711,6 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         await signOut(auth);
         setErrors({ form: 'تم حذف حسابك من قِبل المالك. تواصل معه لإعادة التسجيل.' });
         setLoading(false); return;
-      }
-
-      // ===== Single Session: سجّل الجلسة الحالية =====
-      if (userData.role === 'worker') {
-        const sessionId = Date.now().toString();
-        const sessionRef = doc(db, 'owners', userData.ownerId, 'sessions', uid);
-        const prevSession = await getDoc(sessionRef);
-        // لو في جلسة قديمة → بعت إشعار للمالك
-        if (prevSession.exists() && prevSession.data().sessionId) {
-          const notifRef = doc(db, 'owners', userData.ownerId, 'ownerNotifs', `new_device_${uid}_${sessionId}`);
-          await setDoc(notifRef, {
-            id: `new_device_${uid}_${sessionId}`,
-            type: 'warning',
-            icon: '📱',
-            title: `${userData.name} سجّل دخول من جهاز جديد`,
-            sub: `تم إنهاء الجلسة القديمة تلقائياً · ${new Date().toLocaleString('ar-EG')}`,
-            ts: Date.now(),
-            read: false,
-          });
-        }
-        await setDoc(sessionRef, { sessionId, lastLogin: new Date().toISOString() });
-        localStorage.setItem(`session_${uid}`, sessionId);
       }
 
       toast('مرحباً بك ' + userData.name, 'success');
@@ -3577,7 +3879,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
               </div>
               <div className="form-group">
                 <label className="form-label">كلمة المرور</label>
-                <PasswordInput placeholder="أدخل كلمة المرور" {...lf('password')} />
+                <input type="password" placeholder="أدخل كلمة المرور" {...lf('password')} />
                 {errors.password && <div className="form-error">{errors.password}</div>}
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>🔐 دخول</button>
@@ -3649,7 +3951,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 
               <div className="form-group">
                 <label className="form-label">كلمة المرور</label>
-                <PasswordInput placeholder="6 أحرف على الأقل" {...rf('password')} />
+                <input type="password" placeholder="6 أحرف على الأقل" {...rf('password')} />
                 {errors.reg_password && <div className="form-error">{errors.reg_password}</div>}
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>✨ إنشاء الحساب</button>
@@ -3670,17 +3972,18 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
   const navs = {
     owner: [
       { id: 'dashboard', icon: '📊', label: 'لوحة التحكم' },
-      { id: 'attendance', icon: '📍', label: 'الحضور والانصراف' },
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
       { id: 'reports', icon: '📋', label: 'التقارير' },
-      { id: 'accounts', icon: '🔐', label: 'إدارة الحسابات' }
+      { id: 'salary_payment', icon: '💵', label: 'صرف الرواتب' },
+      { id: 'month_archive', icon: '📦', label: 'أرشيف الشهور' },
+      { id: 'accounts', icon: '🔐', label: 'إدارة الحسابات' },
+      { id: 'owner_profile', icon: '👤', label: 'ملفي الشخصي' }
     ],
     manager: [
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
       { id: 'reports', icon: '📋', label: 'التقارير' }
     ],
     worker: [
-      { id: 'attendance_worker', icon: '📍', label: 'تسجيل الحضور' },
       { id: 'profile', icon: '👤', label: 'ملفي الشخصي' }
     ],
   };
@@ -3739,17 +4042,12 @@ const getTrialInfoFromDB = async (ownerId) => {
     await setDoc(ref, { trialStart: startDate, plan: 'trial' });
     data = { trialStart: startDate, plan: 'trial' };
   }
-  // ✅ sync localStorage من Firebase دايماً
-  const planFromDB = data.plan || 'trial';
-  localStorage.setItem('app_plan', planFromDB);
-  if (data.trialStart) localStorage.setItem('app_trial_start', data.trialStart);
-
   const start = new Date(data.trialStart);
   const now = new Date();
   const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
   const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
   const expired = elapsedDays >= TRIAL_DAYS;
-  return { remaining, expired, elapsedDays, startDate: data.trialStart, plan: planFromDB };
+  return { remaining, expired, elapsedDays, startDate: data.trialStart, plan: data.plan || 'trial' };
 };
 
 const setPlanInDB = async (ownerId, plan) => {
@@ -3774,23 +4072,23 @@ const getTrialInfo = () => {
 
 // ==================== PLAN SYSTEM ====================
 const getPlan = () => {
-  const p = localStorage.getItem('app_plan');
-  // لو في باقة مدفوعة محددة → احترمها دايماً بغض النظر عن الـ trial
-  if (p && p !== 'trial' && p !== 'free') return p;
-  // لو الـ trial لسه شغال
+  // لو الـ trial لسه شغال، كل المميزات مفتوحة بغض النظر عن أي حاجة في localStorage
   const trialStart = localStorage.getItem('app_trial_start');
   if (trialStart) {
     const elapsed = Math.floor((Date.now() - new Date(trialStart)) / (1000 * 60 * 60 * 24));
-    if (elapsed < 15 && (!p || p === 'trial')) return 'trial';
+    if (elapsed < 15) return 'trial'; // trial لسه شغال → كل المميزات
   }
-  if (!p || p === 'trial') return 'free';
+  const p = localStorage.getItem('app_plan');
+  if (!p || p === 'trial') return 'free'; // trial خلص بدون اختيار → مجاني
   return p;
 };
 // trial = كل المميزات مفتوحة، free = محدود
-const PAID_PLANS = ['trial', 'basic', 'pro', 'enterprise', 'lifetime'];
-const planHasGPS      = (plan) => PAID_PLANS.includes(plan);
-const planHasExcelAdv = (plan) => PAID_PLANS.includes(plan);
-const planIsFree      = (plan) => plan === 'free';
+const planHasGPS        = (plan) => false; // مغلقة مؤقتاً
+const planHasExcelAdv   = (plan) => plan !== 'free';
+const planIsFree        = (plan) => plan === 'free';
+const planHasWhatsApp   = (plan) => plan === 'enterprise' || plan === 'lifetime';
+const planHasSalaryPay  = (plan) => plan === 'enterprise' || plan === 'lifetime';
+const planHasMonthReset = (plan) => plan === 'enterprise' || plan === 'lifetime';
 const FREE_WORKER_LIMIT = 5;
 
 // ===== شاشة انتهاء التجربة / الخطط =====
@@ -3808,12 +4106,13 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       features: [
         { yes: true,  text: 'حتى 5 عمال' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: false, text: 'تسجيل الحضور بـ GPS' },
         { yes: false, text: 'تقارير شهرية' },
         { yes: false, text: 'سحب نقدي وسلف' },
         { yes: false, text: 'تقارير Excel متقدمة' },
+        { yes: false, text: 'إشعارات واتساب للعمال' },
+        { yes: false, text: 'تقرير صرف الرواتب' },
+        { yes: false, text: 'أرشيف وإغلاق الشهر' },
         { yes: false, text: 'دعم فني' },
-        { yes: false, text: 'نسخة احتياطية تلقائية' },
       ],
       btnClass: 'btn-success',
       btnLabel: '✅ استمر مجاناً',
@@ -3828,15 +4127,15 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       period: 'شهرياً',
       className: '',
       features: [
-        { yes: true,  text: 'حتى 5 عمال' },
+        { yes: true,  text: 'حتى 10 عمال' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: false, text: 'تسجيل الحضور بـ GPS' },
         { yes: true,  text: 'تقارير شهرية' },
         { yes: true,  text: 'سحب نقدي وسلف' },
         { yes: false, text: 'عمال غير محدودين' },
         { yes: false, text: 'تقارير Excel متقدمة' },
-        { yes: false, text: 'دعم فني أولوية' },
-        { yes: false, text: 'نسخة احتياطية تلقائية' },
+        { yes: false, text: 'إشعارات واتساب للعمال' },
+        { yes: false, text: 'تقرير صرف الرواتب' },
+        { yes: false, text: 'أرشيف وإغلاق الشهر' },
       ],
       btnClass: 'btn-ghost',
       btnLabel: 'اشترك الآن',
@@ -3853,13 +4152,13 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       features: [
         { yes: true,  text: 'حتى 20 عاملاً' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تسجيل الحضور بـ GPS' },
-        { yes: true,  text: 'تقارير شهرية' },
+        { yes: true,  text: 'تقارير شهرية + Excel متقدم' },
         { yes: true,  text: 'سحب نقدي وسلف' },
-        { yes: false, text: 'تقارير Excel متقدمة' },
         { yes: true,  text: 'إشعارات فورية' },
         { yes: false, text: 'عمال غير محدودين' },
-        { yes: false, text: 'نسخة احتياطية تلقائية' },
+        { yes: false, text: 'إشعارات واتساب للعمال' },
+        { yes: false, text: 'تقرير صرف الرواتب' },
+        { yes: false, text: 'أرشيف وإغلاق الشهر' },
       ],
       btnClass: 'btn-primary',
       btnLabel: '🔥 اشترك الآن',
@@ -3875,12 +4174,12 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       features: [
         { yes: true,  text: 'عمال غير محدودين' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تسجيل الحضور بـ GPS' },
-        { yes: true,  text: 'تقارير شهرية' },
+        { yes: true,  text: 'تقارير شهرية + Excel متقدم' },
         { yes: true,  text: 'سحب نقدي وسلف' },
-        { yes: true,  text: 'تقارير Excel متقدمة' },
         { yes: true,  text: 'إشعارات فورية' },
-        { yes: true,  text: 'نسخة احتياطية تلقائية' },
+        { yes: true,  text: '💬 إشعارات واتساب للعمال' },
+        { yes: true,  text: '💵 تقرير صرف الرواتب' },
+        { yes: true,  text: '📦 أرشيف وإغلاق الشهر' },
         { yes: true,  text: 'دعم فني أولوية 24/7' },
       ],
       btnClass: 'btn-accent',
@@ -3898,12 +4197,12 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       features: [
         { yes: true, text: 'عمال غير محدودين' },
         { yes: true, text: 'إدارة الرواتب والخصومات' },
-        { yes: true, text: 'تسجيل الحضور بـ GPS' },
-        { yes: true, text: 'تقارير شهرية' },
+        { yes: true, text: 'تقارير شهرية + Excel متقدم' },
         { yes: true, text: 'سحب نقدي وسلف' },
-        { yes: true, text: 'تقارير Excel متقدمة' },
         { yes: true, text: 'إشعارات فورية' },
-        { yes: true, text: 'نسخة احتياطية تلقائية' },
+        { yes: true, text: '💬 إشعارات واتساب للعمال' },
+        { yes: true, text: '💵 تقرير صرف الرواتب' },
+        { yes: true, text: '📦 أرشيف وإغلاق الشهر' },
         { yes: true, text: 'دعم فني أولوية 24/7' },
         { yes: true, text: '🎁 كل التحديثات القادمة مجاناً' },
       ],
@@ -4069,24 +4368,451 @@ const TrialBanner = ({ remaining, onViewPlans, userName }) => {
 };
 
 // ==================== NOTIFICATION BELL ====================
+// ==================== ANNOUNCEMENTS UTILS ====================
+const ADMIN_PASS = '$9pVnEyz%K6';
+
+const getAnnouncements = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'announcements'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  } catch { return []; }
+};
+
+const saveAnnouncement = async (ann) => {
+  const id = String(Date.now());
+  await setDoc(doc(db, 'announcements', id), { ...ann, id, createdAt: Date.now() });
+  return id;
+};
+
+const deleteAnnouncement = async (id) => {
+  await deleteDoc(doc(db, 'announcements', id));
+};
+
+const getAllOwners = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.role === 'owner');
+  } catch { return []; }
+};
+
+// ==================== OWNER PROFILE PAGE ====================
+const OwnerProfilePage = ({ user, onUpdate }) => {
+  const toast = useToast();
+  const [phone, setPhone] = useState(user.phone || '');
+  const [name, setName] = useState(user.name || '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) { toast('الاسم مطلوب', 'error'); return; }
+    setSaving(true);
+    const updated = { ...user, name: name.trim(), phone: phone.trim() };
+    try {
+      await updateDoc(doc(db, 'users', user.id), { name: updated.name, phone: updated.phone });
+      onUpdate(updated);
+      toast('تم حفظ بياناتك ✓', 'success');
+    } catch { toast('حدث خطأ، حاول مرة أخرى', 'error'); }
+    setSaving(false);
+  };
+
+  return (
+    <div style={{ maxWidth: 520, margin: '0 auto', animation: 'fadeIn .3s ease' }}>
+      <div className="card" style={{ padding: 30 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 22 }}>{(user.name||'?')[0]}</div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>{user.name}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{user.email}</div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>الاسم</label>
+          <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك الكامل" />
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>
+            📱 رقم التليفون
+            {!user.phone && <span style={{ marginRight: 8, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '2px 8px', borderRadius: 6, fontSize: 11 }}>⚠️ غير مكتمل</span>}
+          </label>
+          <input
+            className="form-input"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            placeholder="01XXXXXXXXX"
+            type="tel"
+            dir="ltr"
+          />
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+            📌 رقمك بيُستخدم لإرسال التحديثات والإشعارات المهمة عبر واتساب
+          </div>
+        </div>
+
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save} disabled={saving}>
+          {saving ? '⏳ جاري الحفظ...' : '💾 حفظ البيانات'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+// ==================== ADMIN LOGIN PAGE ====================
+const AdminLoginPage = ({ onAuth }) => {
+  const [pass, setPass] = useState('');
+  const [show, setShow] = useState(false);
+  const [err, setErr] = useState('');
+  const [shake, setShake] = useState(false);
+
+  const submit = () => {
+    if (pass === ADMIN_PASS) { onAuth(); }
+    else {
+      setErr('باسوورد غلط ❌');
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)' }}>
+      <div style={{ width: 360, animation: shake ? 'shake .5s ease' : 'fadeIn .3s ease' }}>
+        <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}`}</style>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontSize: 48, marginBottom: 10 }}>🔐</div>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>لوحة تحكم المطور</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>محطة بترومين — Admin Only</div>
+        </div>
+        <div className="card" style={{ padding: 28 }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>كلمة المرور</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={show ? 'text' : 'password'}
+                className="form-input"
+                value={pass}
+                onChange={e => { setPass(e.target.value); setErr(''); }}
+                onKeyDown={e => e.key === 'Enter' && submit()}
+                placeholder="أدخل كلمة المرور"
+                autoFocus
+              />
+              <button onClick={() => setShow(!show)} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-muted)' }}>
+                {show ? '🙈' : '👁️'}
+              </button>
+            </div>
+            {err && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 6 }}>{err}</div>}
+          </div>
+          <button className="btn btn-danger" style={{ width: '100%', justifyContent: 'center' }} onClick={submit}>
+            🔓 دخول
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== ADMIN PANEL ====================
+const AdminPanel = () => {
+  const toast = useToast();
+  const [authed, setAuthed] = useState(false);
+  const [tab, setTab] = useState('send'); // send | history | owners
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [type, setType] = useState('info'); // info | success | warning | danger
+  const [sending, setSending] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const [owners, setOwners] = useState([]);
+  const [loadingOwners, setLoadingOwners] = useState(false);
+  const [loadingAnns, setLoadingAnns] = useState(false);
+
+  useEffect(() => {
+    if (!authed) return;
+    loadData();
+  }, [authed]);
+
+  const loadData = async () => {
+    setLoadingAnns(true);
+    setLoadingOwners(true);
+    const [anns, ownList] = await Promise.all([getAnnouncements(), getAllOwners()]);
+    setAnnouncements(anns);
+    setOwners(ownList);
+    setLoadingAnns(false);
+    setLoadingOwners(false);
+  };
+
+  const sendAnnouncement = async () => {
+    if (!title.trim() || !body.trim()) { toast('اكتب العنوان والنص', 'error'); return; }
+    setSending(true);
+    await saveAnnouncement({ title: title.trim(), body: body.trim(), type });
+    setTitle(''); setBody(''); setType('info');
+    toast('تم إرسال الإشعار لجميع الملاك ✓', 'success');
+    await loadData();
+    setTab('history');
+    setSending(false);
+  };
+
+  const handleDelete = async (id) => {
+    await deleteAnnouncement(id);
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
+    toast('تم حذف الإشعار', 'info');
+  };
+
+  const typeColors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', danger: '#ef4444' };
+  const typeIcons  = { info: 'ℹ️', success: '✅', warning: '⚠️', danger: '🚨' };
+  const typeLabels = { info: 'معلومة', success: 'إيجابي', warning: 'تحذير', danger: 'مهم' };
+
+  if (!authed) return <AdminLoginPage onAuth={() => setAuthed(true)} />;
+
+  const ownersWithPhone = owners.filter(o => o.phone);
+  const ownersWithoutPhone = owners.filter(o => !o.phone);
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--dark)', padding: '32px 20px' }}>
+      <div className="admin-wrap">
+        {/* Header */}
+        <div className="admin-header">
+          <div style={{ fontSize: 40 }}>🛠️</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>لوحة تحكم المطور</div>
+              <span className="admin-badge">ADMIN</span>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>إدارة الإشعارات والملاك — محطة بترومين</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div className="admin-stat">
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#3b82f6' }}>{owners.length}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>ملاك</div>
+            </div>
+            <div className="admin-stat">
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#10b981' }}>{ownersWithPhone.length}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>عندهم رقم</div>
+            </div>
+            <div className="admin-stat">
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#f59e0b' }}>{announcements.length}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>إشعار مُرسل</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap' }}>
+          {[
+            { id: 'send', label: '📢 إرسال إشعار جديد' },
+            { id: 'history', label: `📋 الإشعارات السابقة (${announcements.length})` },
+            { id: 'owners', label: `👤 الملاك (${owners.length})` },
+          ].map(t => (
+            <button key={t.id} className={`admin-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* TAB: SEND */}
+        {tab === 'send' && (
+          <div className="announce-form">
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 20 }}>📢 إشعار جديد لجميع الملاك</div>
+
+            {/* Type selector */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>نوع الإشعار</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {Object.keys(typeLabels).map(t => (
+                  <button key={t} onClick={() => setType(t)} style={{
+                    padding: '7px 16px', borderRadius: 10, border: `1px solid ${type === t ? typeColors[t] : 'var(--border)'}`,
+                    background: type === t ? `rgba(${t === 'info' ? '59,130,246' : t === 'success' ? '16,185,129' : t === 'warning' ? '245,158,11' : '239,68,68'},.15)` : 'none',
+                    color: type === t ? typeColors[t] : 'var(--text-muted)',
+                    fontFamily: 'Cairo,sans-serif', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .2s',
+                  }}>
+                    {typeIcons[t]} {typeLabels[t]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Title */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>عنوان الإشعار *</label>
+              <input className="form-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="مثال: تحديث جديد في التطبيق 🎉" maxLength={80} />
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'left' }}>{title.length}/80</div>
+            </div>
+
+            {/* Body */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>نص الإشعار *</label>
+              <textarea className="form-input" rows={4} value={body} onChange={e => setBody(e.target.value)} placeholder="اكتب تفاصيل الإشعار هنا..." maxLength={400} style={{ resize: 'vertical', minHeight: 100 }} />
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'left' }}>{body.length}/400</div>
+            </div>
+
+            {/* Preview */}
+            {(title || body) && (
+              <div className="announce-preview">
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, fontWeight: 700 }}>👁️ معاينة كما سيراها الملاك:</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: `rgba(${type === 'info' ? '59,130,246' : type === 'success' ? '16,185,129' : type === 'warning' ? '245,158,11' : '239,68,68'},.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{typeIcons[type]}</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: typeColors[type] }}>{title || 'العنوان'}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.7 }}>{body || 'النص...'}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Send */}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button className="btn btn-primary" style={{ justifyContent: 'center', minWidth: 160 }} onClick={sendAnnouncement} disabled={sending || !title.trim() || !body.trim()}>
+                {sending ? '⏳ جاري الإرسال...' : `📢 إرسال لـ ${owners.length} مالك`}
+              </button>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                بيوصل في الـ notification bell لكل الملاك فور دخولهم
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: HISTORY */}
+        {tab === 'history' && (
+          <div className="table-container">
+            <div className="table-hdr">
+              <div style={{ fontSize: 15, fontWeight: 700 }}>📋 الإشعارات السابقة</div>
+              <button className="btn btn-ghost btn-sm" onClick={loadData}>🔄 تحديث</button>
+            </div>
+            {loadingAnns ? (
+              <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
+            ) : announcements.length === 0 ? (
+              <div className="empty-state" style={{ padding: 40 }}>
+                <div className="empty-icon">📭</div>
+                <div className="empty-title">لا توجد إشعارات مرسلة بعد</div>
+              </div>
+            ) : (
+              <div>
+                {announcements.map(ann => (
+                  <div key={ann.id} style={{ display: 'flex', gap: 14, padding: '16px 20px', borderBottom: '1px solid var(--border)', alignItems: 'flex-start' }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: `rgba(${ann.type === 'info' ? '59,130,246' : ann.type === 'success' ? '16,185,129' : ann.type === 'warning' ? '245,158,11' : '239,68,68'},.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{typeIcons[ann.type] || 'ℹ️'}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{ann.title}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.6 }}>{ann.body}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                        🕐 {ann.createdAt ? new Date(ann.createdAt).toLocaleString('ar-EG') : '—'}
+                      </div>
+                    </div>
+                    <button className="btn btn-xs btn-danger" onClick={() => handleDelete(ann.id)}>🗑️</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: OWNERS */}
+        {tab === 'owners' && (
+          <div>
+            {/* WhatsApp bulk section */}
+            {ownersWithPhone.length > 0 && (
+              <div style={{ background: 'linear-gradient(135deg,rgba(37,211,102,0.1),rgba(37,211,102,0.03))', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 16, padding: '18px 22px', marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12, color: '#25d366' }}>
+                  💬 إرسال واتساب لـ {ownersWithPhone.length} مالك عندهم رقم
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
+                  ⚠️ واتساب مش بيسمح بـ bulk — هيفتح لكل مالك نافذة منفصلة. اضغط على اسمه أو استخدم زرار "واتساب الكل"
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {ownersWithPhone.map(o => {
+                    const phone = o.phone.startsWith('0') ? '2' + o.phone : o.phone;
+                    const latestAnn = announcements[0];
+                    const msg = latestAnn
+                      ? encodeURIComponent(`⛽ محطة بترومين
+مرحباً يا ${o.name} 👋
+
+${typeIcons[latestAnn.type] || 'ℹ️'} ${latestAnn.title}
+─────────────────
+${latestAnn.body}
+─────────────────
+فريق بترومين 🚀`)
+                      : encodeURIComponent(`⛽ محطة بترومين
+مرحباً يا ${o.name} 👋
+لديك إشعار جديد في التطبيق — افتح التطبيق للاطلاع عليه.`);
+                    return (
+                      <a key={o.id} href={`https://wa.me/${phone}?text=${msg}`} target="_blank" rel="noreferrer">
+                        <button className="wa-btn wa-btn-sm">💬 {o.name}</button>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Owners without phone */}
+            {ownersWithoutPhone.length > 0 && (
+              <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 14, padding: '14px 18px', marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>
+                  ⚠️ {ownersWithoutPhone.length} مالك بدون رقم — مش هيوصلهم واتساب
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {ownersWithoutPhone.map(o => (
+                    <span key={o.id} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '4px 10px', fontSize: 12, color: '#ef4444' }}>
+                      {o.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Full owners table */}
+            <div className="table-container">
+              <div className="table-hdr">
+                <div style={{ fontSize: 15, fontWeight: 700 }}>👤 كل الملاك ({owners.length})</div>
+                <button className="btn btn-ghost btn-sm" onClick={loadData}>🔄 تحديث</button>
+              </div>
+              {loadingOwners ? (
+                <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
+              ) : owners.length === 0 ? (
+                <div className="empty-state" style={{ padding: 40 }}>
+                  <div className="empty-icon">👤</div>
+                  <div className="empty-title">لا يوجد ملاك مسجلين بعد</div>
+                </div>
+              ) : owners.map(o => (
+                <div key={o.id} className="owner-row">
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{(o.name||'?')[0]}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{o.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{o.email}</div>
+                  </div>
+                  {o.phone ? (
+                    <span style={{ fontSize: 12, color: '#10b981', fontWeight: 700 }}>📱 {o.phone}</span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: '#ef4444' }}>❌ بدون رقم</span>
+                  )}
+                  <span style={{ fontSize: 11, background: o.plan === 'enterprise' || o.plan === 'lifetime' ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.1)', color: o.plan === 'enterprise' || o.plan === 'lifetime' ? '#f59e0b' : 'var(--text-muted)', padding: '3px 10px', borderRadius: 8, fontWeight: 700 }}>
+                    {o.plan || 'free'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 const NotificationBell = ({ user, workers, onNavigate }) => {
   const [open, setOpen] = useState(false);
   const [readIds, setReadIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`notif_read_${user?.id}`) || '[]'); } catch { return []; }
   });
-  const [ownerNotifs, setOwnerNotifs] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const ref = useRef(null);
 
-  // استمع على إشعارات المالك من Firebase
+  // تحميل الإشعارات من Admin عند فتح التطبيق (للملاك فقط)
   useEffect(() => {
-    if (!user || (user.role !== 'owner' && user.role !== 'manager')) return;
-    const ownerId = user.role === 'owner' ? user.id : user.ownerId;
-    const unsub = onSnapshot(collection(db, 'owners', ownerId, 'ownerNotifs'), (snap) => {
-      const notifs = snap.docs.map(d => d.data()).sort((a, b) => b.ts - a.ts);
-      setOwnerNotifs(notifs);
-    });
-    return () => unsub();
-  }, [user?.id]);
+    if (!user || user.role !== 'owner') return;
+    const load = async () => {
+      const anns = await getAnnouncements();
+      setAnnouncements(anns);
+    };
+    load();
+  }, [user]);
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -4100,6 +4826,22 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
     if (!user || !ownerId) return [];
     const notifs = [];
     const now = Date.now();
+
+    // 0) إشعارات المطور (announcements) — للملاك فقط
+    if (user.role === 'owner') {
+      announcements.forEach(ann => {
+        notifs.push({
+          id: `ann_${ann.id}`,
+          type: ann.type || 'info',
+          icon: { info: 'ℹ️', success: '✅', warning: '⚠️', danger: '🚨' }[ann.type] || 'ℹ️',
+          title: ann.title,
+          sub: ann.body,
+          time: ann.createdAt ? new Date(ann.createdAt).toLocaleString('ar-EG') : '',
+          ts: ann.createdAt || now,
+          isAnnouncement: true,
+        });
+      });
+    }
 
     if (user.role === 'owner' || user.role === 'manager') {
       // 1) طلبات إعادة تسجيل الحضور
@@ -4258,13 +5000,8 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
       }
     }
 
-    // إشعارات الدخول من جهاز جديد
-    ownerNotifs.forEach(n => {
-      if (!notifs.find(x => x.id === n.id)) notifs.push(n);
-    });
-
     return notifs.sort((a,b) => b.ts - a.ts);
-  }, [user, workers, ownerId, ownerNotifs]);
+  }, [user, workers, ownerId, announcements]);
 
   const notifications = buildNotifications();
   const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
@@ -4369,18 +5106,9 @@ const App = () => {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = { id: firebaseUser.uid, ...userDoc.data() };
-          // لو في مستخدم مالك/مدير مسجل، متبدلش بحساب عامل جديد
-          setUser(prev => {
-            if (prev && (prev.role === 'owner' || prev.role === 'manager') && userData.role === 'worker') {
-              return prev;
-            }
-            return userData;
-          });
-          setPage(prev => {
-            if (prev) return prev;
-            const defaults = { owner: 'dashboard', manager: 'workers', worker: 'attendance_worker' };
-            return defaults[userData.role] || 'dashboard';
-          });
+          setUser(userData);
+          const defaults = { owner: 'dashboard', manager: 'workers', worker: 'attendance_worker' };
+          setPage(defaults[userData.role] || 'dashboard');
         }
       } else {
         setUser(null);
@@ -4389,34 +5117,6 @@ const App = () => {
     });
     return () => unsub();
   }, []);
-
-  // Single Session: تحقق كل 30 ثانية إن الجلسة لسه صحيحة
-  useEffect(() => {
-    if (!user || user.role !== 'worker') return;
-    const checkSession = async () => {
-      try {
-        const sessionRef = doc(db, 'owners', user.ownerId, 'sessions', user.id);
-        const sessionDoc = await getDoc(sessionRef);
-        if (sessionDoc.exists()) {
-          const serverSessionId = sessionDoc.data().sessionId;
-          const localSessionId  = localStorage.getItem(`session_${user.id}`);
-          // لو مفيش local session → ده أول دخول، مش طرد
-          if (!localSessionId) return;
-          if (serverSessionId !== localSessionId) {
-            unsubscribeListeners.current.forEach(unsub => unsub());
-            unsubscribeListeners.current = [];
-            localStorage.removeItem(`session_${user.id}`);
-            setUser(null);
-            signOut(auth).catch(() => {});
-            alert('⚠️ تم تسجيل الدخول من جهاز آخر. تم إنهاء جلستك تلقائياً.');
-          }
-        }
-      } catch {}
-    };
-    checkSession();
-    const interval = setInterval(checkSession, 30000);
-    return () => clearInterval(interval);
-  }, [user]);
 
   // لما يتغير المستخدم، نحمل داتاه من Firestore
   useEffect(() => {
@@ -4535,7 +5235,7 @@ const App = () => {
     await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
   };
 
-  const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', attendance: '📍 الحضور والانصراف', attendance_worker: '📍 تسجيل الحضور' };
+  const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', attendance: '📍 الحضور والانصراف', attendance_worker: '📍 تسجيل الحضور', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي' };
   const workerRecord = user?.role === 'worker' ? workers.find(w => w.id === user.id) : null;
 
   const updateWorker = async (updated) => {
@@ -4565,10 +5265,25 @@ const App = () => {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <NotificationBell user={user} workers={workers} onNavigate={handleNavigate} />
-            <UserProfileDropdown user={user} plan={getPlan()} />
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'left' }}>
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{user.name}</div>
+              <div>{user.roleLabel}</div>
+            </div>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>{user.name[0]}</div>
           </div>
         </div>
         <div className="page-content">
+          {/* بانر إكمال البيانات — لو المالك مالكش رقم */}
+          {user.role === 'owner' && !user.phone && (
+            <div className="owner-phone-banner no-print">
+              <div className="owner-phone-banner-text">
+                📱 <span>أكمل بياناتك — أضف رقم تليفونك عشان نقدر نوصلك بالتحديثات والإشعارات المهمة</span>
+              </div>
+              <button className="btn btn-warning btn-sm" onClick={() => setPage('owner_profile')}>
+                ➕ أضف رقمك الآن
+              </button>
+            </div>
+          )}
           {page === 'dashboard' && user.role === 'owner' && (
             <OwnerDashboard workers={workers} workPlaces={workPlaces}
               onAddPlace={async (p) => {
@@ -4587,25 +5302,7 @@ const App = () => {
                 if (place?.id) await deleteDoc(doc(db, 'owners', oid, 'workplaces', place.id));
               }} />
           )}
-          {page === 'attendance' && user.role === 'owner' && (
-            planHasGPS(getPlan())
-              ? <AttendanceDashboard workers={workers} ownerId={getOwnerId(user)} />
-              : <div style={{ textAlign: 'center', padding: 60 }}>
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>الحضور بـ GPS غير متاح في باقتك</div>
-                  <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة الاحترافية والمميزة فقط</div>
-                  <button className="btn btn-primary" onClick={() => { localStorage.setItem('app_trial_start', new Date(Date.now() - 99 * 864e5).toISOString()); window.location.reload(); }}>💳 ترقية الباقة</button>
-                </div>
-          )}
-          {page === 'attendance_worker' && user.role === 'worker' && (
-            planHasGPS(getPlan())
-              ? <AttendanceSystem user={user} ownerId={user.ownerId} />
-              : <div style={{ textAlign: 'center', padding: 60 }}>
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تسجيل الحضور بـ GPS غير متاح</div>
-                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>تواصل مع صاحب المحطة لترقية الباقة</div>
-                </div>
-          )}
+
           {page === 'workers' && (user.role === 'owner' || user.role === 'manager') && (
             <WorkersPage workers={workers} setWorkers={async (updater) => {
               const oid = getOwnerId(user);
@@ -4622,9 +5319,37 @@ const App = () => {
               }
             }} />
           )}
-          {page === 'reports' && <ReportsPage workers={workers} />}
+          {page === 'reports' && <ReportsPage workers={workers} ownerId={getOwnerId(user)} onResetMonth={(resetWorkers) => {
+              const oid = getOwnerId(user);
+              resetWorkers.forEach(async w => {
+                await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+              });
+            }} />}
+          {page === 'salary_payment' && user.role === 'owner' && (
+            planHasSalaryPay(getPlan())
+              ? <SalaryPaymentPage workers={workers} ownerId={getOwnerId(user)} />
+              : <div style={{ textAlign: 'center', padding: 60 }}>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تقرير صرف الرواتب</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
+                  <button className="btn btn-accent" onClick={() => setShowPricing && setShowPricing(true)}>👑 ترقية للمميزة</button>
+                </div>
+          )}
+          {page === 'month_archive' && user.role === 'owner' && (
+            planHasMonthReset(getPlan())
+              ? <MonthArchivePage ownerId={getOwnerId(user)} />
+              : <div style={{ textAlign: 'center', padding: 60 }}>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>أرشيف الشهور</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
+                  <button className="btn btn-accent" onClick={() => setShowPricing && setShowPricing(true)}>👑 ترقية للمميزة</button>
+                </div>
+          )}
           {page === 'profile' && workerRecord && <WorkerProfile worker={workerRecord} onUpdate={updateWorker} />}
           {page === 'profile' && !workerRecord && <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>لا توجد بيانات مرتبطة بحسابك</div>}
+          {page === 'owner_profile' && user.role === 'owner' && (
+            <OwnerProfilePage user={user} onUpdate={(updated) => setUser(updated)} />
+          )}
           {page === 'accounts' && user.role === 'owner' && (
             <AccountsPage
               users={ownerUsers}
@@ -4636,45 +5361,14 @@ const App = () => {
               }}
               onAddUser={async (u) => {
                 const oid = getOwnerId(user);
-                try {
-                  if (u.role === 'worker') {
-                    const fakeEmail = `${u.username.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}@${oid.substring(0,8)}.worker`;
-                    // إنشاء Firebase Auth account عن طريق REST API بدون ما نأثر على session المالك
-                    const apiKey = "AIzaSyD-hbFNfXZHCEnJPiwavxwtCQoqNz6hTgc";
-                    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ email: fakeEmail, password: u.password, returnSecureToken: false }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error?.message || 'فشل إنشاء الحساب');
-                    const fbUid = data.localId;
-                    const fullUser = { ...u, id: fbUid, firebaseUid: fbUid, email: fakeEmail, ownerId: oid, role: 'worker', roleLabel: 'عامل' };
-                    await setDoc(doc(db, 'owners', oid, 'members', fbUid), fullUser);
-                    await setDoc(doc(db, 'users', fbUid), fullUser);
-                    const workerRecord = {
-                      id: fbUid, name: u.name, pump: 'غير محدد', workDays: 26, salary: 0,
-                      phone: '', avatar: u.name[0] || '؟',
-                      delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
-                    };
-                    await setDoc(doc(db, 'owners', oid, 'workers', fbUid), workerRecord);
-                    setOwnerUsers(prev => [...prev, fullUser]);
-                  } else {
-                    await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
-                    await setDoc(doc(db, 'users', String(u.id)), u);
-                    setOwnerUsers(prev => [...prev, u]);
-                  }
-                } catch(e) {
-                  console.error('Error adding user:', e);
-                  await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
-                  await setDoc(doc(db, 'users', String(u.id)), u);
-                  setOwnerUsers(prev => [...prev, u]);
-                }
+                await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
+                await setDoc(doc(db, 'users', String(u.id)), u);
+                setOwnerUsers(prev => [...prev, u]);
               }}
               onEditUser={async (id, updated) => {
                 const oid = getOwnerId(user);
-                await setDoc(doc(db, 'owners', oid, 'members', String(id)), updated, { merge: true });
-                try { await setDoc(doc(db, 'users', String(id)), updated, { merge: true }); } catch {}
+                await updateDoc(doc(db, 'owners', oid, 'members', String(id)), updated);
+                await updateDoc(doc(db, 'users', String(id)), updated);
                 setOwnerUsers(prev => prev.map(u => u.id === id ? { ...u, ...updated } : u));
               }}
               onDeleteUser={handleDeleteUser}
@@ -4693,35 +5387,18 @@ export default function Root() {
 
   // تابع حالة Auth عشان نعرف المستخدم الحالي
   useEffect(() => {
-    let unsubPlan = null;
-
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      // إلغاء الـ listener القديم لو موجود
-      if (unsubPlan) { unsubPlan(); unsubPlan = null; }
-
       if (firebaseUser) {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = { id: firebaseUser.uid, ...userDoc.data() };
           setCurrentUser(userData);
+          // حمّل الـ trial من Firebase
           const ownerId = userData.role === 'owner' ? userData.id : userData.ownerId;
           if (ownerId) {
             await initTrialIfNeeded(ownerId);
-            // ✅ real-time listener — أي تغيير على Firebase يتعكس فوراً
-            unsubPlan = onSnapshot(getOwnerTrialDoc(ownerId), (snap) => {
-              if (!snap.exists()) return;
-              const data = snap.data();
-              const planFromDB = data.plan || 'trial';
-              // sync localStorage
-              localStorage.setItem('app_plan', planFromDB);
-              if (data.trialStart) localStorage.setItem('app_trial_start', data.trialStart);
-              // حدّث الـ state
-              const start = new Date(data.trialStart);
-              const elapsedDays = Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24));
-              const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
-              const expired = elapsedDays >= TRIAL_DAYS;
-              setTrialInfo({ remaining, expired, elapsedDays, startDate: data.trialStart, plan: planFromDB });
-            });
+            const info = await getTrialInfoFromDB(ownerId);
+            setTrialInfo(info);
           }
         }
       } else {
@@ -4729,8 +5406,7 @@ export default function Root() {
         setTrialInfo(null);
       }
     });
-
-    return () => { unsub(); if (unsubPlan) unsubPlan(); };
+    return () => unsub();
   }, []);
 
   const trial = trialInfo || getTrialInfo();
@@ -4761,6 +5437,16 @@ export default function Root() {
     setShowPricing(false);
     if (trialInfo) setTrialInfo({ ...trialInfo, plan: 'free', expired: false });
   };
+
+  // Admin route
+  if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+    return (
+      <ToastProvider>
+        <style>{globalStyles}</style>
+        <AdminPanel />
+      </ToastProvider>
+    );
+  }
 
   // التطبيق دايماً شغال — مفيش قفل بأي حال
   return (
