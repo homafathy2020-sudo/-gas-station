@@ -4046,13 +4046,15 @@ const getTrialInfo = () => {
 
 // ==================== PLAN SYSTEM ====================
 const getPlan = () => {
-  // لو الـ trial لسه شغال، كل المميزات مفتوحة بغض النظر عن أي حاجة في localStorage
+  // لو في باقة محددة في localStorage (lifetime/enterprise/starter) → استخدمها أولاً
+  const p = localStorage.getItem('app_plan');
+  if (p && p !== 'trial' && p !== 'free') return p; // باقة مدفوعة → override كل حاجة
+  // لو الـ trial لسه شغال → رجّع trial (كل المميزات مفتوحة)
   const trialStart = localStorage.getItem('app_trial_start');
   if (trialStart) {
     const elapsed = Math.floor((Date.now() - new Date(trialStart)) / (1000 * 60 * 60 * 24));
-    if (elapsed < 15) return 'trial'; // trial لسه شغال → كل المميزات
+    if (elapsed < 15) return 'trial';
   }
-  const p = localStorage.getItem('app_plan');
   if (!p || p === 'trial') return 'free'; // trial خلص بدون اختيار → مجاني
   return p;
 };
@@ -4060,9 +4062,9 @@ const getPlan = () => {
 const planHasGPS        = (plan) => false; // مغلقة مؤقتاً
 const planHasExcelAdv   = (plan) => plan !== 'free';
 const planIsFree        = (plan) => plan === 'free';
-const planHasWhatsApp   = (plan) => plan === 'enterprise' || plan === 'lifetime';
-const planHasSalaryPay  = (plan) => plan === 'enterprise' || plan === 'lifetime';
-const planHasMonthReset = (plan) => plan === 'enterprise' || plan === 'lifetime';
+const planHasWhatsApp   = (plan) => plan === 'enterprise' || plan === 'lifetime' || plan === 'trial';
+const planHasSalaryPay  = (plan) => plan === 'enterprise' || plan === 'lifetime' || plan === 'trial';
+const planHasMonthReset = (plan) => plan === 'enterprise' || plan === 'lifetime' || plan === 'trial';
 const FREE_WORKER_LIMIT = 5;
 
 // ===== شاشة انتهاء التجربة / الخطط =====
@@ -5482,7 +5484,7 @@ export default function Root() {
             const info = await getTrialInfoFromDB(ownerId);
             setTrialInfo(info);
             // مزامنة الباقة من Firestore مع localStorage عشان getPlan() يشتغل صح
-            if (info?.plan && info.plan !== 'trial') {
+            if (info?.plan) {
               localStorage.setItem('app_plan', info.plan);
             }
           }
