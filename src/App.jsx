@@ -4345,7 +4345,7 @@ const TrialBanner = ({ remaining, onViewPlans, userName }) => {
 
 // ==================== NOTIFICATION BELL ====================
 // ==================== ANNOUNCEMENTS UTILS ====================
-const ADMIN_PASS = '$9pVnEyz%K6';
+const ADMIN_EMAIL = 'homafathy2020@gmail.com';
 
 const getAnnouncements = async () => {
   try {
@@ -4527,14 +4527,30 @@ const AdminLoginPage = ({ onAuth }) => {
   const [show, setShow] = useState(false);
   const [err, setErr] = useState('');
   const [shake, setShake] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const submit = () => {
-    if (pass === ADMIN_PASS) { onAuth(); }
-    else {
-      setErr('باسوورد غلط ❌');
+  const submit = async () => {
+    if (!pass.trim()) return;
+    setLoading(true);
+    setErr('');
+    try {
+      const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pass);
+      // تحقق إن الـ role = admin في Firestore
+      const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+      if (userDoc.exists() && userDoc.data().role === 'admin') {
+        onAuth(cred.user);
+      } else {
+        await signOut(auth);
+        setErr('ليس لديك صلاحية الوصول ❌');
+        setShake(true);
+        setTimeout(() => setShake(false), 600);
+      }
+    } catch (e) {
+      setErr('باسوورد غلط أو حساب غير موجود ❌');
       setShake(true);
       setTimeout(() => setShake(false), 600);
     }
+    setLoading(false);
   };
 
   return (
@@ -4565,8 +4581,8 @@ const AdminLoginPage = ({ onAuth }) => {
             </div>
             {err && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 6 }}>{err}</div>}
           </div>
-          <button className="btn btn-danger" style={{ width: '100%', justifyContent: 'center' }} onClick={submit}>
-            🔓 دخول
+          <button className="btn btn-danger" style={{ width: '100%', justifyContent: 'center' }} onClick={submit} disabled={loading}>
+            {loading ? '⏳ جاري الدخول...' : '🔓 دخول'}
           </button>
         </div>
       </div>
@@ -4578,6 +4594,7 @@ const AdminLoginPage = ({ onAuth }) => {
 const AdminPanel = () => {
   const toast = useToast();
   const [authed, setAuthed] = useState(false);
+  const [adminUser, setAdminUser] = useState(null);
   const [tab, setTab] = useState('send'); // send | history | owners
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -4624,7 +4641,7 @@ const AdminPanel = () => {
   const typeIcons  = { info: 'ℹ️', success: '✅', warning: '⚠️', danger: '🚨' };
   const typeLabels = { info: 'معلومة', success: 'إيجابي', warning: 'تحذير', danger: 'مهم' };
 
-  if (!authed) return <AdminLoginPage onAuth={() => setAuthed(true)} />;
+  if (!authed) return <AdminLoginPage onAuth={(u) => { setAuthed(true); setAdminUser(u); }} />;
 
   const ownersWithPhone = owners.filter(o => o.phone);
   const ownersWithoutPhone = owners.filter(o => !o.phone);
@@ -4857,10 +4874,17 @@ ${latestAnn.body}
                     onChange={async (e) => {
                       const newPlan = e.target.value;
                       try {
-                        await setDoc(doc(db, 'owners', o.id, 'settings', 'subscription'), { plan: newPlan, trialStart: o.trialStart || new Date().toISOString() }, { merge: true });
-                        toast('✅ تم تغيير باقة ' + o.name + ' لـ ' + newPlan, 'success');
-                        loadData();
-                      } catch (err) { toast('حدث خطأ: ' + err.message, 'error'); }
+                        const ref = doc(db, 'owners', o.id, 'settings', 'subscription');
+                        const snap = await getDoc(ref);
+                        if (snap.exists()) {
+                          await updateDoc(ref, { plan: newPlan });
+                        } else {
+                          await setDoc(ref, { plan: newPlan, trialStart: new Date().toISOString() });
+                        }
+                        // حدّث الـ state فوراً بدون انتظار loadData
+                        setOwners(prev => prev.map(x => x.id === o.id ? { ...x, plan: newPlan } : x));
+                        toast('✅ تم تغيير باقة ' + o.name + ' إلى ' + newPlan, 'success');
+                      } catch (err) { toast('خطأ: ' + err.message, 'error'); }
                     }}
                   >
                     <option value="trial">🎯 تجريبية</option>
