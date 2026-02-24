@@ -1,6 +1,6 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
 
 // ==================== STYLES ====================
@@ -4370,11 +4370,22 @@ const getAllOwners = async () => {
 };
 
 // ==================== OWNER PROFILE PAGE ====================
-const OwnerProfilePage = ({ user, onUpdate }) => {
+const OwnerProfilePage = ({ user, onUpdate, onShowPricing }) => {
   const toast = useToast();
   const [phone, setPhone] = useState(user.phone || '');
   const [name, setName] = useState(user.name || '');
   const [saving, setSaving] = useState(false);
+  // Password change
+  const [showPassSection, setShowPassSection] = useState(false);
+  const [currentPass, setCurrentPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [savingPass, setSavingPass] = useState(false);
+
+  const planLabels = { free: '🆓 المجانية', starter: '⭐ الأساسية', enterprise: '👑 المميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية' };
+  const currentPlan = getPlan();
+  const planLabel = planLabels[currentPlan] || currentPlan;
+  const isPremium = currentPlan === 'enterprise' || currentPlan === 'lifetime';
 
   const save = async () => {
     if (!name.trim()) { toast('الاسم مطلوب', 'error'); return; }
@@ -4388,19 +4399,49 @@ const OwnerProfilePage = ({ user, onUpdate }) => {
     setSaving(false);
   };
 
+  const changePassword = async () => {
+    if (!currentPass) { toast('أدخل كلمة المرور الحالية', 'error'); return; }
+    if (newPass.length < 6) { toast('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل', 'error'); return; }
+    if (newPass !== confirmPass) { toast('كلمة المرور الجديدة غير متطابقة', 'error'); return; }
+    setSavingPass(true);
+    try {
+      const firebaseUser = auth.currentUser;
+      const credential = EmailAuthProvider.credential(firebaseUser.email, currentPass);
+      await reauthenticateWithCredential(firebaseUser, credential);
+      await updatePassword(firebaseUser, newPass);
+      toast('تم تغيير كلمة المرور بنجاح ✓', 'success');
+      setCurrentPass(''); setNewPass(''); setConfirmPass('');
+      setShowPassSection(false);
+    } catch (e) {
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') toast('كلمة المرور الحالية غير صحيحة', 'error');
+      else toast('حدث خطأ، حاول مرة أخرى', 'error');
+    }
+    setSavingPass(false);
+  };
+
   return (
-    <div style={{ maxWidth: 520, margin: '0 auto', animation: 'fadeIn .3s ease' }}>
+    <div style={{ maxWidth: 520, margin: '0 auto', animation: 'fadeIn .3s ease', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* بطاقة البيانات الشخصية */}
       <div className="card" style={{ padding: 30 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
           <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 22 }}>{(user.name||'?')[0]}</div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800 }}>{user.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{user.email}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>مالك المحطة</div>
           </div>
         </div>
 
+        {/* الإيميل - عرض فقط */}
         <div style={{ marginBottom: 18 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>الاسم</label>
+          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>📧 البريد الإلكتروني</label>
+          <div style={{ padding: '10px 13px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-muted)', direction: 'ltr', textAlign: 'left' }}>
+            {user.email || '—'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>الإيميل لا يمكن تغييره</div>
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>👤 الاسم</label>
           <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك الكامل" />
         </div>
 
@@ -4409,22 +4450,60 @@ const OwnerProfilePage = ({ user, onUpdate }) => {
             📱 رقم التليفون
             {!user.phone && <span style={{ marginRight: 8, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '2px 8px', borderRadius: 6, fontSize: 11 }}>⚠️ غير مكتمل</span>}
           </label>
-          <input
-            className="form-input"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            placeholder="01XXXXXXXXX"
-            type="tel"
-            dir="ltr"
-          />
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-            📌 رقمك بيُستخدم لإرسال التحديثات والإشعارات المهمة عبر واتساب
-          </div>
+          <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" type="tel" dir="ltr" />
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>📌 رقمك بيُستخدم لإرسال الإشعارات عبر واتساب</div>
         </div>
 
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save} disabled={saving}>
           {saving ? '⏳ جاري الحفظ...' : '💾 حفظ البيانات'}
         </button>
+      </div>
+
+      {/* بطاقة الباقة */}
+      <div className="card" style={{ padding: 24 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📦 باقتك الحالية</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ padding: '8px 18px', borderRadius: 20, fontWeight: 700, fontSize: 14, background: isPremium ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.12)', color: isPremium ? '#f59e0b' : 'var(--text-muted)', border: `1px solid ${isPremium ? 'rgba(245,158,11,0.3)' : 'var(--border)'}` }}>
+              {planLabel}
+            </div>
+          </div>
+          {!isPremium && (
+            <button className="btn btn-accent btn-sm" onClick={() => onShowPricing && onShowPricing()}>
+              👑 ترقية الباقة
+            </button>
+          )}
+          {isPremium && <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ أنت على أعلى باقة</span>}
+        </div>
+      </div>
+
+      {/* بطاقة تغيير كلمة المرور */}
+      <div className="card" style={{ padding: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showPassSection ? 20 : 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>🔐 تغيير كلمة المرور</div>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowPassSection(v => !v)}>
+            {showPassSection ? '✕ إغلاق' : '✏️ تغيير'}
+          </button>
+        </div>
+        {showPassSection && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>كلمة المرور الحالية</label>
+              <input className="form-input" type="password" value={currentPass} onChange={e => setCurrentPass(e.target.value)} placeholder="••••••••" dir="ltr" />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>كلمة المرور الجديدة</label>
+              <input className="form-input" type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="6 أحرف على الأقل" dir="ltr" />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>تأكيد كلمة المرور الجديدة</label>
+              <input className="form-input" type="password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} placeholder="••••••••" dir="ltr" />
+            </div>
+            <button className="btn btn-primary" style={{ justifyContent: 'center' }} onClick={changePassword} disabled={savingPass}>
+              {savingPass ? '⏳ جاري التغيير...' : '🔐 تأكيد تغيير كلمة المرور'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -5054,7 +5133,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
 };
 
 // ==================== APP ====================
-const App = () => {
+const App = ({ onShowPricing }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [page, setPage] = useState('dashboard');
@@ -5306,7 +5385,7 @@ const App = () => {
                   <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تقرير صرف الرواتب</div>
                   <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
-                  <button className="btn btn-accent" onClick={() => setShowPricing && setShowPricing(true)}>👑 ترقية للمميزة</button>
+                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>👑 ترقية للمميزة</button>
                 </div>
           )}
           {page === 'month_archive' && user.role === 'owner' && (
@@ -5316,13 +5395,13 @@ const App = () => {
                   <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>أرشيف الشهور</div>
                   <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
-                  <button className="btn btn-accent" onClick={() => setShowPricing && setShowPricing(true)}>👑 ترقية للمميزة</button>
+                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>👑 ترقية للمميزة</button>
                 </div>
           )}
           {page === 'profile' && workerRecord && <WorkerProfile worker={workerRecord} onUpdate={updateWorker} />}
           {page === 'profile' && !workerRecord && <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>لا توجد بيانات مرتبطة بحسابك</div>}
           {page === 'owner_profile' && user.role === 'owner' && (
-            <OwnerProfilePage user={user} onUpdate={(updated) => setUser(updated)} />
+            <OwnerProfilePage user={user} onUpdate={(updated) => setUser(updated)} onShowPricing={() => onShowPricing && onShowPricing()} />
           )}
           {page === 'accounts' && user.role === 'owner' && (
             <AccountsPage
@@ -5412,8 +5491,13 @@ export default function Root() {
     if (trialInfo) setTrialInfo({ ...trialInfo, plan: 'free', expired: false });
   };
 
-  // Admin route
-  if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+  // Admin route — supports both /admin path and #admin hash (for SPA hosting)
+  const isAdminRoute = typeof window !== 'undefined' && (
+    window.location.pathname === '/admin' ||
+    window.location.hash === '#admin' ||
+    window.location.search === '?admin'
+  );
+  if (isAdminRoute) {
     return (
       <ToastProvider>
         <style>{globalStyles}</style>
@@ -5453,7 +5537,7 @@ export default function Root() {
           </div>
         )}
 
-        <App />
+        <App onShowPricing={() => setShowPricing(true)} />
 
         {/* شاشة الخطط كـ modal فوق التطبيق */}
         {showPricing && (
