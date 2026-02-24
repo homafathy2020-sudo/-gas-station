@@ -2342,8 +2342,10 @@ const WorkersPage = ({ workers, setWorkers }) => {
   const saveWorker = async (data) => {
     // تحقق من حد الباقة المجانية
     const isNewWorker = !workers.find(w => w.id === data.id);
-    if (isNewWorker && planIsFree(getPlan()) && workers.length >= FREE_WORKER_LIMIT) {
-      toast(`الباقة المجانية تسمح بـ ${FREE_WORKER_LIMIT} عمال فقط — قم بالترقية لإضافة المزيد 🔒`, 'warning');
+    const _plan = getPlan();
+    const _limit = getWorkerLimit(_plan);
+    if (isNewWorker && workers.length >= _limit && _limit !== Infinity) {
+      toast(`باقتك الحالية تسمح بـ ${_limit} عمال فقط — قم بالترقية لإضافة المزيد 🔒`, 'warning');
       setWorkerModal(null);
       return;
     }
@@ -4060,12 +4062,18 @@ const getPlan = () => {
 };
 // trial = كل المميزات مفتوحة، free = محدود
 const planHasGPS        = (plan) => false; // مغلقة مؤقتاً
-const planHasExcelAdv   = (plan) => plan !== 'free';
-const planIsFree        = (plan) => plan === 'free';
-const planHasWhatsApp   = (plan) => plan === 'enterprise' || plan === 'lifetime' || plan === 'trial';
-const planHasSalaryPay  = (plan) => plan === 'enterprise' || plan === 'lifetime' || plan === 'trial';
-const planHasMonthReset = (plan) => plan === 'enterprise' || plan === 'lifetime' || plan === 'trial';
+
+// حدود العمال لكل باقة
+const WORKER_LIMITS = { free: 5, basic: 10, pro: 20, enterprise: Infinity, lifetime: Infinity, trial: Infinity };
+const getWorkerLimit  = (plan) => WORKER_LIMITS[plan] ?? 5;
 const FREE_WORKER_LIMIT = 5;
+
+// الـ features حسب كل باقة بالظبط
+const planIsFree        = (plan) => plan === 'free';
+const planHasExcelAdv   = (plan) => ['basic', 'pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
+const planHasWhatsApp   = (plan) => ['pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
+const planHasSalaryPay  = (plan) => ['enterprise', 'lifetime', 'trial'].includes(plan);
+const planHasMonthReset = (plan) => ['enterprise', 'lifetime', 'trial'].includes(plan);
 
 // ===== شاشة انتهاء التجربة / الخطط =====
 const PricingScreen = ({ onBack, onSelectFree }) => {
@@ -4080,11 +4088,9 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       className: 'free',
       free: true,
       features: [
-        { yes: true,  text: 'حتى 5 عمال' },
+        { yes: true,  text: 'حتى 5 عمال فقط' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: false, text: 'تقارير شهرية' },
-        { yes: false, text: 'سحب نقدي وسلف' },
-        { yes: false, text: 'تقارير Excel متقدمة' },
+        { yes: false, text: 'تقارير Excel' },
         { yes: false, text: 'إشعارات واتساب للعمال' },
         { yes: false, text: 'تقرير صرف الرواتب' },
         { yes: false, text: 'أرشيف وإغلاق الشهر' },
@@ -4099,16 +4105,14 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       emoji: '🚀',
       name: 'الأساسية',
       desc: 'مناسبة للمحطات الصغيرة',
-      price: '99',
+      price: '149',
       period: 'شهرياً',
       className: '',
       features: [
         { yes: true,  text: 'حتى 10 عمال' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تقارير شهرية' },
-        { yes: true,  text: 'سحب نقدي وسلف' },
+        { yes: true,  text: 'تقارير Excel' },
         { yes: false, text: 'عمال غير محدودين' },
-        { yes: false, text: 'تقارير Excel متقدمة' },
         { yes: false, text: 'إشعارات واتساب للعمال' },
         { yes: false, text: 'تقرير صرف الرواتب' },
         { yes: false, text: 'أرشيف وإغلاق الشهر' },
@@ -4121,20 +4125,18 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       emoji: '⭐',
       name: 'الاحترافية',
       desc: 'الأكثر مبيعاً — للمحطات المتوسطة',
-      price: '199',
+      price: '299',
       period: 'شهرياً',
       className: 'popular',
       popular: true,
       features: [
         { yes: true,  text: 'حتى 20 عاملاً' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تقارير شهرية + Excel متقدم' },
-        { yes: true,  text: 'سحب نقدي وسلف' },
-        { yes: true,  text: 'إشعارات فورية' },
+        { yes: true,  text: 'تقارير Excel متقدمة' },
+        { yes: true,  text: '💬 إشعارات واتساب للعمال' },
         { yes: false, text: 'عمال غير محدودين' },
-        { yes: false, text: 'إشعارات واتساب للعمال' },
-        { yes: false, text: 'تقرير صرف الرواتب' },
-        { yes: false, text: 'أرشيف وإغلاق الشهر' },
+        { yes: false, text: '💵 تقرير صرف الرواتب' },
+        { yes: false, text: '📦 أرشيف وإغلاق الشهر' },
       ],
       btnClass: 'btn-primary',
       btnLabel: '🔥 اشترك الآن',
@@ -4144,15 +4146,13 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       emoji: '👑',
       name: 'المميزة',
       desc: 'للشركات والمحطات الكبيرة',
-      price: '349',
+      price: '499',
       period: 'شهرياً',
       className: 'gold',
       features: [
         { yes: true,  text: 'عمال غير محدودين' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تقارير شهرية + Excel متقدم' },
-        { yes: true,  text: 'سحب نقدي وسلف' },
-        { yes: true,  text: 'إشعارات فورية' },
+        { yes: true,  text: 'تقارير Excel متقدمة' },
         { yes: true,  text: '💬 إشعارات واتساب للعمال' },
         { yes: true,  text: '💵 تقرير صرف الرواتب' },
         { yes: true,  text: '📦 أرشيف وإغلاق الشهر' },
@@ -4166,16 +4166,14 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       emoji: '♾️',
       name: 'مدى الحياة',
       desc: 'ادفع مرة واحدة — استخدم للأبد',
-      price: '4,000',
+      price: '5,999',
       period: 'دفعة واحدة فقط — بدون أي رسوم شهرية',
       className: 'lifetime',
       lifetime: true,
       features: [
         { yes: true, text: 'عمال غير محدودين' },
         { yes: true, text: 'إدارة الرواتب والخصومات' },
-        { yes: true, text: 'تقارير شهرية + Excel متقدم' },
-        { yes: true, text: 'سحب نقدي وسلف' },
-        { yes: true, text: 'إشعارات فورية' },
+        { yes: true, text: 'تقارير Excel متقدمة' },
         { yes: true, text: '💬 إشعارات واتساب للعمال' },
         { yes: true, text: '💵 تقرير صرف الرواتب' },
         { yes: true, text: '📦 أرشيف وإغلاق الشهر' },
