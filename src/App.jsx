@@ -4367,7 +4367,16 @@ const deleteAnnouncement = async (id) => {
 const getAllOwners = async () => {
   try {
     const snap = await getDocs(collection(db, 'users'));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.role === 'owner');
+    const owners = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.role === 'owner');
+    // جيب الباقة لكل مالك من settings/subscription
+    const withPlans = await Promise.all(owners.map(async (o) => {
+      try {
+        const subSnap = await getDoc(doc(db, 'owners', o.id, 'settings', 'subscription'));
+        const plan = subSnap.exists() ? (subSnap.data().plan || 'trial') : 'trial';
+        return { ...o, plan };
+      } catch { return { ...o, plan: 'trial' }; }
+    }));
+    return withPlans;
   } catch { return []; }
 };
 
@@ -4826,39 +4835,53 @@ ${latestAnn.body}
                   <div className="empty-title">لا يوجد ملاك مسجلين بعد</div>
                 </div>
               ) : owners.map(o => (
-                <div key={o.id} className="owner-row">
-                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{(o.name||'?')[0]}</div>
-                  <div style={{ flex: 1 }}>
+                <div key={o.id} style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {/* أفاتار */}
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{(o.name||'?')[0]}</div>
+                  {/* بيانات */}
+                  <div style={{ flex: 1, minWidth: 140 }}>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{o.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{o.email}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{o.email}</div>
+                    {o.phone && <div style={{ fontSize: 11, color: '#10b981' }}>📱 {o.phone}</div>}
                   </div>
-                  {o.phone ? (
-                    <span style={{ fontSize: 12, color: '#10b981', fontWeight: 700 }}>📱 {o.phone}</span>
-                  ) : (
-                    <span style={{ fontSize: 12, color: '#ef4444' }}>❌ بدون رقم</span>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, background: o.plan === 'enterprise' || o.plan === 'lifetime' ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.1)', color: o.plan === 'enterprise' || o.plan === 'lifetime' ? '#f59e0b' : 'var(--text-muted)', padding: '3px 10px', borderRadius: 8, fontWeight: 700 }}>
-                      {o.plan || 'free'}
-                    </span>
-                    <select
-                      style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', cursor: 'pointer' }}
-                      value={o.plan || 'free'}
-                      onChange={async (e) => {
-                        const newPlan = e.target.value;
-                        try {
-                          await updateDoc(doc(db, 'owners', o.id, 'meta', 'trial'), { plan: newPlan });
-                          toast('✅ تم تغيير الباقة لـ ' + newPlan, 'success');
-                          loadData();
-                        } catch { toast('حدث خطأ', 'error'); }
-                      }}
-                    >
-                      <option value="free">🆓 مجاني</option>
-                      <option value="starter">⭐ أساسية</option>
-                      <option value="enterprise">👑 مميزة</option>
-                      <option value="lifetime">♾️ مدى الحياة</option>
-                    </select>
-                  </div>
+                  {/* الباقة الحالية */}
+                  <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 8, fontWeight: 700,
+                    background: o.plan === 'lifetime' ? 'rgba(168,85,247,0.15)' : o.plan === 'enterprise' ? 'rgba(245,158,11,0.15)' : o.plan === 'trial' ? 'rgba(59,130,246,0.15)' : 'rgba(100,116,139,0.1)',
+                    color: o.plan === 'lifetime' ? '#a855f7' : o.plan === 'enterprise' ? '#f59e0b' : o.plan === 'trial' ? '#3b82f6' : 'var(--text-muted)' }}>
+                    { o.plan === 'lifetime' ? '♾️ مدى الحياة' : o.plan === 'enterprise' ? '👑 مميزة' : o.plan === 'starter' ? '⭐ أساسية' : o.plan === 'trial' ? '🎯 تجريبية' : '🆓 مجاني' }
+                  </span>
+                  {/* تغيير الباقة */}
+                  <select
+                    style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', cursor: 'pointer' }}
+                    value={o.plan || 'trial'}
+                    onChange={async (e) => {
+                      const newPlan = e.target.value;
+                      try {
+                        await setDoc(doc(db, 'owners', o.id, 'settings', 'subscription'), { plan: newPlan, trialStart: o.trialStart || new Date().toISOString() }, { merge: true });
+                        toast('✅ تم تغيير باقة ' + o.name + ' لـ ' + newPlan, 'success');
+                        loadData();
+                      } catch (err) { toast('حدث خطأ: ' + err.message, 'error'); }
+                    }}
+                  >
+                    <option value="trial">🎯 تجريبية</option>
+                    <option value="free">🆓 مجاني</option>
+                    <option value="starter">⭐ أساسية</option>
+                    <option value="enterprise">👑 مميزة</option>
+                    <option value="lifetime">♾️ مدى الحياة</option>
+                  </select>
+                  {/* حذف المالك */}
+                  <button
+                    className="btn btn-danger btn-sm"
+                    title="حذف المالك"
+                    onClick={async () => {
+                      if (!window.confirm('هل أنت متأكد من حذف ' + o.name + '؟ هيتحذف نهائياً!')) return;
+                      try {
+                        await deleteDoc(doc(db, 'users', o.id));
+                        toast('🗑️ تم حذف ' + o.name, 'info');
+                        loadData();
+                      } catch (err) { toast('خطأ في الحذف: ' + err.message, 'error'); }
+                    }}
+                  >🗑️ حذف</button>
                 </div>
               ))}
             </div>
