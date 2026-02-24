@@ -4835,9 +4835,28 @@ ${latestAnn.body}
                   ) : (
                     <span style={{ fontSize: 12, color: '#ef4444' }}>❌ بدون رقم</span>
                   )}
-                  <span style={{ fontSize: 11, background: o.plan === 'enterprise' || o.plan === 'lifetime' ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.1)', color: o.plan === 'enterprise' || o.plan === 'lifetime' ? '#f59e0b' : 'var(--text-muted)', padding: '3px 10px', borderRadius: 8, fontWeight: 700 }}>
-                    {o.plan || 'free'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, background: o.plan === 'enterprise' || o.plan === 'lifetime' ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.1)', color: o.plan === 'enterprise' || o.plan === 'lifetime' ? '#f59e0b' : 'var(--text-muted)', padding: '3px 10px', borderRadius: 8, fontWeight: 700 }}>
+                      {o.plan || 'free'}
+                    </span>
+                    <select
+                      style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', cursor: 'pointer' }}
+                      value={o.plan || 'free'}
+                      onChange={async (e) => {
+                        const newPlan = e.target.value;
+                        try {
+                          await updateDoc(doc(db, 'owners', o.id, 'meta', 'trial'), { plan: newPlan });
+                          toast('✅ تم تغيير الباقة لـ ' + newPlan, 'success');
+                          loadData();
+                        } catch { toast('حدث خطأ', 'error'); }
+                      }}
+                    >
+                      <option value="free">🆓 مجاني</option>
+                      <option value="starter">⭐ أساسية</option>
+                      <option value="enterprise">👑 مميزة</option>
+                      <option value="lifetime">♾️ مدى الحياة</option>
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>
@@ -5162,6 +5181,16 @@ const App = ({ onShowPricing }) => {
           setUser(userData);
           const defaults = { owner: 'dashboard', manager: 'workers', worker: 'attendance_worker' };
           setPage(defaults[userData.role] || 'dashboard');
+          // مزامنة الباقة من Firestore عشان getPlan() يشتغل صح
+          const ownId = userData.role === 'owner' ? userData.id : userData.ownerId;
+          if (ownId) {
+            try {
+              const info = await getTrialInfoFromDB(ownId);
+              if (info?.plan && info.plan !== 'trial') {
+                localStorage.setItem('app_plan', info.plan);
+              }
+            } catch {}
+          }
         }
       } else {
         setUser(null);
@@ -5452,6 +5481,10 @@ export default function Root() {
             await initTrialIfNeeded(ownerId);
             const info = await getTrialInfoFromDB(ownerId);
             setTrialInfo(info);
+            // مزامنة الباقة من Firestore مع localStorage عشان getPlan() يشتغل صح
+            if (info?.plan && info.plan !== 'trial') {
+              localStorage.setItem('app_plan', info.plan);
+            }
           }
         }
       } else {
