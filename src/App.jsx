@@ -2990,28 +2990,15 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
                       const net = calcNet(w);
                       const phone = w.phone.startsWith('0') ? '2' + w.phone : w.phone;
                       const msg = encodeURIComponent(
-                        'مرحباً يا ' + w.name + ' 👋
-
-⛽ محطة بترومين
-─────────────────
-' +
-                        '💵 راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '
-' +
-                        '─────────────────
-' +
-                        '💰 الراتب الأساسي: ' + fmt(w.salary) + '
-' +
-                        '➖ الخصومات: -' + fmt(totalDed(w)) + '
-' +
-                        (totalRewards(w) > 0 ? '🎁 الحوافز: +' + fmt(totalRewards(w)) + '
-' : '') +
-                        (totalCash(w) > 0 ? '💸 السحوبات: -' + fmt(totalCash(w)) + '
-' : '') +
-                        '─────────────────
-' +
-                        '✅ صافي المدفوع: ' + fmt(net) + '
-─────────────────
-شكراً على مجهودك! 🙏'
+                        'مرحباً يا ' + w.name + ' 👋\n\n⛽ محطة بترومين\n─────────────────\n' +
+                        '💵 راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '\n' +
+                        '─────────────────\n' +
+                        '💰 الراتب الأساسي: ' + fmt(w.salary) + '\n' +
+                        '➖ الخصومات: -' + fmt(totalDed(w)) + '\n' +
+                        (totalRewards(w) > 0 ? '🎁 الحوافز: +' + fmt(totalRewards(w)) + '\n' : '') +
+                        (totalCash(w) > 0 ? '💸 السحوبات: -' + fmt(totalCash(w)) + '\n' : '') +
+                        '─────────────────\n' +
+                        '✅ صافي المدفوع: ' + fmt(net) + '\n─────────────────\nشكراً على مجهودك! 🙏'
                       );
                       window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
                     }}>💬 أبلغه</button>
