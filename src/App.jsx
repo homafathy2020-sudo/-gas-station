@@ -1,7 +1,7 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
 
 // ==================== STYLES ====================
 const globalStyles = `
@@ -2368,15 +2368,16 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const [inviteWorkerName, setInviteWorkerName] = useState('');
   const [invites, setInvites] = useState([]);
 
-  // real-time listener على الدعوات — بيتحدث فور ما عامل يسجل
+  // جيب الدعوات من Firebase عند فتح الصفحة
   useEffect(() => {
-    const unsubInvites = onSnapshot(
-      doc(db, 'owners', currentUser.id, 'meta', 'invites'),
-      (d) => { if (d.exists()) setInvites(d.data().list || []); else setInvites([]); },
-      (e) => console.error('invites listener error:', e)
-    );
-    return () => unsubInvites();
-  }, [currentUser.id]);
+    const loadInvites = async () => {
+      try {
+        const d = await getDoc(doc(db, 'owners', currentUser.id, 'meta', 'invites'));
+        if (d.exists()) setInvites(d.data().list || []);
+      } catch {}
+    };
+    loadInvites();
+  }, []);
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
   const toast = useToast();
   const ownerCode = currentUser.ownerCode || 'STAT-????';
@@ -2757,29 +2758,35 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     if (regForm.role === 'worker') {
       if (!regForm.ownerCode.trim()) { errs.reg_ownerCode = 'كود المالك مطلوب'; }
       else {
-        // ابحث عن المالك بالكود في Firestore (query مباشر بدون قراءة كل الـ users)
+        // ابحث عن المالك بالكود في Firestore
         try {
-          const q = query(
-            collection(db, 'users'),
-            where('ownerCode', '==', regForm.ownerCode.trim()),
-            where('role', '==', 'owner')
-          );
-          const ownerSnap = await getDocs(q);
+          const ownerSnap = await getDocs(collection(db, 'users'));
           ownerData = null;
-          ownerSnap.forEach(d => { ownerData = { id: d.id, ...d.data() }; });
+          ownerSnap.forEach(d => {
+            const u = d.data();
+            if (u.role === 'owner' && u.ownerCode === regForm.ownerCode.trim()) {
+              ownerData = { id: d.id, ...u };
+            }
+          });
           if (!ownerData) { errs.reg_ownerCode = 'كود المالك غير صحيح'; }
           else {
             // مزامنة الدعوات من Firestore ثم تحقق بالاسم
             await syncInvites(ownerData.id);
             const inviteList = getInvites(ownerData.id);
-            if (!inviteList.includes(regForm.name.trim())) {
+            // مقارنة مرنة: بتتجاهل المسافات الزيادة والفرق بين الحروف المتشابهة
+            const normalize = (s) => s.trim()
+              .replace(/\s+/g, ' ')           // مسافات متعددة → مسافة واحدة
+              .replace(/[أإآا]/g, 'ا')        // توحيد الألف
+              .replace(/[ةه]/g, 'ه')          // توحيد التاء المربوطة والهاء
+              .replace(/[يى]/g, 'ي')          // توحيد الياء
+              .toLowerCase();
+            const inputName = normalize(regForm.name);
+            const found = inviteList.some(inv => normalize(inv) === inputName);
+            if (!found) {
               errs.reg_name = 'الاسم ده مش موجود في قائمة الدعوات — تأكد إن المالك كتب اسمك بالظبط';
             }
           }
-        } catch(e) {
-          console.error('owner lookup error:', e.code, e.message);
-          errs.reg_ownerCode = 'تعذّر التحقق من الكود — تأكد من الاتصال بالإنترنت';
-        }
+        } catch { errs.reg_ownerCode = 'حدث خطأ في التحقق من الكود'; }
       }
     }
 
@@ -4339,12 +4346,8 @@ const App = ({ onShowPricing }) => {
       avatar: newUser.name[0] || '؟',
       delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
     };
-    try {
-      await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker);
-    } catch(e) { console.error('❌ workers write:', e.code, e.message); }
-    try {
-      await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
-    } catch(e) { console.error('❌ members write:', e.code, e.message); }
+    await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker);
+    await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
   };
 
   const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي' };
