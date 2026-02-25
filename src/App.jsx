@@ -1353,6 +1353,9 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
           </div>}
       </div>}
 
+      {/* تصفية الوردية - للمالك فقط */}
+      {!isWorkerView && <ShiftSettlement worker={w} ownerId={w.ownerId} />}
+
       {/* السحب النقدي - عرض للعامل */}
       {isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
@@ -2190,8 +2193,305 @@ const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
   );
 };
 
-// ==================== WORKER PROFILE (self) ====================
-const WorkerProfile = ({ worker, onUpdate }) => {
+// ==================== SHIFT SETTLEMENT COMPONENT ====================
+const ShiftSettlement = ({ worker, ownerId }) => {
+  const toast = useToast();
+  const [morning, setMorning] = useState('');
+  const [evening, setEvening] = useState('');
+  const [literPrice, setLiterPrice] = useState('');
+  const [requiredAmount, setRequiredAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [settlements, setSettlements] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // تحميل السجلات
+  useEffect(() => {
+    const loadSettlements = async () => {
+      try {
+        const settlementsSnap = await getDocs(
+          collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}shift_settlements`)
+        );
+        setSettlements(settlementsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error('خطأ في تحميل التصفيات:', err);
+      }
+    };
+    if (ownerId) loadSettlements();
+  }, [ownerId]);
+
+  const handleCalculate = () => {
+    if (!morning || !evening || !literPrice || !requiredAmount) {
+      toast('ملء جميع الحقول مطلوب', 'error');
+      return;
+    }
+
+    const morn = parseFloat(morning);
+    const eve = parseFloat(evening);
+    const price = parseFloat(literPrice);
+    const required = parseFloat(requiredAmount);
+
+    // حساب الفرق (الكمية)
+    const quantity = eve - morn;
+
+    // حساب الأرباح
+    const profit = quantity * price;
+
+    // حساب العجز/الفائض
+    const shortage = required - profit;
+
+    setResult({
+      quantity,
+      profit,
+      required,
+      shortage,
+      date: new Date().toLocaleDateString('ar-EG'),
+      time: new Date().toLocaleTimeString('ar-EG'),
+    });
+  };
+
+  const handleSave = async () => {
+    if (!result) return;
+
+    setLoading(true);
+    try {
+      const settlementsCol = collection(
+        db,
+        `${COLLECTION_PREFIX}owners`,
+        ownerId,
+        `${COLLECTION_PREFIX}shift_settlements`
+      );
+
+      await setDoc(doc(settlementsCol, `shift_${Date.now()}`), {
+        workerId: worker.id,
+        workerName: worker.name,
+        ...result,
+        createdAt: new Date().toISOString(),
+      });
+
+      toast('تم حفظ تصفية الوردية بنجاح ✅', 'success');
+      setMorning('');
+      setEvening('');
+      setLiterPrice('');
+      setRequiredAmount('');
+      setResult(null);
+
+      // تحديث السجلات
+      const updatedSnap = await getDocs(
+        collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}shift_settlements`)
+      );
+      setSettlements(updatedSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error('خطأ:', err);
+      toast('فشل الحفظ: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      background: 'var(--card)',
+      border: '1px solid var(--border)',
+      borderRadius: 16,
+      padding: 24,
+      marginBottom: 20,
+    }}>
+      <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>⛽ تصفية الوردية</span>
+        {settlements.length > 0 && (
+          <button 
+            onClick={() => setShowHistory(!showHistory)}
+            className="btn btn-sm btn-ghost"
+          >
+            📋 السجلات ({settlements.length})
+          </button>
+        )}
+      </div>
+
+      {/* نموذج الإدخال */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 14,
+        marginBottom: 20,
+      }}>
+        <div>
+          <label className="form-label">قراءة الصبح</label>
+          <input
+            type="number"
+            value={morning}
+            onChange={(e) => setMorning(e.target.value)}
+            placeholder="مثال: 1000"
+            className="form-input"
+          />
+        </div>
+
+        <div>
+          <label className="form-label">قراءة الليل</label>
+          <input
+            type="number"
+            value={evening}
+            onChange={(e) => setEvening(e.target.value)}
+            placeholder="مثال: 1500"
+            className="form-input"
+          />
+        </div>
+
+        <div>
+          <label className="form-label">سعر اللتر</label>
+          <input
+            type="number"
+            value={literPrice}
+            onChange={(e) => setLiterPrice(e.target.value)}
+            placeholder="مثال: 50"
+            className="form-input"
+          />
+        </div>
+
+        <div>
+          <label className="form-label">المبلغ المطلوب</label>
+          <input
+            type="number"
+            value={requiredAmount}
+            onChange={(e) => setRequiredAmount(e.target.value)}
+            placeholder="مثال: 20000"
+            className="form-input"
+          />
+        </div>
+      </div>
+
+      {/* زر الحساب */}
+      <button
+        onClick={handleCalculate}
+        className="btn btn-primary"
+        style={{ marginBottom: 20 }}
+      >
+        🧮 حساب النتائج
+      </button>
+
+      {/* النتائج */}
+      {result && (
+        <div style={{
+          background: 'rgba(59,130,246,0.05)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: '#3b82f6' }}>
+            📊 نتائج التصفية:
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الكمية (اللترات)</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
+                {result.quantity.toFixed(2)} لتر
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الأرباح</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#10b981' }}>
+                {result.profit.toFixed(2)} جنيه
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>المطلوب</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
+                {result.required.toFixed(2)} جنيه
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>العجز/الفائض</div>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: result.shortage > 0 ? '#ef4444' : '#10b981',
+              }}>
+                {result.shortage > 0 ? '❌ عجز' : '✅ فائض'}
+              </div>
+              <div style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: result.shortage > 0 ? '#ef4444' : '#10b981',
+              }}>
+                {Math.abs(result.shortage).toFixed(2)} جنيه
+              </div>
+            </div>
+          </div>
+
+          {/* زر الحفظ */}
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="btn btn-success"
+            style={{
+              width: '100%',
+              opacity: loading ? 0.6 : 1,
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {loading ? '⏳ جاري الحفظ...' : '💾 حفظ التصفية'}
+          </button>
+        </div>
+      )}
+
+      {/* السجلات */}
+      {showHistory && settlements.length > 0 && (
+        <div style={{
+          marginTop: 20,
+          paddingTop: 20,
+          borderTop: '1px solid var(--border)',
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
+            📜 سجل التصفيات
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>التاريخ</th>
+                  <th>الكمية</th>
+                  <th>الأرباح</th>
+                  <th>العجز/الفائض</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {settlements.map((s, i) => (
+                  <tr key={s.id}>
+                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{s.date}</td>
+                    <td>{s.quantity.toFixed(2)} لتر</td>
+                    <td style={{ color: '#10b981', fontWeight: 700 }}>{s.profit.toFixed(2)}</td>
+                    <td style={{ 
+                      color: s.shortage > 0 ? '#ef4444' : '#10b981',
+                      fontWeight: 700 
+                    }}>
+                      {s.shortage > 0 ? '❌ عجز' : '✅ فائض'} {Math.abs(s.shortage).toFixed(2)}
+                    </td>
+                    <td>
+                      <span className={`badge ${s.shortage > 0 ? 'badge-danger' : 'badge-success'}`}>
+                        {s.shortage > 0 ? 'عجز' : 'فائض'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== END SHIFT SETTLEMENT ====================
   const toast = useToast();
   const w = worker;
   const ded = totalDed(w);
