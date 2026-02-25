@@ -1353,8 +1353,8 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
           </div>}
       </div>}
 
-      {/* تصفية الوردية - للمالك فقط */}
-      {!isWorkerView && <ShiftSettlement worker={w} ownerId={w.ownerId} />}
+      {/* تصفية الوردية - للمالك فقط (إذا كان ownerId موجود) */}
+      {!isWorkerView && w.ownerId && <ShiftSettlement worker={w} ownerId={w.ownerId} />}
 
       {/* السحب النقدي - عرض للعامل */}
       {isWorkerView && <div className="detail-section">
@@ -2195,6 +2195,9 @@ const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
 
 // ==================== SHIFT SETTLEMENT COMPONENT ====================
 const ShiftSettlement = ({ worker, ownerId }) => {
+  // Guard: لو ما في ownerId ما نعرض الـ component
+  if (!ownerId || !worker) return null;
+
   const toast = useToast();
   const [morning, setMorning] = useState('');
   const [evening, setEvening] = useState('');
