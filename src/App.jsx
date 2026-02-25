@@ -2810,10 +2810,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
           }
         } catch(e) {
           console.error('[DEBUG] owner lookup error:', e.code, e.message);
-          // permission-denied على meta/invites مش مشكلة — الكود اتتحقق منه بنجاح والتسجيل يكمل
-          if (e.code !== 'permission-denied') {
-            errs.reg_ownerCode = 'تعذّر التحقق من الكود — تأكد من الاتصال بالإنترنت';
-          }
+          errs.reg_ownerCode = 'تعذّر التحقق من الكود — تأكد من الاتصال بالإنترنت';
         }
       }
     }
@@ -4421,12 +4418,14 @@ const App = ({ onShowPricing }) => {
     // workers — real-time listener
     const unsubWorkers = onSnapshot(
       collection(db, 'owners', oid, 'workers'),
-      (snap) => setWorkers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      (snap) => setWorkers(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      (err) => { if (err.code !== 'permission-denied') console.error('workers listener:', err.code); }
     );
     // workplaces
     const unsubPlaces = onSnapshot(
       collection(db, 'owners', oid, 'workplaces'),
-      (snap) => setWorkPlaces(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      (snap) => setWorkPlaces(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      (err) => { if (err.code !== 'permission-denied') console.error('workplaces listener:', err.code); }
     );
     // users
     const unsubUsers = onSnapshot(
@@ -4436,7 +4435,8 @@ const App = ({ onShowPricing }) => {
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(m => !m.deleted); // فلتر المحذوفين
         setOwnerUsers(members.length > 0 ? members : [user]);
-      }
+      },
+      (err) => { if (err.code !== 'permission-denied') console.error('members listener:', err.code); }
     );
     // حفظ مراجع إلغاء الاشتراك عشان نقدر نوقفهم قبل تسجيل الخروج
     unsubscribeListeners.current = [unsubWorkers, unsubPlaces, unsubUsers];
