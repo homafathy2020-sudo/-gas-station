@@ -4064,11 +4064,19 @@ const getPlan = () => {
 const planHasGPS        = (plan) => false; // مغلقة مؤقتاً
 
 // حدود العمال لكل باقة
+// free=5, basic=10, pro=20, enterprise=∞, lifetime=∞, trial=∞
 const WORKER_LIMITS = { free: 5, basic: 10, pro: 20, enterprise: Infinity, lifetime: Infinity, trial: Infinity };
 const getWorkerLimit  = (plan) => WORKER_LIMITS[plan] ?? 5;
 const FREE_WORKER_LIMIT = 5;
 
-// الـ features حسب كل باقة بالظبط
+// ===== الـ features حسب كل باقة بالظبط =====
+// | Feature          | free | basic | pro | enterprise | lifetime | trial |
+// | عدد العمال       |  5   |  10   | 20  |     ∞      |    ∞     |   ∞   |
+// | رواتب وخصومات   |  ✅  |  ✅   | ✅  |    ✅      |   ✅     |  ✅   |
+// | Excel            |  ❌  |  ✅   | ✅  |    ✅      |   ✅     |  ✅   |
+// | واتساب للعمال   |  ❌  |  ❌   | ✅  |    ✅      |   ✅     |  ✅   |
+// | صرف الرواتب     |  ❌  |  ❌   | ❌  |    ✅      |   ✅     |  ✅   |
+// | أرشيف الشهور    |  ❌  |  ❌   | ❌  |    ✅      |   ✅     |  ✅   |
 const planIsFree        = (plan) => plan === 'free';
 const planHasExcelAdv   = (plan) => ['basic', 'pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
 const planHasWhatsApp   = (plan) => ['pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
@@ -4112,10 +4120,10 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         { yes: true,  text: 'حتى 10 عمال' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
         { yes: true,  text: 'تقارير Excel' },
-        { yes: false, text: 'عمال غير محدودين' },
         { yes: false, text: 'إشعارات واتساب للعمال' },
         { yes: false, text: 'تقرير صرف الرواتب' },
         { yes: false, text: 'أرشيف وإغلاق الشهر' },
+        { yes: false, text: 'عمال غير محدودين' },
       ],
       btnClass: 'btn-ghost',
       btnLabel: 'اشترك الآن',
@@ -4166,7 +4174,7 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       emoji: '♾️',
       name: 'مدى الحياة',
       desc: 'ادفع مرة واحدة — استخدم للأبد',
-      price: '5,999',
+      price: '5,000',
       period: 'دفعة واحدة فقط — بدون أي رسوم شهرية',
       className: 'lifetime',
       lifetime: true,
