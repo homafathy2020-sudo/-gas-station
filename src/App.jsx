@@ -3,6 +3,17 @@ import { auth, db } from "./firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs, query, where } from "firebase/firestore";
 
+// ==================== STAGING/PRODUCTION MODE ====================
+const IS_STAGING = process.env.REACT_APP_ENV === 'staging' || 
+                   (typeof window !== 'undefined' && localStorage.getItem('app_mode') === 'staging');
+
+const COLLECTION_PREFIX = IS_STAGING ? 'test_' : '';
+
+if (typeof window !== 'undefined') {
+  console.log(`🔥 App Mode: ${IS_STAGING ? 'STAGING 🧪' : 'PRODUCTION 🚀'}`);
+  console.log(`📦 Using collections: ${COLLECTION_PREFIX}owners, ${COLLECTION_PREFIX}workers`);
+}
+
 // ==================== STYLES ====================
 const globalStyles = `
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
@@ -419,7 +430,7 @@ const getMonthArchives = (ownerId) => {
 };
 const saveMonthArchives = async (ownerId, list) => {
   localStorage.setItem('owner_' + ownerId + '_month_archives', JSON.stringify(list));
-  try { await setDoc(doc(db, 'owners', ownerId, 'meta', 'monthArchives'), { list }); } catch {}
+  try { await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}meta`, 'monthArchives'), { list }); } catch {}
 };
 
 // ==================== SALARY PAYMENT UTILS ====================
@@ -428,7 +439,7 @@ const getPaymentRecords = (ownerId) => {
 };
 const savePaymentRecords = async (ownerId, list) => {
   localStorage.setItem('owner_' + ownerId + '_payments', JSON.stringify(list));
-  try { await setDoc(doc(db, 'owners', ownerId, 'meta', 'payments'), { list }); } catch {}
+  try { await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}meta`, 'payments'), { list }); } catch {}
 };
 
 // التحقق من الأرقام المُدخلة: بين 0 و 1,000,000
@@ -443,9 +454,9 @@ const validateNum = (val, label) => {
 
 // مفاتيح localStorage الخاصة بكل مالك
 // ==================== FIRESTORE UTILS ====================
-const ownerDoc  = (ownerId)          => doc(db, 'owners', ownerId);
-const subDoc    = (ownerId, col, id) => doc(db, 'owners', ownerId, col, id);
-const subCol    = (ownerId, col)     => collection(db, 'owners', ownerId, col);
+const ownerDoc  = (ownerId)          => doc(db, `${COLLECTION_PREFIX}owners`, ownerId);
+const subDoc    = (ownerId, col, id) => doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}${col}`, id);
+const subCol    = (ownerId, col)     => collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}${col}`);
 
 // ── الدوال دي بتستخدم localStorage كـ cache سريع + بتحفظ في Firestore في الخلفية ──
 // عشان كده الكود القديم اللي بيستدعيها sync هيشتغل عادي
@@ -458,7 +469,7 @@ const getInvites = (ownerId) => {
 };
 const saveInvites = async (ownerId, list, ownerCode) => {
   localStorage.setItem(_lsKey(ownerId,'invites'), JSON.stringify(list));
-  try { await setDoc(doc(db,'owners',ownerId,'meta','invites'), { list }); } catch {}
+  try { await setDoc(doc(db,`${COLLECTION_PREFIX}owners`,ownerId,`${COLLECTION_PREFIX}meta`,'invites'), { list }); } catch {}
   if (ownerCode) {
     try { await setDoc(doc(db,'ownerCodes',ownerCode), { ownerId, inviteList: list }, { merge: true }); } catch(e) { console.warn('ownerCodes inviteList update failed:', e.code); }
   }
@@ -466,7 +477,7 @@ const saveInvites = async (ownerId, list, ownerCode) => {
 // مزامنة من Firestore للـ cache
 const syncInvites = async (ownerId) => {
   try {
-    const d = await getDoc(doc(db,'owners',ownerId,'meta','invites'));
+    const d = await getDoc(doc(db,`${COLLECTION_PREFIX}owners`,ownerId,`${COLLECTION_PREFIX}meta`,'invites'));
     if (d.exists()) localStorage.setItem(_lsKey(ownerId,'invites'), JSON.stringify(d.data().list || []));
   } catch {}
 };
@@ -475,9 +486,9 @@ const syncInvites = async (ownerId) => {
 // ==================== BACKUP SYSTEM ====================
 const MAX_BACKUPS = 30;
 const BACKUP_INTERVAL_HOURS = 24;
-const backupsCol = (ownerId) => collection(db, 'owners', ownerId, 'backups');
-const backupDoc  = (ownerId, backupId) => doc(db, 'owners', ownerId, 'backups', backupId);
-const backupMetaDoc = (ownerId) => doc(db, 'owners', ownerId, 'meta', 'backup_meta');
+const backupsCol = (ownerId) => collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}backups`);
+const backupDoc  = (ownerId, backupId) => doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}backups`, backupId);
+const backupMetaDoc = (ownerId) => doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}meta`, 'backup_meta');
 
 // جلب كل الـ backups مرتبة من الأحدث للأقدم
 const getBackupsList = async (ownerId) => {
@@ -529,30 +540,30 @@ const restoreBackup = async (ownerId, backup) => {
   const { workers = [], workPlaces = [], members = [] } = backup.data || {};
 
   // 1) احذف كل العمال الحاليين
-  const currentWorkers = await getDocs(collection(db, 'owners', ownerId, 'workers'));
+  const currentWorkers = await getDocs(collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workers`));
   for (const d of currentWorkers.docs) {
-    try { await deleteDoc(doc(db, 'owners', ownerId, 'workers', d.id)); } catch {}
+    try { await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workers`, d.id)); } catch {}
   }
   // 2) احذف كل الـ workplaces الحالية
-  const currentPlaces = await getDocs(collection(db, 'owners', ownerId, 'workplaces'));
+  const currentPlaces = await getDocs(collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workplaces`));
   for (const d of currentPlaces.docs) {
-    try { await deleteDoc(doc(db, 'owners', ownerId, 'workplaces', d.id)); } catch {}
+    try { await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workplaces`, d.id)); } catch {}
   }
   // 3) احذف كل الـ members الحاليين
-  const currentMembers = await getDocs(collection(db, 'owners', ownerId, 'members'));
+  const currentMembers = await getDocs(collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}members`));
   for (const d of currentMembers.docs) {
-    try { await deleteDoc(doc(db, 'owners', ownerId, 'members', d.id)); } catch {}
+    try { await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}members`, d.id)); } catch {}
   }
 
   // 4) أعد كتابة البيانات من الـ backup
   for (const w of workers) {
-    await setDoc(doc(db, 'owners', ownerId, 'workers', String(w.id)), w);
+    await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workers`, String(w.id)), w);
   }
   for (const p of workPlaces) {
-    await setDoc(doc(db, 'owners', ownerId, 'workplaces', String(p.id)), p);
+    await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workplaces`, String(p.id)), p);
   }
   for (const m of members) {
-    await setDoc(doc(db, 'owners', ownerId, 'members', String(m.id)), m);
+    await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}members`, String(m.id)), m);
   }
 };
 
@@ -2405,7 +2416,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   useEffect(() => {
     const loadInvites = async () => {
       try {
-        const d = await getDoc(doc(db, 'owners', currentUser.id, 'meta', 'invites'));
+        const d = await getDoc(doc(db, `${COLLECTION_PREFIX}owners`, currentUser.id, `${COLLECTION_PREFIX}meta`, 'invites'));
         if (d.exists()) setInvites(d.data().list || []);
       } catch {}
     };
@@ -2843,7 +2854,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 
       // لو مالك، ابدأله الـ trial تلقائياً من لحظة التسجيل
       if (regForm.role === 'owner') {
-        await setDoc(doc(db, 'owners', uid, 'settings', 'subscription'), {
+        await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, uid, `${COLLECTION_PREFIX}settings`, 'subscription'), {
           trialStart: new Date().toISOString(),
           plan: 'trial',
         });
@@ -2862,10 +2873,10 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         try {
           const norm = (s) => s.trim().replace(/\s+/g, ' ').replace(/[أإآا]/g, 'ا').replace(/[ةه]/g, 'ه').replace(/[يى]/g, 'ي');
           const workerNorm = norm(regForm.name);
-          const inviteDoc = await getDoc(doc(db, 'owners', ownerData.id, 'meta', 'invites'));
+          const inviteDoc = await getDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerData.id, `${COLLECTION_PREFIX}meta`, 'invites'));
           const currentList = inviteDoc.exists() ? (inviteDoc.data().list || []) : [];
           const updatedList = currentList.filter(x => norm(x) !== workerNorm);
-          await setDoc(doc(db, 'owners', ownerData.id, 'meta', 'invites'), { list: updatedList });
+          await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerData.id, `${COLLECTION_PREFIX}meta`, 'invites'), { list: updatedList });
           await setDoc(doc(db, 'ownerCodes', ownerData.ownerCode), { inviteList: updatedList }, { merge: true });
         } catch (e) { console.log('invite remove error', e); }
       }
@@ -3081,7 +3092,7 @@ const TRIAL_DAYS = 15;
 const WHATSAPP_NUMBER = '201220523598';
 
 // ---- Firebase-based trial & plan helpers ----
-const getOwnerTrialDoc = (ownerId) => doc(db, 'owners', ownerId, 'settings', 'subscription');
+const getOwnerTrialDoc = (ownerId) => doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}settings`, 'subscription');
 
 const initTrialIfNeeded = async (ownerId) => {
   try {
@@ -3174,13 +3185,13 @@ const getStationLimit = (plan) => STATION_LIMITS[plan] ?? 1;
 
 // Firestore helpers للمحطات
 const getStations = async (ownerId) => {
-  try { const snap = await getDocs(collection(db, 'owners', ownerId, 'stations')); return snap.docs.map(d => ({ id: d.id, ...d.data() })); } catch { return []; }
+  try { const snap = await getDocs(collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}stations`)); return snap.docs.map(d => ({ id: d.id, ...d.data() })); } catch { return []; }
 };
 const saveStation = async (ownerId, station) => {
-  await setDoc(doc(db, 'owners', ownerId, 'stations', String(station.id)), station);
+  await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}stations`, String(station.id)), station);
 };
 const deleteStation = async (ownerId, stationId) => {
-  await deleteDoc(doc(db, 'owners', ownerId, 'stations', String(stationId)));
+  await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}stations`, String(stationId)));
 };
 const ACTIVE_STATION_KEY = (ownerId) => `owner_${ownerId}_active_station`;
 
@@ -3629,7 +3640,7 @@ const getAllOwners = async () => {
     // جيب الباقة لكل مالك من settings/subscription
     const withPlans = await Promise.all(owners.map(async (o) => {
       try {
-        const subSnap = await getDoc(doc(db, 'owners', o.id, 'settings', 'subscription'));
+        const subSnap = await getDoc(doc(db, `${COLLECTION_PREFIX}owners`, o.id, `${COLLECTION_PREFIX}settings`, 'subscription'));
         const plan = subSnap.exists() ? (subSnap.data().plan || 'trial') : 'trial';
         return { ...o, plan };
       } catch { return { ...o, plan: 'trial' }; }
@@ -4132,7 +4143,7 @@ ${latestAnn.body}
                     onChange={async (e) => {
                       const newPlan = e.target.value;
                       try {
-                        const ref = doc(db, 'owners', o.id, 'settings', 'subscription');
+                        const ref = doc(db, `${COLLECTION_PREFIX}owners`, o.id, `${COLLECTION_PREFIX}settings`, 'subscription');
                         const snap = await getDoc(ref);
                         if (snap.exists()) {
                           await updateDoc(ref, { plan: newPlan });
@@ -4437,17 +4448,17 @@ const App = ({ onShowPricing }) => {
 
     // workers — real-time listener
     const unsubWorkers = onSnapshot(
-      collection(db, 'owners', oid, 'workers'),
+      collection(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`),
       (snap) => setWorkers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     );
     // workplaces
     const unsubPlaces = onSnapshot(
-      collection(db, 'owners', oid, 'workplaces'),
+      collection(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workplaces`),
       (snap) => setWorkPlaces(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     );
     // users
     const unsubUsers = onSnapshot(
-      collection(db, 'owners', oid, 'members'),
+      collection(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}members`),
       (snap) => {
         const members = snap.docs
           .map(d => ({ id: d.id, ...d.data() }))
@@ -4487,9 +4498,9 @@ const App = ({ onShowPricing }) => {
         try {
           // انتظر شوية عشان الـ listeners يجيبوا البيانات الأول
           setTimeout(async () => {
-            const wSnap = await getDocs(collection(db, 'owners', oid, 'workers'));
-            const pSnap = await getDocs(collection(db, 'owners', oid, 'workplaces'));
-            const mSnap = await getDocs(collection(db, 'owners', oid, 'members'));
+            const wSnap = await getDocs(collection(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`));
+            const pSnap = await getDocs(collection(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workplaces`));
+            const mSnap = await getDocs(collection(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}members`));
             const ws = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             const ps = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             const ms = mSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => !m.deleted);
@@ -4507,7 +4518,7 @@ const App = ({ onShowPricing }) => {
   const saveWorkers = async (list, ownerId) => {
     // حفظ كل عامل كـ document منفصل
     for (const w of list) {
-      await setDoc(doc(db, 'owners', ownerId, 'workers', String(w.id)), w);
+      await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workers`, String(w.id)), w);
     }
   };
 
@@ -4517,7 +4528,7 @@ const App = ({ onShowPricing }) => {
     const newList = typeof updater === 'function' ? updater(workers) : updater;
     setWorkers(newList);
     for (const w of newList) {
-      await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+      await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, String(w.id)), w);
     }
   };
 
@@ -4529,7 +4540,7 @@ const App = ({ onShowPricing }) => {
     if (u.role === 'owner' && u.ownerCode) {
       Promise.all([
         getDoc(doc(db, 'ownerCodes', u.ownerCode)),
-        getDoc(doc(db, 'owners', u.id, 'meta', 'invites'))
+        getDoc(doc(db, `${COLLECTION_PREFIX}owners`, u.id, `${COLLECTION_PREFIX}meta`, 'invites'))
       ]).then(([codeSnap, invSnap]) => {
         const inviteList = invSnap.exists() ? (invSnap.data().list || []) : [];
         const needsUpdate = !codeSnap.exists() || JSON.stringify(codeSnap.data().inviteList || []) !== JSON.stringify(inviteList);
@@ -4566,9 +4577,9 @@ const App = ({ onShowPricing }) => {
       // 2) علّم الـ member كـ deleted (أسرع وأضمن من الحذف)
       try { await setDoc(doc(db, 'owners', oid, 'members', uid), { deleted: true }, { merge: true }); } catch(e) { console.warn('members mark deleted:', e); }
       // وامسحه كمان
-      try { await deleteDoc(doc(db, 'owners', oid, 'members', uid)); } catch(e) { console.warn('members delete:', e); }
+      try { await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}members`, uid)); } catch(e) { console.warn('members delete:', e); }
       // 3) امسحه من workers
-      try { await deleteDoc(doc(db, 'owners', oid, 'workers', uid)); } catch(e) { console.warn('workers delete:', e); }
+      try { await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, uid)); } catch(e) { console.warn('workers delete:', e); }
       // 4) علّم الحساب كـ deleted في users collection
       try { await updateDoc(doc(db, 'users', uid), { deleted: true }); } catch(e) { console.warn('users update:', e); }
     } catch (err) { console.error('Error deleting user:', err); }
@@ -4589,20 +4600,20 @@ const App = ({ onShowPricing }) => {
     let workerWriteOk = false;
     let memberWriteOk = false;
     try {
-      await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker);
+      await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}workers`, String(newUser.id)), newWorker);
       workerWriteOk = true;
       console.log('[DEBUG] workers write OK');
     } catch(e) {
       console.error('[DEBUG] workers write FAILED:', e.code, e.message);
       try {
-        await setDoc(doc(db, 'owners', ownerId, 'pendingWorkers', String(newUser.id)), {
+        await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}pendingWorkers`, String(newUser.id)), {
           ...newWorker, pendingAt: new Date().toISOString(), reason: e.code
         });
         console.log('[DEBUG] fallback pendingWorkers OK');
       } catch(e2) { console.error('[DEBUG] pendingWorkers fallback FAILED:', e2.code); }
     }
     try {
-      await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
+      await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}members`, String(newUser.id)), newUser);
       memberWriteOk = true;
       console.log('[DEBUG] members write OK');
     } catch(e) {
@@ -4617,7 +4628,7 @@ const App = ({ onShowPricing }) => {
   const updateWorker = async (updated) => {
     const oid = getOwnerId(user);
     if (!oid) return;
-    await setDoc(doc(db, 'owners', oid, 'workers', String(updated.id)), updated);
+    await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, String(updated.id)), updated);
   };
 
   const handleNavigate = (targetPage) => setPage(targetPage);
@@ -4700,18 +4711,18 @@ const App = ({ onShowPricing }) => {
               const deletedWorkers = workers.filter(w => !newList.find(n => n.id === w.id));
               // احذفهم من Firebase
               for (const w of deletedWorkers) {
-                await deleteDoc(doc(db, 'owners', oid, 'workers', String(w.id)));
+                await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, String(w.id)));
               }
               // حدّث الباقيين
               for (const w of newList) {
-                await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+                await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, String(w.id)), w);
               }
             }} />
           )}
           {page === 'reports' && <ReportsPage workers={workers} ownerId={getOwnerId(user)} onResetMonth={(resetWorkers) => {
               const oid = getOwnerId(user);
               resetWorkers.forEach(async w => {
-                await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+                await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, String(w.id)), w);
               });
             }} />}
           {page === 'salary_payment' && user.role === 'owner' && (
@@ -4746,17 +4757,17 @@ const App = ({ onShowPricing }) => {
               workers={workers}
               onAddWorker={async (w) => {
                 const oid = getOwnerId(user);
-                await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
+                await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, String(w.id)), w);
               }}
               onAddUser={async (u) => {
                 const oid = getOwnerId(user);
-                await setDoc(doc(db, 'owners', oid, 'members', String(u.id)), u);
+                await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}members`, String(u.id)), u);
                 await setDoc(doc(db, 'users', String(u.id)), u);
                 setOwnerUsers(prev => [...prev, u]);
               }}
               onEditUser={async (id, updated) => {
                 const oid = getOwnerId(user);
-                await updateDoc(doc(db, 'owners', oid, 'members', String(id)), updated);
+                await updateDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}members`, String(id)), updated);
                 await updateDoc(doc(db, 'users', String(id)), updated);
                 setOwnerUsers(prev => prev.map(u => u.id === id ? { ...u, ...updated } : u));
               }}
