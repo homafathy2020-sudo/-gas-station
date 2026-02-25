@@ -1,7 +1,7 @@
 import { useState, useCallback, useContext, createContext, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs, query, where } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, onSnapshot, deleteDoc, getDocs } from "firebase/firestore";
 
 // ==================== STYLES ====================
 const globalStyles = `
@@ -2368,16 +2368,15 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const [inviteWorkerName, setInviteWorkerName] = useState('');
   const [invites, setInvites] = useState([]);
 
-  // جيب الدعوات من Firebase عند فتح الصفحة
+  // real-time listener على الدعوات — بيتحدث فوراً لما عامل يسجل
   useEffect(() => {
-    const loadInvites = async () => {
-      try {
-        const d = await getDoc(doc(db, 'owners', currentUser.id, 'meta', 'invites'));
-        if (d.exists()) setInvites(d.data().list || []);
-      } catch {}
-    };
-    loadInvites();
-  }, []);
+    const unsubInvites = onSnapshot(
+      doc(db, 'owners', currentUser.id, 'meta', 'invites'),
+      (d) => { if (d.exists()) setInvites(d.data().list || []); else setInvites([]); },
+      () => {}
+    );
+    return () => unsubInvites();
+  }, [currentUser.id]);
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
   const toast = useToast();
   const ownerCode = currentUser.ownerCode || 'STAT-????';
@@ -2758,12 +2757,16 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     if (regForm.role === 'worker') {
       if (!regForm.ownerCode.trim()) { errs.reg_ownerCode = 'كود المالك مطلوب'; }
       else {
-        // ابحث عن المالك بالكود في Firestore (query مباشر بالكود)
+        // ابحث عن المالك بالكود في Firestore
         try {
-          const q = query(collection(db, 'users'), where('ownerCode', '==', regForm.ownerCode.trim()), where('role', '==', 'owner'));
-          const ownerSnap = await getDocs(q);
+          const ownerSnap = await getDocs(collection(db, 'users'));
           ownerData = null;
-          ownerSnap.forEach(d => { ownerData = { id: d.id, ...d.data() }; });
+          ownerSnap.forEach(d => {
+            const u = d.data();
+            if (u.role === 'owner' && u.ownerCode === regForm.ownerCode.trim()) {
+              ownerData = { id: d.id, ...u };
+            }
+          });
           if (!ownerData) { errs.reg_ownerCode = 'كود المالك غير صحيح'; }
           else {
             // مزامنة الدعوات من Firestore ثم تحقق بالاسم
@@ -2773,10 +2776,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
               errs.reg_name = 'الاسم ده مش موجود في قائمة الدعوات — تأكد إن المالك كتب اسمك بالظبط';
             }
           }
-        } catch (e) {
-          console.error('owner lookup error:', e);
-          errs.reg_ownerCode = 'تعذّر التحقق من الكود — تأكد من الاتصال بالإنترنت';
-        }
+        } catch { errs.reg_ownerCode = 'حدث خطأ في التحقق من الكود'; }
       }
     }
 
