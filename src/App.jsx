@@ -2810,7 +2810,10 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
           }
         } catch(e) {
           console.error('[DEBUG] owner lookup error:', e.code, e.message);
-          errs.reg_ownerCode = 'تعذّر التحقق من الكود — تأكد من الاتصال بالإنترنت';
+          // permission-denied على meta/invites مش مشكلة — الكود اتتحقق منه بنجاح والتسجيل يكمل
+          if (e.code !== 'permission-denied') {
+            errs.reg_ownerCode = 'تعذّر التحقق من الكود — تأكد من الاتصال بالإنترنت';
+          }
         }
       }
     }
