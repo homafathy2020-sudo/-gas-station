@@ -1343,30 +1343,32 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
       </div>}
 
       {/* السحب النقدي - عرض للعامل */}
-      {isWorkerView && (w.cash_withdrawals || []).length > 0 && <div className="detail-section">
+      {isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
           <div className="detail-section-title">💵 السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="entries-tbl">
-            <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>ملاحظة</th></tr></thead>
-            <tbody>
-              {w.cash_withdrawals.map((c, i) => (
-                <tr key={c.id}>
-                  <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
-                  <td style={{ fontWeight: 600 }}>{c.date}</td>
-                  <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
+        {(!w.cash_withdrawals || w.cash_withdrawals.length === 0)
+          ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سحب نقدي مسجل</div>
+          : <div style={{ overflowX: 'auto' }}>
+            <table className="entries-tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>ملاحظة</th></tr></thead>
+              <tbody>
+                {w.cash_withdrawals.map((c, i) => (
+                  <tr key={c.id}>
+                    <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{c.date}</td>
+                    <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
+                  <td colSpan={2} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي السحوبات</td>
+                  <td style={{ fontWeight: 800, color: '#3b82f6' }}>−{fmt(totalCash(w))}</td>
+                  <td />
                 </tr>
-              ))}
-              <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
-                <td colSpan={2} style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12, paddingTop: 10 }}>إجمالي السحوبات</td>
-                <td style={{ fontWeight: 800, color: '#3b82f6' }}>−{fmt(totalCash(w))}</td>
-                <td />
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>}
       </div>}
 
       {/* Net */}
