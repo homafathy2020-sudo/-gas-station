@@ -2195,293 +2195,42 @@ const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
 
 // ==================== SHIFT SETTLEMENT COMPONENT ====================
 const ShiftSettlement = ({ worker, ownerId }) => {
-  // Guard: لو ما في ownerId ما نعرض الـ component
-  if (!ownerId || !worker) return null;
+  if (!ownerId) return null;
 
-  const toast = useToast();
   const [morning, setMorning] = useState('');
   const [evening, setEvening] = useState('');
-  const [literPrice, setLiterPrice] = useState('');
-  const [requiredAmount, setRequiredAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [price, setPrice] = useState('');
+  const [salary, setSalary] = useState('');
   const [result, setResult] = useState(null);
-  const [settlements, setSettlements] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
 
-  // تحميل السجلات
-  useEffect(() => {
-    const loadSettlements = async () => {
-      try {
-        const settlementsSnap = await getDocs(
-          collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}shift_settlements`)
-        );
-        setSettlements(settlementsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      } catch (err) {
-        console.error('خطأ في تحميل التصفيات:', err);
-      }
-    };
-    if (ownerId) loadSettlements();
-  }, [ownerId]);
-
-  const handleCalculate = () => {
-    if (!morning || !evening || !literPrice || !requiredAmount) {
-      toast('ملء جميع الحقول مطلوب', 'error');
-      return;
-    }
-
-    const morn = parseFloat(morning);
-    const eve = parseFloat(evening);
-    const price = parseFloat(literPrice);
-    const workerSalary = parseFloat(requiredAmount); // الواصل من العامل
-
-    // حساب الفرق (الكمية)
-    const quantity = eve - morn;
-
-    // حساب المبلغ المطلوب (quantity × سعر اللتر)
-    const requiredAmount_calc = quantity * price;
-
-    // حساب العجز/الفائض (الواصل من العامل - المبلغ المطلوب)
-    const shortage = workerSalary - requiredAmount_calc;
-
-    setResult({
-      quantity,
-      requiredAmount: requiredAmount_calc,
-      workerSalary,
-      shortage,
-      date: new Date().toLocaleDateString('ar-EG'),
-      time: new Date().toLocaleTimeString('ar-EG'),
-    });
-  };
-
-  const handleSave = async () => {
-    if (!result) return;
-
-    setLoading(true);
-    try {
-      const settlementsCol = collection(
-        db,
-        `${COLLECTION_PREFIX}owners`,
-        ownerId,
-        `${COLLECTION_PREFIX}shift_settlements`
-      );
-
-      await setDoc(doc(settlementsCol, `shift_${Date.now()}`), {
-        workerId: worker.id,
-        workerName: worker.name,
-        ...result,
-        createdAt: new Date().toISOString(),
-      });
-
-      toast('تم حفظ تصفية الوردية بنجاح ✅', 'success');
-      setMorning('');
-      setEvening('');
-      setLiterPrice('');
-      setRequiredAmount('');
-      setResult(null);
-
-      // تحديث السجلات
-      const updatedSnap = await getDocs(
-        collection(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}shift_settlements`)
-      );
-      setSettlements(updatedSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (err) {
-      console.error('خطأ:', err);
-      toast('فشل الحفظ: ' + err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
+  const calculate = () => {
+    if (!morning || !evening || !price || !salary) return;
+    const qty = parseFloat(evening) - parseFloat(morning);
+    const required = qty * parseFloat(price);
+    const diff = parseFloat(salary) - required;
+    setResult({ qty, required, salary: parseFloat(salary), diff });
   };
 
   return (
-    <div style={{
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: 16,
-      padding: 24,
-      marginBottom: 20,
-    }}>
-      <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span>⛽ تصفية الوردية</span>
-        {settlements.length > 0 && (
-          <button 
-            onClick={() => setShowHistory(!showHistory)}
-            className="btn btn-sm btn-ghost"
-          >
-            📋 السجلات ({settlements.length})
-          </button>
-        )}
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, marginBottom: 20 }}>
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>⛽ تصفية الوردية</div>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        <input type="number" placeholder="قراءة الصبح" value={morning} onChange={(e) => setMorning(e.target.value)} className="form-input" />
+        <input type="number" placeholder="قراءة الليل" value={evening} onChange={(e) => setEvening(e.target.value)} className="form-input" />
+        <input type="number" placeholder="سعر اللتر" value={price} onChange={(e) => setPrice(e.target.value)} className="form-input" />
+        <input type="number" placeholder="الواصل من العامل" value={salary} onChange={(e) => setSalary(e.target.value)} className="form-input" />
       </div>
 
-      {/* نموذج الإدخال */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 14,
-        marginBottom: 20,
-      }}>
-        <div>
-          <label className="form-label">قراءة الصبح</label>
-          <input
-            type="number"
-            value={morning}
-            onChange={(e) => setMorning(e.target.value)}
-            placeholder="مثال: 1000"
-            className="form-input"
-          />
-        </div>
+      <button onClick={calculate} className="btn btn-primary" style={{ marginBottom: 16 }}>🧮 احسب</button>
 
-        <div>
-          <label className="form-label">قراءة الليل</label>
-          <input
-            type="number"
-            value={evening}
-            onChange={(e) => setEvening(e.target.value)}
-            placeholder="مثال: 1500"
-            className="form-input"
-          />
-        </div>
-
-        <div>
-          <label className="form-label">سعر اللتر</label>
-          <input
-            type="number"
-            value={literPrice}
-            onChange={(e) => setLiterPrice(e.target.value)}
-            placeholder="مثال: 50"
-            className="form-input"
-          />
-        </div>
-
-        <div>
-          <label className="form-label">الواصل من العامل</label>
-          <input
-            type="number"
-            value={requiredAmount}
-            onChange={(e) => setRequiredAmount(e.target.value)}
-            placeholder="مثال: 25000"
-            className="form-input"
-          />
-        </div>
-      </div>
-
-      {/* زر الحساب */}
-      <button
-        onClick={handleCalculate}
-        className="btn btn-primary"
-        style={{ marginBottom: 20 }}
-      >
-        🧮 حساب النتائج
-      </button>
-
-      {/* النتائج */}
       {result && (
-        <div style={{
-          background: 'rgba(59,130,246,0.05)',
-          border: '1px solid rgba(59,130,246,0.3)',
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 20,
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: '#3b82f6' }}>
-            📊 نتائج التصفية:
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الكمية (اللترات)</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
-                {result.quantity.toFixed(2)} لتر
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>المبلغ المطلوب</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#10b981' }}>
-                {result.requiredAmount.toFixed(2)} جنيه
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الواصل من العامل</div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
-                {result.workerSalary.toFixed(2)} جنيه
-              </div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>العجز/الفائض</div>
-              <div style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: result.shortage > 0 ? '#ef4444' : '#10b981',
-              }}>
-                {result.shortage > 0 ? '❌ عجز' : '✅ فائض'}
-              </div>
-              <div style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: result.shortage > 0 ? '#ef4444' : '#10b981',
-              }}>
-                {Math.abs(result.shortage).toFixed(2)} جنيه
-              </div>
-            </div>
-          </div>
-
-          {/* زر الحفظ */}
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="btn btn-success"
-            style={{
-              width: '100%',
-              opacity: loading ? 0.6 : 1,
-              cursor: loading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {loading ? '⏳ جاري الحفظ...' : '💾 حفظ التصفية'}
-          </button>
-        </div>
-      )}
-
-      {/* السجلات */}
-      {showHistory && settlements.length > 0 && (
-        <div style={{
-          marginTop: 20,
-          paddingTop: 20,
-          borderTop: '1px solid var(--border)',
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>
-            📜 سجل التصفيات
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="entries-tbl">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>التاريخ</th>
-                  <th>الكمية</th>
-                  <th>المبلغ المطلوب</th>
-                  <th>الواصل</th>
-                  <th>الحالة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {settlements.map((s, i) => (
-                  <tr key={s.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                    <td style={{ fontWeight: 600 }}>{s.date}</td>
-                    <td>{s.quantity.toFixed(2)} لتر</td>
-                    <td style={{ color: '#10b981', fontWeight: 700 }}>{s.requiredAmount.toFixed(2)}</td>
-                    <td style={{ color: 'var(--text)', fontWeight: 700 }}>{s.workerSalary.toFixed(2)}</td>
-                    <td>
-                      <span className={`badge ${s.shortage > 0 ? 'badge-danger' : 'badge-success'}`}>
-                        {s.shortage > 0 ? '❌ عجز' : '✅ فائض'} {Math.abs(s.shortage).toFixed(2)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 12, padding: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>الكمية</div><div style={{ fontSize: 14, fontWeight: 700 }}>{result.qty.toFixed(2)} لتر</div></div>
+            <div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>المبلغ المطلوب</div><div style={{ fontSize: 14, fontWeight: 700, color: '#10b981' }}>{result.required.toFixed(2)} ج</div></div>
+            <div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>الواصل</div><div style={{ fontSize: 14, fontWeight: 700 }}>{result.salary.toFixed(2)} ج</div></div>
+            <div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>الفرق</div><div style={{ fontSize: 14, fontWeight: 700, color: result.diff > 0 ? '#10b981' : '#ef4444' }}>{result.diff > 0 ? '+' : ''}{result.diff.toFixed(2)} ج</div></div>
           </div>
         </div>
       )}
