@@ -456,9 +456,12 @@ const _lsKey = (ownerId, type) => `owner_${ownerId}_${type}`;
 const getInvites = (ownerId) => {
   try { return JSON.parse(localStorage.getItem(_lsKey(ownerId,'invites')) || '[]'); } catch { return []; }
 };
-const saveInvites = async (ownerId, list) => {
+const saveInvites = async (ownerId, list, ownerCode) => {
   localStorage.setItem(_lsKey(ownerId,'invites'), JSON.stringify(list));
   try { await setDoc(doc(db,'owners',ownerId,'meta','invites'), { list }); } catch {}
+  if (ownerCode) {
+    try { await setDoc(doc(db,'ownerCodes',ownerCode), { ownerId, inviteList: list }, { merge: true }); } catch(e) { console.warn('ownerCodes inviteList update failed:', e.code); }
+  }
 };
 // مزامنة من Firestore للـ cache
 const syncInvites = async (ownerId) => {
@@ -2476,7 +2479,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
     if (invites.includes(workerName)) { toast('هذا الاسم موجود في القائمة مسبقاً', 'warning'); return; }
     const updated = [...invites, workerName];
     setInvites(updated);
-    saveInvites(currentUser.id, updated);
+    saveInvites(currentUser.id, updated, currentUser.ownerCode);
 
     // فتح واتساب برسالة جاهزة باسم العامل والكود
     const msg = encodeURIComponent(
@@ -2502,7 +2505,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const handleRemoveInvite = (workerName) => {
     const updated = invites.filter(u => u !== workerName);
     setInvites(updated);
-    saveInvites(currentUser.id, updated);
+    saveInvites(currentUser.id, updated, currentUser.ownerCode);
     toast('تم حذف الدعوة', 'success');
   };
 
@@ -2794,23 +2797,14 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
             errs.reg_ownerCode = 'كود المالك غير صحيح';
           } else {
             const ownerId = codeDoc.data().ownerId;
-            console.log('[DEBUG] found ownerId:', ownerId);
-            const ownerDoc = await getDoc(doc(db, 'users', ownerId));
-            if (!ownerDoc.exists()) {
-              errs.reg_ownerCode = 'كود المالك غير صحيح';
-            } else {
-              ownerData = { id: ownerId, ...ownerDoc.data() };
-              const norm = (s) => s.trim().replace(/\s+/g, ' ').replace(/[أإآا]/g, 'ا').replace(/[ةه]/g, 'ه').replace(/[يى]/g, 'ي');
-              try {
-                const inviteDoc = await getDoc(doc(db, 'owners', ownerId, 'meta', 'invites'));
-                const inviteList = inviteDoc.exists() ? (inviteDoc.data().list || []) : [];
-                console.log('[DEBUG] inviteList:', inviteList);
-                const found = inviteList.some(inv => norm(inv) === norm(regForm.name));
-                if (!found) {
-                  errs.reg_name = 'الاسم ده مش موجود في قائمة الدعوات — تأكد إن المالك كتب اسمك بالظبط';
-                }
-              } catch(invErr) {
-                console.warn('[DEBUG] invites read error:', invErr.code, invErr.message);
+            // ✅ كل البيانات من ownerCodes — بدون أي قراءة تانية محتاجة auth
+            ownerData = { id: ownerId, ownerCode: cleanCode };
+            const norm = (s) => s.trim().replace(/\s+/g, ' ').replace(/[أإآا]/g, 'ا').replace(/[ةه]/g, 'ه').replace(/[يى]/g, 'ي');
+            const inviteList = codeDoc.data().inviteList || [];
+            if (inviteList.length > 0) {
+              const found = inviteList.some(inv => norm(inv) === norm(regForm.name));
+              if (!found) {
+                errs.reg_name = 'الاسم ده مش موجود في قائمة الدعوات — تأكد إن المالك كتب اسمك بالظبط';
               }
             }
           }
@@ -2853,8 +2847,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         localStorage.setItem('app_trial_start', new Date().toISOString());
         localStorage.removeItem('app_plan');
         try {
-          await setDoc(doc(db, 'ownerCodes', newUser.ownerCode), { ownerId: uid });
-          console.log('[DEBUG] ownerCodes created:', newUser.ownerCode);
+          await setDoc(doc(db, 'ownerCodes', newUser.ownerCode), { ownerId: uid, ownerName: newUser.name, inviteList: [] });
         } catch(e) { console.error('[DEBUG] ownerCodes write failed:', e.code); }
       }
 
@@ -2863,10 +2856,13 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         await onRegisterWorker(newUser, ownerData.id);
         // امسح الدعوة من Firebase مباشرة
         try {
+          const norm = (s) => s.trim().replace(/\s+/g, ' ').replace(/[أإآا]/g, 'ا').replace(/[ةه]/g, 'ه').replace(/[يى]/g, 'ي');
+          const workerNorm = norm(regForm.name);
           const inviteDoc = await getDoc(doc(db, 'owners', ownerData.id, 'meta', 'invites'));
           const currentList = inviteDoc.exists() ? (inviteDoc.data().list || []) : [];
-          const updatedList = currentList.filter(x => x !== regForm.name.trim());
+          const updatedList = currentList.filter(x => norm(x) !== workerNorm);
           await setDoc(doc(db, 'owners', ownerData.id, 'meta', 'invites'), { list: updatedList });
+          await setDoc(doc(db, 'ownerCodes', ownerData.ownerCode), { inviteList: updatedList }, { merge: true });
         } catch (e) { console.log('invite remove error', e); }
       }
 
@@ -4510,15 +4506,16 @@ const App = ({ onShowPricing }) => {
   const handleLogin = (u) => {
     setUser(u);
     setPage(defaults[u.role] || 'workers');
-    // ✅ migration تلقائية: لو المالك مش عنده ownerCodes document، ينشئه في الخلفية
-    // بدون ما يحس بأي حاجة — آمن 100% على العملاء القدام
     if (u.role === 'owner' && u.ownerCode) {
-      const codeRef = doc(db, 'ownerCodes', u.ownerCode);
-      getDoc(codeRef).then(snap => {
-        if (!snap.exists()) {
-          setDoc(codeRef, { ownerId: u.id })
-            .then(() => console.log('ownerCodes migration done:', u.ownerCode))
-            .catch(e => console.warn('ownerCodes migration failed:', e.code));
+      Promise.all([
+        getDoc(doc(db, 'ownerCodes', u.ownerCode)),
+        getDoc(doc(db, 'owners', u.id, 'meta', 'invites'))
+      ]).then(([codeSnap, invSnap]) => {
+        const inviteList = invSnap.exists() ? (invSnap.data().list || []) : [];
+        const needsUpdate = !codeSnap.exists() || JSON.stringify(codeSnap.data().inviteList || []) !== JSON.stringify(inviteList);
+        if (needsUpdate) {
+          setDoc(doc(db, 'ownerCodes', u.ownerCode), { ownerId: u.id, ownerName: u.name, inviteList }, { merge: true })
+            .catch(e => console.warn('ownerCodes sync failed:', e.code));
         }
       }).catch(() => {});
     }
