@@ -2492,6 +2492,9 @@ const ShiftSettlement = ({ worker, ownerId }) => {
 };
 
 // ==================== END SHIFT SETTLEMENT ====================
+
+// ==================== WORKER PROFILE (self) ====================
+const WorkerProfile = ({ worker, onUpdate }) => {
   const toast = useToast();
   const w = worker;
   const ded = totalDed(w);
