@@ -2785,8 +2785,10 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       if (!regForm.ownerCode.trim()) { errs.reg_ownerCode = 'كود المالك مطلوب'; }
       else {
         try {
-          console.log('[DEBUG] looking up ownerCode:', regForm.ownerCode.trim());
-          const codeDoc = await getDoc(doc(db, 'ownerCodes', regForm.ownerCode.trim()));
+          // تنظيف الكود — شيل أي حروف عربية أو مسافات أو رموز غريبة
+          const cleanCode = regForm.ownerCode.trim().replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
+          console.log('[DEBUG] looking up ownerCode:', cleanCode);
+          const codeDoc = await getDoc(doc(db, 'ownerCodes', cleanCode));
           console.log('[DEBUG] codeDoc.exists:', codeDoc.exists());
           if (!codeDoc.exists()) {
             errs.reg_ownerCode = 'كود المالك غير صحيح';
