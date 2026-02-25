@@ -2784,28 +2784,36 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     if (regForm.role === 'worker') {
       if (!regForm.ownerCode.trim()) { errs.reg_ownerCode = 'كود المالك مطلوب'; }
       else {
-        // ابحث عن المالك بالكود في Firestore
         try {
-          const q = query(
-            collection(db, 'users'),
-            where('ownerCode', '==', regForm.ownerCode.trim()),
-            where('role', '==', 'owner')
-          );
-          const ownerSnap = await getDocs(q);
-          ownerData = null;
-          ownerSnap.forEach(d => { ownerData = { id: d.id, ...d.data() }; });
-          if (!ownerData) { errs.reg_ownerCode = 'كود المالك غير صحيح'; }
-          else {
-            await syncInvites(ownerData.id);
-            const inviteList = getInvites(ownerData.id);
-            const norm = (s) => s.trim().replace(/\s+/g, ' ').replace(/[أإآا]/g, 'ا').replace(/[ةه]/g, 'ه').replace(/[يى]/g, 'ي');
-            const found = inviteList.some(inv => norm(inv) === norm(regForm.name));
-            if (!found) {
-              errs.reg_name = 'الاسم ده مش موجود في قائمة الدعوات — تأكد إن المالك كتب اسمك بالظبط';
+          console.log('[DEBUG] looking up ownerCode:', regForm.ownerCode.trim());
+          const codeDoc = await getDoc(doc(db, 'ownerCodes', regForm.ownerCode.trim()));
+          console.log('[DEBUG] codeDoc.exists:', codeDoc.exists());
+          if (!codeDoc.exists()) {
+            errs.reg_ownerCode = 'كود المالك غير صحيح';
+          } else {
+            const ownerId = codeDoc.data().ownerId;
+            console.log('[DEBUG] found ownerId:', ownerId);
+            const ownerDoc = await getDoc(doc(db, 'users', ownerId));
+            if (!ownerDoc.exists()) {
+              errs.reg_ownerCode = 'كود المالك غير صحيح';
+            } else {
+              ownerData = { id: ownerId, ...ownerDoc.data() };
+              const norm = (s) => s.trim().replace(/\s+/g, ' ').replace(/[أإآا]/g, 'ا').replace(/[ةه]/g, 'ه').replace(/[يى]/g, 'ي');
+              try {
+                const inviteDoc = await getDoc(doc(db, 'owners', ownerId, 'meta', 'invites'));
+                const inviteList = inviteDoc.exists() ? (inviteDoc.data().list || []) : [];
+                console.log('[DEBUG] inviteList:', inviteList);
+                const found = inviteList.some(inv => norm(inv) === norm(regForm.name));
+                if (!found) {
+                  errs.reg_name = 'الاسم ده مش موجود في قائمة الدعوات — تأكد إن المالك كتب اسمك بالظبط';
+                }
+              } catch(invErr) {
+                console.warn('[DEBUG] invites read error:', invErr.code, invErr.message);
+              }
             }
           }
         } catch(e) {
-          console.error('owner lookup error:', e.code, e.message);
+          console.error('[DEBUG] owner lookup error:', e.code, e.message);
           errs.reg_ownerCode = 'تعذّر التحقق من الكود — تأكد من الاتصال بالإنترنت';
         }
       }
@@ -2842,6 +2850,10 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         // احفظ في localStorage برضو
         localStorage.setItem('app_trial_start', new Date().toISOString());
         localStorage.removeItem('app_plan');
+        try {
+          await setDoc(doc(db, 'ownerCodes', newUser.ownerCode), { ownerId: uid });
+          console.log('[DEBUG] ownerCodes created:', newUser.ownerCode);
+        } catch(e) { console.error('[DEBUG] ownerCodes write failed:', e.code); }
       }
 
       // لو عامل، يتضاف في داتا المالك
@@ -4555,10 +4567,29 @@ const App = ({ onShowPricing }) => {
       avatar: newUser.name[0] || '؟',
       delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
     };
-    try { await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker); }
-    catch(e) { console.error('workers write:', e.code, e.message); }
-    try { await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser); }
-    catch(e) { console.error('members write:', e.code, e.message); }
+    let workerWriteOk = false;
+    let memberWriteOk = false;
+    try {
+      await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker);
+      workerWriteOk = true;
+      console.log('[DEBUG] workers write OK');
+    } catch(e) {
+      console.error('[DEBUG] workers write FAILED:', e.code, e.message);
+      try {
+        await setDoc(doc(db, 'owners', ownerId, 'pendingWorkers', String(newUser.id)), {
+          ...newWorker, pendingAt: new Date().toISOString(), reason: e.code
+        });
+        console.log('[DEBUG] fallback pendingWorkers OK');
+      } catch(e2) { console.error('[DEBUG] pendingWorkers fallback FAILED:', e2.code); }
+    }
+    try {
+      await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
+      memberWriteOk = true;
+      console.log('[DEBUG] members write OK');
+    } catch(e) {
+      console.error('[DEBUG] members write FAILED:', e.code, e.message);
+    }
+    console.log('[DEBUG] registerWorker done — worker:', workerWriteOk, 'member:', memberWriteOk);
   };
 
   const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي', stations: '⛽ إدارة المحطات' };
