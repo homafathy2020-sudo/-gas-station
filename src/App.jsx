@@ -4780,22 +4780,18 @@ const App = ({ onShowPricing }) => {
             />
           )}
           {page === 'stations' && user.role === 'owner' && (
-            <StationsPage
-              ownerId={getOwnerId(user)}
-              stations={stations}
-              activeStation={activeStation}
-              onSetActive={(id) => {
-                setActiveStation(id);
-                const oid = getOwnerId(user);
-                if (oid) localStorage.setItem(ACTIVE_STATION_KEY(oid), id);
-              }}
-              onRefresh={async () => {
-                const oid = getOwnerId(user);
-                if (!oid) return;
-                const updated = await getStations(oid);
-                setStations(updated);
-              }}
-            />
+            <div style={{ maxWidth: 500, margin: '60px auto 0', textAlign: 'center', animation: 'fadeIn .4s ease' }}>
+              <div style={{ fontSize: 64, marginBottom: 20 }}>🚧</div>
+              <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 10 }}>قيد التطوير</div>
+              <div style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.9, marginBottom: 28 }}>
+                ميزة إدارة المحطات المتعددة قادمة قريباً ⚡<br/>
+                بنشتغل عليها عشان تطلع بأفضل شكل ممكن
+              </div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '14px 24px' }}>
+                <span style={{ fontSize: 18 }}>🔔</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b' }}>هيتم الإعلان عنها قريباً</span>
+              </div>
+            </div>
           )}
         </div>
       </div>
