@@ -3080,31 +3080,47 @@ const WHATSAPP_NUMBER = '201220523598';
 const getOwnerTrialDoc = (ownerId) => doc(db, 'owners', ownerId, 'settings', 'subscription');
 
 const initTrialIfNeeded = async (ownerId) => {
-  const ref = getOwnerTrialDoc(ownerId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      trialStart: new Date().toISOString(),
-      plan: 'trial',
-    });
+  try {
+    const ref = getOwnerTrialDoc(ownerId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        trialStart: new Date().toISOString(),
+        plan: 'trial',
+      });
+    }
+  } catch(e) {
+    // العامل ممكن ما يكونش عنده صلاحية كتابة — مش مشكلة
+    if (e.code !== 'permission-denied') console.error('initTrial error:', e.code);
   }
 };
 
 const getTrialInfoFromDB = async (ownerId) => {
-  const ref = getOwnerTrialDoc(ownerId);
-  const snap = await getDoc(ref);
-  let data = snap.exists() ? snap.data() : null;
-  if (!data) {
-    const startDate = new Date().toISOString();
-    await setDoc(ref, { trialStart: startDate, plan: 'trial' });
-    data = { trialStart: startDate, plan: 'trial' };
+  try {
+    const ref = getOwnerTrialDoc(ownerId);
+    const snap = await getDoc(ref);
+    let data = snap.exists() ? snap.data() : null;
+    if (!data) {
+      // لو مش موجود وعنده صلاحية كتابة، ابدأ trial جديد
+      try {
+        const startDate = new Date().toISOString();
+        await setDoc(ref, { trialStart: startDate, plan: 'trial' });
+        data = { trialStart: startDate, plan: 'trial' };
+      } catch(writeErr) {
+        // العامل ما عندوش صلاحية كتابة — استخدم بيانات افتراضية
+        data = { trialStart: new Date().toISOString(), plan: 'trial' };
+      }
+    }
+    const start = new Date(data.trialStart);
+    const now = new Date();
+    const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
+    const expired = elapsedDays >= TRIAL_DAYS;
+    return { remaining, expired, elapsedDays, startDate: data.trialStart, plan: data.plan || 'trial' };
+  } catch(e) {
+    if (e.code !== 'permission-denied') console.error('getTrialInfo error:', e.code);
+    return { remaining: 0, expired: false, elapsedDays: 0, startDate: null, plan: 'trial' };
   }
-  const start = new Date(data.trialStart);
-  const now = new Date();
-  const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-  const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
-  const expired = elapsedDays >= TRIAL_DAYS;
-  return { remaining, expired, elapsedDays, startDate: data.trialStart, plan: data.plan || 'trial' };
 };
 
 const setPlanInDB = async (ownerId, plan) => {
@@ -4418,14 +4434,12 @@ const App = ({ onShowPricing }) => {
     // workers — real-time listener
     const unsubWorkers = onSnapshot(
       collection(db, 'owners', oid, 'workers'),
-      (snap) => setWorkers(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      (err) => { if (err.code !== 'permission-denied') console.error('workers listener:', err.code); }
+      (snap) => setWorkers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     );
     // workplaces
     const unsubPlaces = onSnapshot(
       collection(db, 'owners', oid, 'workplaces'),
-      (snap) => setWorkPlaces(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      (err) => { if (err.code !== 'permission-denied') console.error('workplaces listener:', err.code); }
+      (snap) => setWorkPlaces(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     );
     // users
     const unsubUsers = onSnapshot(
@@ -4435,8 +4449,7 @@ const App = ({ onShowPricing }) => {
           .map(d => ({ id: d.id, ...d.data() }))
           .filter(m => !m.deleted); // فلتر المحذوفين
         setOwnerUsers(members.length > 0 ? members : [user]);
-      },
-      (err) => { if (err.code !== 'permission-denied') console.error('members listener:', err.code); }
+      }
     );
     // حفظ مراجع إلغاء الاشتراك عشان نقدر نوقفهم قبل تسجيل الخروج
     unsubscribeListeners.current = [unsubWorkers, unsubPlaces, unsubUsers];
