@@ -366,7 +366,7 @@ const sendWhatsAppNotify = (worker, type, entry) => {
   const net = calcNet(worker);
   const isPositive = type === 'discipline';
 
-  let msg = '⛽ محطة بترومين\n';
+  let msg = '⛽ WaqoudPro\n';
   msg += '─────────────────\n';
   msg += 'مرحباً يا ' + worker.name + ' 👋\n\n';
   if (isPositive) {
@@ -1597,7 +1597,7 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
   // ── Sheet 1: ملخص الشهر ──
   const summaryRows = [
     { cells: [C(`التقرير الشهري - ${monthName} ${year}`,1),E(1),E(1),E(1),E(1),E(1),E(1),E(1)], ht: 32 },
-    { cells: [C('محطة بترومين 10000',15),E(15),E(15),E(15),E(15),E(15),E(15),E(15)], ht: 26 },
+    { cells: [C('WaqoudPro',15),E(15),E(15),E(15),E(15),E(15),E(15),E(15)], ht: 26 },
     { cells: Array(8).fill(E(0)) },
     { cells: [C('العامل',1),C('مكان العمل',1),C('ايام العمل',1),C('التاخيرات',1),C('الغيابات',1),C('الخصومات',1),C('الحوافز',1),C('السحب النقدي',1),C('صافي المدفوع',1)], ht: 24 },
     ...workers.map((w, i) => {
@@ -2032,7 +2032,7 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
                       const net = calcNet(w);
                       const phone = w.phone.startsWith('0') ? '2' + w.phone : w.phone;
                       const msg = encodeURIComponent(
-                        'مرحباً يا ' + w.name + ' 👋\n\n⛽ محطة بترومين\n─────────────────\n' +
+                        'مرحباً يا ' + w.name + ' 👋\n\n⛽ WaqoudPro\n─────────────────\n' +
                         '💵 راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '\n' +
                         '─────────────────\n' +
                         '💰 الراتب الأساسي: ' + fmt(w.salary) + '\n' +
@@ -2103,7 +2103,7 @@ const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
       {showReset && <MonthResetModal workers={workers} ownerId={ownerId} onReset={onResetMonth} onClose={() => setShowReset(false)} />}
       <div style={{ textAlign: 'center', marginBottom: 22 }}>
         <div style={{ fontSize: 22, fontWeight: 800 }}>التقرير الشهري — {months[month]} {year}</div>
-        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>محطة بترومين 10000</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>WaqoudPro</div>
       </div>
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', marginBottom: 22 }}>
         {[
@@ -2456,7 +2456,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
     const msg = encodeURIComponent(
       `أهلاً يا ${workerName} 👋
 
-تم تسجيلك في منظومة بترومين لإدارة المحطة ⛽
+تم تسجيلك في WaqoudPro لإدارة المحطة ⛽
 
 خطوات التسجيل:
 1️⃣ افتح الرابط: ${appUrl}
@@ -2668,7 +2668,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
                   <button className="btn btn-success btn-xs" onClick={() => {
                     const msg = encodeURIComponent(`أهلاً يا ${workerName} 👋
 
-تذكير بخطوات التسجيل في منظومة بترومين ⛽
+تذكير بخطوات التسجيل في WaqoudPro ⛽
 
 1️⃣ افتح الرابط: ${appUrl}
 2️⃣ اضغط "إنشاء حساب جديد"
@@ -2714,7 +2714,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       // لو عامل، حول الـ username لـ fake email
       if (loginForm.loginRole === 'worker') {
         const uname = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
-        emailToUse = `${uname}@petromin.worker`;
+        emailToUse = `${uname}@waqoudpro.worker`;
       }
 
       const cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
@@ -2787,7 +2787,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       const roleLabels = { owner: 'المالك', worker: 'عامل' };
       // العامل يستخدم fake email من username
       const emailForAuth = regForm.role === 'worker'
-        ? `${regForm.username.trim().toLowerCase().replace(/\s+/g, '_')}@petromin.worker`
+        ? `${regForm.username.trim().toLowerCase().replace(/\s+/g, '_')}@waqoudpro.worker`
         : regForm.email.trim();
 
       const cred = await createUserWithEmailAndPassword(auth, emailForAuth, regForm.password);
@@ -2855,8 +2855,8 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       <div className="login-card" style={{ animation: 'fadeIn .4s ease' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div className="login-logo">⛽</div>
-          <div style={{ fontSize: 26, fontWeight: 800 }}>محطة بترومين 10000</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>نظام إدارة العمال</div>
+          <div style={{ fontSize: 26, fontWeight: 800 }}>WaqoudPro</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>نظام المحطات الذكي</div>
         </div>
 
         {/* Tabs */}
@@ -3007,7 +3007,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
     <>
       <div className={`mobile-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
       <div className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo"><div className="logo-icon">⛽</div><div><div className="logo-text">محطة بترومين</div><div className="logo-sub">نظام إدارة العمال</div></div></div>
+        <div className="sidebar-logo"><div className="logo-icon">⛽</div><div><div className="logo-text">WaqoudPro</div><div className="logo-sub">نظام المحطات الذكي</div></div></div>
         <nav className="sidebar-nav">
           <div className="nav-section-title">القائمة الرئيسية</div>
           {(navs[user.role] || []).map(item => (
@@ -3231,8 +3231,8 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
     },
   ];
 
-  const msg = encodeURIComponent(`مرحباً، أريد الاشتراك في تطبيق بترومين لإدارة المحطة 🚀`);
-  const wa = (plan) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في خطة "${plan}" — تطبيق بترومين ⛽`)}`;
+  const msg = encodeURIComponent(`مرحباً، أريد الاشتراك في WaqoudPro لإدارة المحطة 🚀`);
+  const wa = (plan) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في خطة "${plan}" — WaqoudPro ⛽`)}`;
 
   return (
     <div className="expired-screen">
@@ -3604,7 +3604,7 @@ const AdminLoginPage = ({ onAuth }) => {
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontSize: 48, marginBottom: 10 }}>🔐</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>لوحة تحكم المطور</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>محطة بترومين — Admin Only</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>WaqoudPro — Admin Only</div>
         </div>
         <div className="card" style={{ padding: 28 }}>
           <div style={{ marginBottom: 16 }}>
@@ -3701,7 +3701,7 @@ const AdminPanel = () => {
               <div style={{ fontSize: 20, fontWeight: 800 }}>لوحة تحكم المطور</div>
               <span className="admin-badge">ADMIN</span>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>إدارة الإشعارات والملاك — محطة بترومين</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>إدارة الإشعارات والملاك — WaqoudPro</div>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div className="admin-stat">
@@ -3845,15 +3845,15 @@ const AdminPanel = () => {
                     const phone = o.phone.startsWith('0') ? '2' + o.phone : o.phone;
                     const latestAnn = announcements[0];
                     const msg = latestAnn
-                      ? encodeURIComponent(`⛽ محطة بترومين
+                      ? encodeURIComponent(`⛽ WaqoudPro
 مرحباً يا ${o.name} 👋
 
 ${typeIcons[latestAnn.type] || 'ℹ️'} ${latestAnn.title}
 ─────────────────
 ${latestAnn.body}
 ─────────────────
-فريق بترومين 🚀`)
-                      : encodeURIComponent(`⛽ محطة بترومين
+فريق WaqoudPro 🚀`)
+                      : encodeURIComponent(`⛽ WaqoudPro
 مرحباً يا ${o.name} 👋
 لديك إشعار جديد في التطبيق — افتح التطبيق للاطلاع عليه.`);
                     return (
