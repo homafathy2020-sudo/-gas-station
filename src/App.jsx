@@ -2215,7 +2215,8 @@ const ShiftSettlement = ({ worker, ownerId }) => {
   const [errors, setErrors] = useState({});
   const [saved, setSaved] = useState(false);
 
-  const shiftLabels = { morning: '🌅 صباحية', evening: '🌆 مسائية', night: '🌙 ليلية' };
+  const [pumpNumber, setPumpNumber] = useState('');
+  const shiftLabels = { morning: '🌅 صباحية', evening: '🌆 مسائية' };
   const fuelTypes = ['بنزين 80', 'بنزين 92', 'بنزين 95', 'سولار'];
 
   const validate = () => {
@@ -2224,6 +2225,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
     if (!evening) e.evening = 'مطلوب';
     if (!price || parseFloat(price) <= 0) e.price = 'مطلوب';
     if (!received) e.received = 'مطلوب';
+    if (!pumpNumber) e.pumpNumber = 'مطلوب';
     if (morning && evening && parseFloat(evening) <= parseFloat(morning)) e.evening = 'يجب أن تكون أكبر من البداية';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -2236,7 +2238,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
     const required = qty * parseFloat(price);
     const recv = parseFloat(received);
     const diff = recv - required;
-    setResult({ qty, required, recv, diff, date: shiftDate, shiftType, fuelType, note });
+    setResult({ qty, required, recv, diff, date: shiftDate, shiftType, fuelType, note, pumpNumber });
   };
 
   const saveToHistory = () => {
@@ -2298,8 +2300,8 @@ const ShiftSettlement = ({ worker, ownerId }) => {
       {/* ===== TAB: الحساب ===== */}
       {tab === 'calc' && (
         <div style={{ padding: '20px 22px' }}>
-          {/* التاريخ + نوع الوردية */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+          {/* التاريخ + نوع الوردية + رقم الطلمبة */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 تاريخ الوردية</div>
               <input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} style={inp()} />
@@ -2309,8 +2311,12 @@ const ShiftSettlement = ({ worker, ownerId }) => {
               <select value={shiftType} onChange={e => setShiftType(e.target.value)} style={inp()}>
                 <option value="morning">🌅 صباحية</option>
                 <option value="evening">🌆 مسائية</option>
-                <option value="night">🌙 ليلية</option>
               </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>⛽ رقم الطلمبة</div>
+              <input type="text" placeholder="مثال: 2" value={pumpNumber} onChange={e => { setPumpNumber(e.target.value); setErrors(p => ({ ...p, pumpNumber: '' })); }} style={inp('pumpNumber')} />
+              {errors.pumpNumber && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>⚠ {errors.pumpNumber}</div>}
             </div>
           </div>
 
@@ -2375,7 +2381,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
             <div style={{ borderRadius: 14, overflow: 'hidden', border: `2px solid ${result.diff > 0 ? 'rgba(16,185,129,0.35)' : result.diff < 0 ? 'rgba(239,68,68,0.35)' : 'rgba(148,163,184,0.3)'}`, animation: 'fadeIn 0.3s ease' }}>
               <div style={{ padding: '16px 20px', background: result.diff > 0 ? 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))' : result.diff < 0 ? 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))' : 'linear-gradient(135deg, rgba(148,163,184,0.1), rgba(148,163,184,0.03))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{shiftLabels[result.shiftType]} · {result.date} · {result.fuelType}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{shiftLabels[result.shiftType]} · {result.date} · {result.fuelType}{result.pumpNumber ? ` · طلمبة ${result.pumpNumber}` : ''}</div>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>{result.diff > 0 ? '✅ زيادة' : result.diff < 0 ? '❌ عجز' : '✔️ تمام بالظبط'}</div>
                 </div>
                 <div style={{ fontSize: 32, fontWeight: 900, color: result.diff > 0 ? '#10b981' : result.diff < 0 ? '#ef4444' : '#94a3b8' }}>
@@ -2439,7 +2445,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
                 {history.map((h) => (
                   <div key={h.id} style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 12, padding: '13px 16px', border: `1px solid ${h.diff > 0 ? 'rgba(16,185,129,0.2)' : h.diff < 0 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: 160 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{shiftLabels[h.shiftType] || '⛽ وردية'} · {h.date}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{shiftLabels[h.shiftType] || '⛽ وردية'} · {h.date}{h.pumpNumber ? ` · طلمبة ${h.pumpNumber}` : ''}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{h.fuelType} · {h.qty?.toFixed(1)} لتر · المطلوب: {h.required?.toFixed(0)} ج · الواصل: {h.recv?.toFixed(0)} ج</div>
                       {h.note && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>📝 {h.note}</div>}
                     </div>
