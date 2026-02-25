@@ -2368,15 +2368,16 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const [inviteWorkerName, setInviteWorkerName] = useState('');
   const [invites, setInvites] = useState([]);
 
-  // real-time listener على الدعوات — بيتحدث فوراً لما عامل يسجل
+  // جيب الدعوات من Firebase عند فتح الصفحة
   useEffect(() => {
-    const unsubInvites = onSnapshot(
-      doc(db, 'owners', currentUser.id, 'meta', 'invites'),
-      (d) => { if (d.exists()) setInvites(d.data().list || []); else setInvites([]); },
-      () => {}
-    );
-    return () => unsubInvites();
-  }, [currentUser.id]);
+    const loadInvites = async () => {
+      try {
+        const d = await getDoc(doc(db, 'owners', currentUser.id, 'meta', 'invites'));
+        if (d.exists()) setInvites(d.data().list || []);
+      } catch {}
+    };
+    loadInvites();
+  }, []);
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
   const toast = useToast();
   const ownerCode = currentUser.ownerCode || 'STAT-????';
@@ -4336,8 +4337,12 @@ const App = ({ onShowPricing }) => {
       avatar: newUser.name[0] || '؟',
       delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
     };
-    await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker);
-    await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
+    try {
+      await setDoc(doc(db, 'owners', ownerId, 'workers', String(newUser.id)), newWorker);
+    } catch(e) { console.error('❌ workers write failed:', e.code, e.message); }
+    try {
+      await setDoc(doc(db, 'owners', ownerId, 'members', String(newUser.id)), newUser);
+    } catch(e) { console.error('❌ members write failed:', e.code, e.message); }
   };
 
   const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي' };
