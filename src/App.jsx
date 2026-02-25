@@ -1064,7 +1064,7 @@ const CashWithdrawalModal = ({ onSave, onClose }) => {
 };
 
 // ==================== WORKER DETAIL ====================
-const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }) => {
+const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, ownerId }) => {
   const toast = useToast();
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({ name: worker.name, pump: worker.pump, workDays: worker.workDays, salary: worker.salary, phone: worker.phone || '' });
@@ -1354,7 +1354,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
       </div>}
 
       {/* تصفية الوردية - للمالك فقط (إذا كان ownerId موجود) */}
-      {!isWorkerView && w.ownerId && <ShiftSettlement worker={w} ownerId={w.ownerId} />}
+      {!isWorkerView && ownerId && <ShiftSettlement worker={w} ownerId={ownerId} />}
 
       {/* السحب النقدي - عرض للعامل */}
       {isWorkerView && <div className="detail-section">
@@ -1414,7 +1414,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true }
 };
 
 // ==================== WORKERS PAGE ====================
-const WorkersPage = ({ workers, setWorkers }) => {
+const WorkersPage = ({ workers, setWorkers, ownerId }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [ddOpen, setDdOpen] = useState(false);
   const [workerModal, setWorkerModal] = useState(null);
@@ -1508,7 +1508,7 @@ const WorkersPage = ({ workers, setWorkers }) => {
       </div>
 
       {selected
-        ? <WorkerDetail key={selected.id} worker={selected} onUpdate={updateWorker} />
+        ? <WorkerDetail key={selected.id} worker={selected} onUpdate={updateWorker} ownerId={ownerId} />
         : <div className="empty-state">
           <div className="empty-icon">👆</div>
           <div className="empty-title">اختر عاملاً من القائمة أعلاه</div>
@@ -4976,7 +4976,7 @@ const App = ({ onShowPricing }) => {
           )}
 
           {page === 'workers' && (user.role === 'owner' || user.role === 'manager') && (
-            <WorkersPage workers={workers} setWorkers={async (updater) => {
+            <WorkersPage workers={workers} ownerId={getOwnerId(user)} setWorkers={async (updater) => {
               const oid = getOwnerId(user);
               const newList = typeof updater === 'function' ? updater(workers) : updater;
               // اعرف مين اتحذف
