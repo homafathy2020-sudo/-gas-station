@@ -2221,9 +2221,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
   const validate = () => {
     const e = {};
     if (!morning) e.morning = 'مطلوب';
-    else if (parseFloat(morning) > 99999999) e.morning = 'الحد الأقصى 99,999,999';
     if (!evening) e.evening = 'مطلوب';
-    else if (parseFloat(evening) > 99999999) e.evening = 'الحد الأقصى 99,999,999';
     if (!price || parseFloat(price) <= 0) e.price = 'مطلوب';
     if (!received) e.received = 'مطلوب';
     if (morning && evening && parseFloat(evening) <= parseFloat(morning)) e.evening = 'يجب أن تكون أكبر من البداية';
@@ -2304,7 +2302,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 تاريخ الوردية</div>
-              <input type="date" value={shiftDate} max={TODAY} onChange={e => setShiftDate(e.target.value)} style={inp()} />
+              <input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} style={inp()} />
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🕐 نوع الوردية</div>
@@ -2322,12 +2320,12 @@ const ShiftSettlement = ({ worker, ownerId }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>قراءة البداية</div>
-                <input type="number" min="0" max="99999999" placeholder="مثال: 12450" value={morning} onChange={e => { setMorning(e.target.value); setErrors(p => ({ ...p, morning: '' })); }} style={inp('morning')} />
+                <input type="number" min="0" max="99999999" placeholder="مثال: 12450" value={morning} onChange={e => { const v = e.target.value; if (v === '' || parseFloat(v) <= 99999999) { setMorning(v); setErrors(p => ({ ...p, morning: '' })); } }} style={inp('morning')} />
                 {errors.morning && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>⚠ {errors.morning}</div>}
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>قراءة النهاية</div>
-                <input type="number" min="0" max="99999999" placeholder="مثال: 15320" value={evening} onChange={e => { setEvening(e.target.value); setErrors(p => ({ ...p, evening: '' })); }} style={inp('evening')} />
+                <input type="number" min="0" max="99999999" placeholder="مثال: 15320" value={evening} onChange={e => { const v = e.target.value; if (v === '' || parseFloat(v) <= 99999999) { setEvening(v); setErrors(p => ({ ...p, evening: '' })); } }} style={inp('evening')} />
                 {errors.evening && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>⚠ {errors.evening}</div>}
               </div>
             </div>
