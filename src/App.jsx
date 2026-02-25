@@ -4496,6 +4496,18 @@ const App = ({ onShowPricing }) => {
   const handleLogin = (u) => {
     setUser(u);
     setPage(defaults[u.role] || 'workers');
+    // ✅ migration تلقائية: لو المالك مش عنده ownerCodes document، ينشئه في الخلفية
+    // بدون ما يحس بأي حاجة — آمن 100% على العملاء القدام
+    if (u.role === 'owner' && u.ownerCode) {
+      const codeRef = doc(db, 'ownerCodes', u.ownerCode);
+      getDoc(codeRef).then(snap => {
+        if (!snap.exists()) {
+          setDoc(codeRef, { ownerId: u.id })
+            .then(() => console.log('ownerCodes migration done:', u.ownerCode))
+            .catch(e => console.warn('ownerCodes migration failed:', e.code));
+        }
+      }).catch(() => {});
+    }
   };
 
   const handleLogout = async () => {
