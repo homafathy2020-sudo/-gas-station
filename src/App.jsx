@@ -2229,21 +2229,21 @@ const ShiftSettlement = ({ worker, ownerId }) => {
     const morn = parseFloat(morning);
     const eve = parseFloat(evening);
     const price = parseFloat(literPrice);
-    const required = parseFloat(requiredAmount);
+    const workerSalary = parseFloat(requiredAmount); // الواصل من العامل
 
     // حساب الفرق (الكمية)
     const quantity = eve - morn;
 
-    // حساب الأرباح
-    const profit = quantity * price;
+    // حساب المبلغ المطلوب (quantity × سعر اللتر)
+    const requiredAmount_calc = quantity * price;
 
-    // حساب العجز/الفائض
-    const shortage = required - profit;
+    // حساب العجز/الفائض (الواصل من العامل - المبلغ المطلوب)
+    const shortage = workerSalary - requiredAmount_calc;
 
     setResult({
       quantity,
-      profit,
-      required,
+      requiredAmount: requiredAmount_calc,
+      workerSalary,
       shortage,
       date: new Date().toLocaleDateString('ar-EG'),
       time: new Date().toLocaleTimeString('ar-EG'),
@@ -2350,12 +2350,12 @@ const ShiftSettlement = ({ worker, ownerId }) => {
         </div>
 
         <div>
-          <label className="form-label">المبلغ المطلوب</label>
+          <label className="form-label">الواصل من العامل</label>
           <input
             type="number"
             value={requiredAmount}
             onChange={(e) => setRequiredAmount(e.target.value)}
-            placeholder="مثال: 20000"
+            placeholder="مثال: 25000"
             className="form-input"
           />
         </div>
@@ -2392,16 +2392,16 @@ const ShiftSettlement = ({ worker, ownerId }) => {
             </div>
 
             <div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الأرباح</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>المبلغ المطلوب</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: '#10b981' }}>
-                {result.profit.toFixed(2)} جنيه
+                {result.requiredAmount.toFixed(2)} جنيه
               </div>
             </div>
 
             <div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>المطلوب</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الواصل من العامل</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
-                {result.required.toFixed(2)} جنيه
+                {result.workerSalary.toFixed(2)} جنيه
               </div>
             </div>
 
@@ -2457,8 +2457,8 @@ const ShiftSettlement = ({ worker, ownerId }) => {
                   <th>#</th>
                   <th>التاريخ</th>
                   <th>الكمية</th>
-                  <th>الأرباح</th>
-                  <th>العجز/الفائض</th>
+                  <th>المبلغ المطلوب</th>
+                  <th>الواصل</th>
                   <th>الحالة</th>
                 </tr>
               </thead>
@@ -2468,16 +2468,11 @@ const ShiftSettlement = ({ worker, ownerId }) => {
                     <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{s.date}</td>
                     <td>{s.quantity.toFixed(2)} لتر</td>
-                    <td style={{ color: '#10b981', fontWeight: 700 }}>{s.profit.toFixed(2)}</td>
-                    <td style={{ 
-                      color: s.shortage > 0 ? '#ef4444' : '#10b981',
-                      fontWeight: 700 
-                    }}>
-                      {s.shortage > 0 ? '❌ عجز' : '✅ فائض'} {Math.abs(s.shortage).toFixed(2)}
-                    </td>
+                    <td style={{ color: '#10b981', fontWeight: 700 }}>{s.requiredAmount.toFixed(2)}</td>
+                    <td style={{ color: 'var(--text)', fontWeight: 700 }}>{s.workerSalary.toFixed(2)}</td>
                     <td>
                       <span className={`badge ${s.shortage > 0 ? 'badge-danger' : 'badge-success'}`}>
-                        {s.shortage > 0 ? 'عجز' : 'فائض'}
+                        {s.shortage > 0 ? '❌ عجز' : '✅ فائض'} {Math.abs(s.shortage).toFixed(2)}
                       </span>
                     </td>
                   </tr>
