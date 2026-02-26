@@ -2302,7 +2302,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 تاريخ الوردية</div>
-              <input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} style={inp()} />
+              <input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} max={new Date().toISOString().split('T')[0]} style={inp()} />
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🕐 نوع الوردية</div>
@@ -3345,22 +3345,6 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <div className="user-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0, padding: '14px 12px', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
-              <div className="user-avatar" style={{ background: user.avatarBg || 'linear-gradient(135deg, var(--primary), var(--accent))', fontSize: user.avatarEmoji ? 18 : 14, flexShrink: 0 }}>
-                {user.avatarEmoji || user.name[0]}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
-                <div className="user-role">{user.roleLabel}</div>
-              </div>
-            </div>
-            {user.email && (
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', direction: 'ltr', textAlign: 'left' }}>
-                {user.email}
-              </div>
-            )}
-          </div>
           <button className="logout-btn" onClick={onLogout}>🚪 تسجيل الخروج</button>
         </div>
       </div>
