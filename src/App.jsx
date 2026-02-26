@@ -4531,8 +4531,8 @@ const AdminPanel = () => {
             {/* Body */}
             <div style={{ marginBottom: 18 }}>
               <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>نص الإشعار *</label>
-              <textarea className="form-input" rows={4} value={body} onChange={e => setBody(e.target.value)} placeholder="اكتب تفاصيل الإشعار هنا..." maxLength={400} style={{ resize: 'vertical', minHeight: 100 }} />
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'left' }}>{body.length}/400</div>
+              <textarea className="form-input" rows={4} value={body} onChange={e => setBody(e.target.value)} placeholder="اكتب تفاصيل الإشعار هنا..." maxLength={1000} style={{ resize: 'vertical', minHeight: 100 }} />
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'left' }}>{body.length}/1000</div>
             </div>
 
             {/* Preview */}
