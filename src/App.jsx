@@ -5194,16 +5194,35 @@ const App = ({ onShowPricing }) => {
             <button
               onClick={() => setSidebarCollapsed(v => !v)}
               className="no-print"
-              title={sidebarCollapsed ? 'إظهار القائمة الجانبية' : 'إخفاء القائمة الجانبية'}
+              title={sidebarCollapsed ? 'إظهار القائمة' : 'إخفاء القائمة'}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 36, height: 36, borderRadius: 9,
-                background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
-                cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16,
-                transition: 'all 0.2s',
+                width: 28, height: 28, borderRadius: 7,
+                background: 'transparent', border: '1px solid var(--border)',
+                cursor: 'pointer', color: 'var(--text-muted)',
+                transition: 'all 0.2s', padding: 0, flexShrink: 0,
               }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
             >
-              {sidebarCollapsed ? '▶' : '◀'}
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {sidebarCollapsed ? (
+                  // ثلاث خطوط أفقية مع سهم يمين
+                  <>
+                    <rect x="1" y="2.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+                    <rect x="1" y="6.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+                    <rect x="1" y="10" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+                  </>
+                ) : (
+                  // سهم لليسار بجانب خط عمودي
+                  <>
+                    <rect x="1" y="2.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+                    <rect x="1" y="6.25" width="8" height="1.5" rx="0.75" fill="currentColor"/>
+                    <rect x="1" y="10" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+                    <path d="M11.5 5L9 7L11.5 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  </>
+                )}
+              </svg>
             </button>
             <div>
               <div className="topbar-title">{titles[page]}</div>
