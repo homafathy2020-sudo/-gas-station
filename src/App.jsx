@@ -3345,12 +3345,21 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <div className="user-card">
-            <div className="user-avatar">{user.name[0]}</div>
-            <div>
-              <div className="user-name">{user.name}</div>
-              <div className="user-role">{user.roleLabel}</div>
+          <div className="user-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0, padding: '14px 12px', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+              <div className="user-avatar" style={{ background: user.avatarBg || 'linear-gradient(135deg, var(--primary), var(--accent))', fontSize: user.avatarEmoji ? 18 : 14, flexShrink: 0 }}>
+                {user.avatarEmoji || user.name[0]}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+                <div className="user-role">{user.roleLabel}</div>
+              </div>
             </div>
+            {user.email && (
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', direction: 'ltr', textAlign: 'left' }}>
+                {user.email}
+              </div>
+            )}
           </div>
           <button className="logout-btn" onClick={onLogout}>🚪 تسجيل الخروج</button>
         </div>
@@ -3922,29 +3931,63 @@ const getAllOwners = async () => {
 };
 
 // ==================== OWNER PROFILE PAGE ====================
+const AVATAR_OPTIONS = [
+  { emoji: '👑', label: 'ملك' },
+  { emoji: '🧑‍💼', label: 'مدير' },
+  { emoji: '👷', label: 'مهندس' },
+  { emoji: '🦁', label: 'أسد' },
+  { emoji: '🐯', label: 'نمر' },
+  { emoji: '🦅', label: 'نسر' },
+  { emoji: '🔥', label: 'نار' },
+  { emoji: '⚡', label: 'برق' },
+  { emoji: '💎', label: 'ماس' },
+  { emoji: '🚀', label: 'صاروخ' },
+  { emoji: '⛽', label: 'محطة' },
+  { emoji: '🏆', label: 'بطل' },
+  { emoji: '🌟', label: 'نجمة' },
+  { emoji: '🎯', label: 'هدف' },
+  { emoji: '🦊', label: 'ثعلب' },
+  { emoji: '🐺', label: 'ذئب' },
+];
+const AVATAR_BG_OPTIONS = [
+  { label: 'أزرق', value: 'linear-gradient(135deg,#1a56db,#3b82f6)' },
+  { label: 'ذهبي', value: 'linear-gradient(135deg,#d97706,#f59e0b)' },
+  { label: 'أخضر', value: 'linear-gradient(135deg,#059669,#10b981)' },
+  { label: 'بنفسجي', value: 'linear-gradient(135deg,#7c3aed,#a855f7)' },
+  { label: 'أحمر', value: 'linear-gradient(135deg,#dc2626,#ef4444)' },
+  { label: 'وردي', value: 'linear-gradient(135deg,#db2777,#ec4899)' },
+  { label: 'سماوي', value: 'linear-gradient(135deg,#0891b2,#06b6d4)' },
+  { label: 'برتقالي', value: 'linear-gradient(135deg,#ea580c,#f97316)' },
+];
+
 const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, ownerUsers }) => {
   const toast = useToast();
   const [phone, setPhone] = useState(user.phone || '');
   const [name, setName] = useState(user.name || '');
   const [saving, setSaving] = useState(false);
-  // Password change
   const [showPassSection, setShowPassSection] = useState(false);
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [savingPass, setSavingPass] = useState(false);
+  // Avatar state
+  const [selectedEmoji, setSelectedEmoji] = useState(user.avatarEmoji || '');
+  const [selectedBg, setSelectedBg] = useState(user.avatarBg || AVATAR_BG_OPTIONS[0].value);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
-  const planLabels = { free: '🆓 المجانية', starter: '⭐ الأساسية', enterprise: '👑 المميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية' };
+  const planLabels = { free: '🆓 المجانية', starter: '⭐ الأساسية', enterprise: '👑 المميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية', basic: '🚀 الأساسية', pro: '⭐ الاحترافية' };
   const currentPlan = getPlan();
   const planLabel = planLabels[currentPlan] || currentPlan;
   const isPremium = currentPlan === 'enterprise' || currentPlan === 'lifetime';
+  const totalWorkersCount = workers.length;
+  const totalSalaries = workers.reduce((s, w) => s + (w.salary || 0), 0);
 
   const save = async () => {
     if (!name.trim()) { toast('الاسم مطلوب', 'error'); return; }
     setSaving(true);
-    const updated = { ...user, name: name.trim(), phone: phone.trim() };
+    const updated = { ...user, name: name.trim(), phone: phone.trim(), avatarEmoji: selectedEmoji, avatarBg: selectedBg };
     try {
-      await updateDoc(doc(db, 'users', user.id), { name: updated.name, phone: updated.phone });
+      await updateDoc(doc(db, 'users', user.id), { name: updated.name, phone: updated.phone, avatarEmoji: selectedEmoji, avatarBg: selectedBg });
       onUpdate(updated);
       toast('تم حفظ بياناتك ✓', 'success');
     } catch { toast('حدث خطأ، حاول مرة أخرى', 'error'); }
@@ -3971,68 +4014,278 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
     setSavingPass(false);
   };
 
+  const avatarBg = selectedBg || 'linear-gradient(135deg,var(--primary),var(--accent))';
+  const avatarContent = selectedEmoji || name[0] || '؟';
+
   return (
-    <div style={{ maxWidth: 520, margin: '0 auto', animation: 'fadeIn .3s ease', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* بطاقة البيانات الشخصية */}
-      <div className="card" style={{ padding: 30 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 22 }}>{(user.name||'?')[0]}</div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800 }}>{user.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>مالك المحطة</div>
+    <div style={{ maxWidth: 600, margin: '0 auto', animation: 'fadeIn .3s ease', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* ── HERO HEADER ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(26,86,219,0.15), rgba(245,158,11,0.08))',
+        border: '1px solid rgba(26,86,219,0.2)',
+        borderRadius: 24,
+        padding: '32px 28px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 24,
+        flexWrap: 'wrap',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* خلفية ديكور */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% 50%, rgba(245,158,11,0.07) 0%, transparent 60%)', pointerEvents: 'none' }} />
+
+        {/* الأفاتار */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{
+            width: 90, height: 90, borderRadius: 22,
+            background: avatarBg,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: selectedEmoji ? 42 : 36, fontWeight: 900,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            border: '3px solid rgba(255,255,255,0.1)',
+            transition: 'all 0.3s',
+          }}>
+            {avatarContent}
           </div>
+          <button
+            onClick={() => setShowAvatarPicker(true)}
+            style={{
+              position: 'absolute', bottom: -6, left: -6,
+              width: 28, height: 28, borderRadius: '50%',
+              background: 'var(--primary-light)', border: '2px solid var(--dark-2)',
+              color: 'white', cursor: 'pointer', fontSize: 13,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            title="تغيير الأفاتار"
+          >✏️</button>
+        </div>
+
+        {/* البيانات */}
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 4 }}>{user.name}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>👑 مالك المحطة</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 10, padding: '6px 14px', fontSize: 12 }}>
+              👷 {totalWorkersCount} عامل
+            </div>
+            <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, padding: '6px 14px', fontSize: 12, color: '#10b981', fontWeight: 700 }}>
+              💰 {fmt(totalSalaries)} / شهر
+            </div>
+            <div style={{
+              background: isPremium ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.1)',
+              border: `1px solid ${isPremium ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
+              borderRadius: 10, padding: '6px 14px', fontSize: 12,
+              color: isPremium ? '#f59e0b' : 'var(--text-muted)', fontWeight: 700
+            }}>
+              {planLabel}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── AVATAR PICKER MODAL ── */}
+      {showAvatarPicker && (
+        <div className="modal-overlay" onClick={() => setShowAvatarPicker(false)}>
+          <div className="modal" style={{ maxWidth: 460, animation: 'fadeIn .2s ease' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">🎨 اختر أفاتار</div>
+              <button className="close-btn" onClick={() => setShowAvatarPicker(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* معاينة */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <div style={{
+                  width: 80, height: 80, borderRadius: 20,
+                  background: selectedBg || avatarBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: selectedEmoji ? 38 : 32, fontWeight: 900,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                  transition: 'all 0.3s',
+                }}>
+                  {selectedEmoji || name[0] || '؟'}
+                </div>
+              </div>
+
+              {/* اختيار الأيقونة */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>الأيقونة</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 8 }}>
+                  {/* خيار بلا أيقونة — أول حرف من الاسم */}
+                  <button
+                    onClick={() => setSelectedEmoji('')}
+                    title="أول حرف من الاسم"
+                    style={{
+                      width: '100%', aspectRatio: '1', borderRadius: 10,
+                      background: !selectedEmoji ? 'rgba(26,86,219,0.2)' : 'rgba(255,255,255,0.05)',
+                      border: !selectedEmoji ? '2px solid var(--primary-light)' : '1px solid var(--border)',
+                      cursor: 'pointer', fontSize: 16, fontWeight: 900, color: 'var(--text)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {name[0] || '؟'}
+                  </button>
+                  {AVATAR_OPTIONS.map(opt => (
+                    <button
+                      key={opt.emoji}
+                      onClick={() => setSelectedEmoji(opt.emoji)}
+                      title={opt.label}
+                      style={{
+                        width: '100%', aspectRatio: '1', borderRadius: 10,
+                        background: selectedEmoji === opt.emoji ? 'rgba(26,86,219,0.2)' : 'rgba(255,255,255,0.05)',
+                        border: selectedEmoji === opt.emoji ? '2px solid var(--primary-light)' : '1px solid var(--border)',
+                        cursor: 'pointer', fontSize: 22,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {opt.emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* اختيار اللون */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>لون الخلفية</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {AVATAR_BG_OPTIONS.map(bg => (
+                    <button
+                      key={bg.value}
+                      onClick={() => setSelectedBg(bg.value)}
+                      title={bg.label}
+                      style={{
+                        width: 38, height: 38, borderRadius: 10,
+                        background: bg.value,
+                        border: selectedBg === bg.value ? '3px solid white' : '2px solid transparent',
+                        cursor: 'pointer',
+                        boxShadow: selectedBg === bg.value ? '0 0 0 2px var(--primary-light)' : 'none',
+                        transition: 'all 0.15s',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowAvatarPicker(false)}>✅ تم</button>
+              <button className="btn btn-ghost" onClick={() => setShowAvatarPicker(false)}>إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── البيانات الشخصية ── */}
+      <div className="card" style={{ padding: 26 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18 }}>👤</span> البيانات الشخصية
         </div>
 
         {/* الإيميل - عرض فقط */}
-        <div style={{ marginBottom: 18 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>📧 البريد الإلكتروني</label>
-          <div style={{ padding: '10px 13px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 14, color: 'var(--text-muted)', direction: 'ltr', textAlign: 'left' }}>
-            {user.email || '—'}
+        <div style={{ marginBottom: 16, padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>📧 البريد الإلكتروني</div>
+            <div style={{ fontSize: 14, direction: 'ltr', textAlign: 'left' }}>{user.email || '—'}</div>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>الإيميل لا يمكن تغييره</div>
+          <span style={{ fontSize: 11, background: 'rgba(100,116,139,0.1)', color: 'var(--text-muted)', padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>لا يمكن تغييره</span>
         </div>
 
-        <div style={{ marginBottom: 18 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>👤 الاسم</label>
-          <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك الكامل" />
+        <div className="form-grid-2">
+          <div className="form-group">
+            <label className="form-label">👤 الاسم الكامل</label>
+            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك الكامل" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">
+              📱 رقم التليفون
+              {!user.phone && <span style={{ marginRight: 6, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 6px', borderRadius: 6, fontSize: 10 }}>⚠️ غير مكتمل</span>}
+            </label>
+            <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" type="tel" dir="ltr" />
+          </div>
         </div>
-
-        <div style={{ marginBottom: 24 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>
-            📱 رقم التليفون
-            {!user.phone && <span style={{ marginRight: 8, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '2px 8px', borderRadius: 6, fontSize: 11 }}>⚠️ غير مكتمل</span>}
-          </label>
-          <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" type="tel" dir="ltr" />
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>📌 رقمك بيُستخدم لإرسال الإشعارات عبر واتساب</div>
-        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, marginTop: -8 }}>📌 رقمك بيُستخدم لإرسال الإشعارات عبر واتساب</div>
 
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save} disabled={saving}>
           {saving ? '⏳ جاري الحفظ...' : '💾 حفظ البيانات'}
         </button>
       </div>
 
-      {/* بطاقة الباقة */}
-      <div className="card" style={{ padding: 24 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📦 باقتك الحالية</div>
+      {/* ── الباقة الحالية ── */}
+      <div className="card" style={{ padding: 22 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18 }}>📦</span> باقتك الحالية
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ padding: '8px 18px', borderRadius: 20, fontWeight: 700, fontSize: 14, background: isPremium ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.12)', color: isPremium ? '#f59e0b' : 'var(--text-muted)', border: `1px solid ${isPremium ? 'rgba(245,158,11,0.3)' : 'var(--border)'}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              padding: '10px 20px', borderRadius: 20, fontWeight: 700, fontSize: 15,
+              background: isPremium ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.12)',
+              color: isPremium ? '#f59e0b' : 'var(--text-muted)',
+              border: `1px solid ${isPremium ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`,
+            }}>
               {planLabel}
             </div>
+            {isPremium && <span style={{ fontSize: 12, color: '#10b981' }}>✅ أنت على أعلى باقة</span>}
           </div>
           {!isPremium && (
             <button className="btn btn-accent btn-sm" onClick={() => onShowPricing && onShowPricing()}>
               👑 ترقية الباقة
             </button>
           )}
-          {isPremium && <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ أنت على أعلى باقة</span>}
+        </div>
+        {/* ميزات الباقة بشكل مختصر */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+          {[
+            { ok: true, label: 'رواتب وخصومات' },
+            { ok: planHasExcelAdv(currentPlan), label: 'تقارير Excel' },
+            { ok: planHasWhatsApp(currentPlan), label: 'واتساب للعمال' },
+            { ok: planHasSalaryPay(currentPlan), label: 'صرف الرواتب' },
+            { ok: planHasMonthReset(currentPlan), label: 'أرشيف الشهور' },
+          ].map((f, i) => (
+            <span key={i} style={{
+              fontSize: 11, fontWeight: 600,
+              padding: '4px 10px', borderRadius: 20,
+              background: f.ok ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.08)',
+              color: f.ok ? '#10b981' : 'var(--text-muted)',
+              border: `1px solid ${f.ok ? 'rgba(16,185,129,0.25)' : 'var(--border)'}`,
+              opacity: f.ok ? 1 : 0.5,
+            }}>
+              {f.ok ? '✅' : '❌'} {f.label}
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* بطاقة تغيير كلمة المرور */}
-      <div className="card" style={{ padding: 24 }}>
+      {/* ── كود المالك ── */}
+      {user.ownerCode && (
+        <div className="card" style={{ padding: 22 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🔑</span> كود الانضمام الخاص بك
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              flex: 1, padding: '12px 18px', background: 'rgba(26,86,219,0.08)',
+              border: '2px solid rgba(26,86,219,0.25)', borderRadius: 12,
+              fontFamily: 'monospace', fontSize: 20, fontWeight: 900,
+              color: 'var(--primary-light)', letterSpacing: 3, textAlign: 'center',
+            }}>
+              {user.ownerCode}
+            </div>
+            <button className="btn btn-ghost" onClick={() => { navigator.clipboard?.writeText(user.ownerCode); toast('تم نسخ الكود ✓', 'success'); }}>📋 نسخ</button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>يستخدمه العمال عند التسجيل للانضمام لحسابك</div>
+        </div>
+      )}
+
+      {/* ── تغيير كلمة المرور ── */}
+      <div className="card" style={{ padding: 22 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showPassSection ? 20 : 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>🔐 تغيير كلمة المرور</div>
+          <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 18 }}>🔐</span> تغيير كلمة المرور
+          </div>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowPassSection(v => !v)}>
             {showPassSection ? '✕ إغلاق' : '✏️ تغيير'}
           </button>
@@ -4040,16 +4293,18 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
         {showPassSection && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>كلمة المرور الحالية</label>
+              <label className="form-label">كلمة المرور الحالية</label>
               <input className="form-input" type="password" value={currentPass} onChange={e => setCurrentPass(e.target.value)} placeholder="••••••••" dir="ltr" />
             </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>كلمة المرور الجديدة</label>
-              <input className="form-input" type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="6 أحرف على الأقل" dir="ltr" />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 8 }}>تأكيد كلمة المرور الجديدة</label>
-              <input className="form-input" type="password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} placeholder="••••••••" dir="ltr" />
+            <div className="form-grid-2">
+              <div>
+                <label className="form-label">كلمة المرور الجديدة</label>
+                <input className="form-input" type="password" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="6 أحرف على الأقل" dir="ltr" />
+              </div>
+              <div>
+                <label className="form-label">تأكيد كلمة المرور</label>
+                <input className="form-input" type="password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)} placeholder="••••••••" dir="ltr" />
+              </div>
             </div>
             <button className="btn btn-primary" style={{ justifyContent: 'center' }} onClick={changePassword} disabled={savingPass}>
               {savingPass ? '⏳ جاري التغيير...' : '🔐 تأكيد تغيير كلمة المرور'}
@@ -4057,9 +4312,9 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
           </div>
         )}
       </div>
-      {/* بطاقة النسخ الاحتياطية */}
-      <BackupCard ownerId={user.id} workers={workers} workPlaces={workPlaces} ownerUsers={ownerUsers} />
 
+      {/* ── النسخ الاحتياطية ── */}
+      <BackupCard ownerId={user.id} workers={workers} workPlaces={workPlaces} ownerUsers={ownerUsers} />
     </div>
   );
 };
@@ -4937,11 +5192,22 @@ const App = ({ onShowPricing }) => {
               />
             )}
             <NotificationBell user={user} workers={workers} onNavigate={handleNavigate} />
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'left' }}>
-              <div style={{ fontWeight: 600, color: 'var(--text)' }}>{user.name}</div>
-              <div>{user.roleLabel}</div>
-            </div>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16 }}>{user.name[0]}</div>
+            {user.role === 'owner' && (
+              <button
+                onClick={() => setPage('owner_profile')}
+                title="ملفي الشخصي"
+                style={{
+                  width: 38, height: 38, borderRadius: 10, cursor: 'pointer',
+                  background: user.avatarBg || 'linear-gradient(135deg,var(--primary),var(--accent))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, fontSize: user.avatarEmoji ? 19 : 16,
+                  border: page === 'owner_profile' ? '2px solid var(--primary-light)' : '2px solid transparent',
+                  transition: 'all 0.2s', flexShrink: 0,
+                }}
+              >
+                {user.avatarEmoji || user.name[0]}
+              </button>
+            )}
           </div>
         </div>
         <div className="page-content">
@@ -5047,18 +5313,14 @@ const App = ({ onShowPricing }) => {
             />
           )}
           {page === 'stations' && user.role === 'owner' && (
-            <div style={{ maxWidth: 500, margin: '60px auto 0', textAlign: 'center', animation: 'fadeIn .4s ease' }}>
-              <div style={{ fontSize: 64, marginBottom: 20 }}>🚧</div>
-              <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 10 }}>قيد التطوير</div>
-              <div style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.9, marginBottom: 28 }}>
-                ميزة إدارة المحطات المتعددة قادمة قريباً ⚡<br/>
-                بنشتغل عليها عشان تطلع بأفضل شكل ممكن
-              </div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 14, padding: '14px 24px' }}>
-                <span style={{ fontSize: 18 }}>🔔</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b' }}>هيتم الإعلان عنها قريباً</span>
-              </div>
-            </div>
+            <StationsPage
+              ownerId={getOwnerId(user)}
+              stations={stations}
+              activeStation={activeStation}
+              onSetActive={(id) => { setActiveStation(id); const oid = getOwnerId(user); if (oid) localStorage.setItem(ACTIVE_STATION_KEY(oid), id); }}
+              onRefresh={async () => { const stList = await getStations(getOwnerId(user)); setStations(stList); }}
+              plan={getPlan()}
+            />
           )}
         </div>
       </div>
