@@ -4733,10 +4733,13 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
   const [readIds, setReadIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`notif_read_${user?.id}`) || '[]'); } catch { return []; }
   });
+  const [deletedIds, setDeletedIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`notif_deleted_${user?.id}`) || '[]'); } catch { return []; }
+  });
   const [announcements, setAnnouncements] = useState([]);
+  const [expandedNotif, setExpandedNotif] = useState(null); // للـ modal
   const ref = useRef(null);
 
-  // تحميل الإشعارات من Admin عند فتح التطبيق (للملاك فقط)
   useEffect(() => {
     if (!user || user.role !== 'owner') return;
     const load = async () => {
@@ -4759,7 +4762,6 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
     const notifs = [];
     const now = Date.now();
 
-    // 0) إشعارات المطور (announcements) — للملاك فقط
     if (user.role === 'owner') {
       announcements.forEach(ann => {
         notifs.push({
@@ -4776,7 +4778,6 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
     }
 
     if (user.role === 'owner' || user.role === 'manager') {
-      // 1) عمال خصوماتهم عالية
       workers.filter(w => totalDed(w) > w.salary * 0.3 && w.salary > 0).forEach(w => {
         notifs.push({
           id: `high_ded_${w.id}`,
@@ -4788,8 +4789,6 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
           workerId: w.id,
         });
       });
-
-      // 5) عمال بيانات ناقصة
       workers.filter(w => w.salary === 0 || w.pump === 'غير محدد').forEach(w => {
         notifs.push({
           id: `incomplete_${w.id}`,
@@ -4801,59 +4800,28 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
           workerId: w.id,
         });
       });
-
     } else if (user.role === 'worker') {
       const workerRecord = workers.find(w => w.id === user.id);
-
       if (workerRecord) {
         if (workerRecord.delays?.length > 0) {
-          notifs.push({
-            id: `worker_delays`,
-            type: 'warning', icon: '⏰',
-            title: `${workerRecord.delays.length} تأخير مسجل هذا الشهر`,
-            sub: `إجمالي الخصم: ${fmt(workerRecord.delays.reduce((s,d)=>s+(d.deduction||0),0))}`,
-            time: '', ts: now - 2000,
-            page: 'profile', hint: '← عرض ملفك الشخصي',
-          });
+          notifs.push({ id: `worker_delays`, type: 'warning', icon: '⏰', title: `${workerRecord.delays.length} تأخير مسجل هذا الشهر`, sub: `إجمالي الخصم: ${fmt(workerRecord.delays.reduce((s,d)=>s+(d.deduction||0),0))}`, time: '', ts: now - 2000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
         if (workerRecord.absences?.length > 0) {
-          notifs.push({
-            id: `worker_absences`,
-            type: 'danger', icon: '📅',
-            title: `${workerRecord.absences.length} غياب مسجل`,
-            sub: `إجمالي الخصم: ${fmt(workerRecord.absences.reduce((s,a)=>s+(a.deduction||0),0))}`,
-            time: '', ts: now - 3000,
-            page: 'profile', hint: '← عرض ملفك الشخصي',
-          });
+          notifs.push({ id: `worker_absences`, type: 'danger', icon: '📅', title: `${workerRecord.absences.length} غياب مسجل`, sub: `إجمالي الخصم: ${fmt(workerRecord.absences.reduce((s,a)=>s+(a.deduction||0),0))}`, time: '', ts: now - 3000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
         const rewards = (workerRecord.discipline||[]).filter(d=>d.reward>0);
         if (rewards.length > 0) {
-          notifs.push({
-            id: `worker_rewards`,
-            type: 'success', icon: '⭐',
-            title: `${rewards.length} مكافأة انضباط`,
-            sub: `إجمالي المكافآت: ${fmt(rewards.reduce((s,d)=>s+(d.reward||0),0))}`,
-            time: '', ts: now - 4000,
-            page: 'profile', hint: '← عرض ملفك الشخصي',
-          });
+          notifs.push({ id: `worker_rewards`, type: 'success', icon: '⭐', title: `${rewards.length} مكافأة انضباط`, sub: `إجمالي المكافآت: ${fmt(rewards.reduce((s,d)=>s+(d.reward||0),0))}`, time: '', ts: now - 4000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
         const net = calcNet(workerRecord);
         const pct = workerRecord.salary > 0 ? Math.round((net/workerRecord.salary)*100) : 100;
         if (pct < 80 && workerRecord.salary > 0) {
-          notifs.push({
-            id: `worker_net_low`,
-            type: 'danger', icon: '💰',
-            title: `صافي راتبك ${pct}% هذا الشهر`,
-            sub: `${fmt(net)} من أصل ${fmt(workerRecord.salary)}`,
-            time: '', ts: now - 10000,
-            page: 'profile', hint: '← عرض ملفك الشخصي',
-          });
+          notifs.push({ id: `worker_net_low`, type: 'danger', icon: '💰', title: `صافي راتبك ${pct}% هذا الشهر`, sub: `${fmt(net)} من أصل ${fmt(workerRecord.salary)}`, time: '', ts: now - 10000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
       }
     }
-
-    return notifs.sort((a,b) => b.ts - a.ts);
-  }, [user, workers, ownerId, announcements]);
+    return notifs.sort((a,b) => b.ts - a.ts).filter(n => !deletedIds.includes(n.id));
+  }, [user, workers, ownerId, announcements, deletedIds]);
 
   const notifications = buildNotifications();
   const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
@@ -4864,66 +4832,195 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
     localStorage.setItem(`notif_read_${user?.id}`, JSON.stringify(allIds));
   };
 
+  const deleteNotif = (e, id) => {
+    e.stopPropagation();
+    const updated = [...deletedIds, id];
+    setDeletedIds(updated);
+    localStorage.setItem(`notif_deleted_${user?.id}`, JSON.stringify(updated));
+  };
+
+  const deleteAll = () => {
+    const allIds = notifications.map(n => n.id);
+    const updated = [...new Set([...deletedIds, ...allIds])];
+    setDeletedIds(updated);
+    localStorage.setItem(`notif_deleted_${user?.id}`, JSON.stringify(updated));
+  };
+
   const handleNotifClick = (n) => {
-    // تعليم كمقروء
     if (!readIds.includes(n.id)) {
       const updated = [...readIds, n.id];
       setReadIds(updated);
       localStorage.setItem(`notif_read_${user?.id}`, JSON.stringify(updated));
     }
-    // الانتقال للصفحة
-    if (n.page && onNavigate) {
-      onNavigate(n.page, n);
-      setOpen(false);
-    }
+    if (n.page && onNavigate) { onNavigate(n.page, n); setOpen(false); }
   };
+
+  const typeColors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', danger: '#ef4444' };
+  const PREVIEW_LENGTH = 80;
 
   return (
     <div className="notif-bell-wrap" ref={ref}>
-      <button
-        className={`notif-bell-btn ${unreadCount > 0 ? 'has-notif' : ''}`}
-        onClick={() => setOpen(!open)}
-        title="الإشعارات"
-      >
+      <button className={`notif-bell-btn ${unreadCount > 0 ? 'has-notif' : ''}`} onClick={() => setOpen(!open)} title="الإشعارات">
         🔔
-        {unreadCount > 0 && (
-          <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
-        )}
+        {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
+
+      {/* ── READ MORE MODAL ── */}
+      {expandedNotif && (
+        <div
+          className="modal-overlay"
+          onClick={() => setExpandedNotif(null)}
+          style={{ zIndex: 9999 }}
+        >
+          <div
+            className="modal"
+            style={{ maxWidth: 480, animation: 'fadeIn .2s ease' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* header */}
+            <div className="modal-header" style={{ borderBottom: `2px solid ${typeColors[expandedNotif.type] || 'var(--border)'}20` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 12, flexShrink: 0,
+                  background: `${typeColors[expandedNotif.type]}22`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+                }}>
+                  {expandedNotif.icon}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: typeColors[expandedNotif.type] || 'var(--text)', lineHeight: 1.4 }}>
+                  {expandedNotif.title}
+                </div>
+              </div>
+              <button className="close-btn" onClick={() => setExpandedNotif(null)}>✕</button>
+            </div>
+
+            {/* body */}
+            <div className="modal-body">
+              <div style={{
+                fontSize: 14, color: 'var(--text)', lineHeight: 1.9,
+                whiteSpace: 'pre-line',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border)',
+                borderRadius: 12, padding: '16px 18px',
+              }}>
+                {expandedNotif.sub}
+              </div>
+              {expandedNotif.time && (
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  🕐 {expandedNotif.time}
+                </div>
+              )}
+            </div>
+
+            {/* footer */}
+            <div className="modal-footer">
+              {expandedNotif.page && (
+                <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { handleNotifClick(expandedNotif); setExpandedNotif(null); }}>
+                  {expandedNotif.hint?.replace('←', '')} ↗
+                </button>
+              )}
+              <button
+                className="btn btn-danger"
+                style={{ justifyContent: 'center' }}
+                onClick={(e) => { deleteNotif(e, expandedNotif.id); setExpandedNotif(null); }}
+              >
+                🗑️ حذف
+              </button>
+              <button className="btn btn-ghost" onClick={() => setExpandedNotif(null)}>إغلاق</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {open && (
         <div className="notif-dropdown">
+          {/* header */}
           <div className="notif-hdr">
             <div className="notif-hdr-title">
               🔔 الإشعارات
               {unreadCount > 0 && <span style={{ fontSize: 11, color: 'var(--primary-light)', fontWeight: 600, marginRight: 6 }}>({unreadCount} جديد)</span>}
             </div>
-            {unreadCount > 0 && (
-              <button className="notif-clear-btn" onClick={markAllRead}>تحديد الكل كمقروء</button>
-            )}
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {unreadCount > 0 && (
+                <button className="notif-clear-btn" onClick={markAllRead}>✓ قراءة الكل</button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={deleteAll}
+                  title="حذف كل الإشعارات"
+                  style={{
+                    background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                    color: '#ef4444', borderRadius: 7, padding: '3px 9px',
+                    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'Cairo,sans-serif', transition: 'all .2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background='rgba(239,68,68,0.18)'}
+                  onMouseLeave={e => e.currentTarget.style.background='rgba(239,68,68,0.08)'}
+                >
+                  🗑️ حذف الكل
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* list */}
           <div className="notif-list">
             {notifications.length === 0 ? (
               <div className="notif-empty">
                 <div className="notif-empty-icon">🔕</div>
                 <div>لا توجد إشعارات حالياً</div>
               </div>
-            ) : notifications.map(n => (
-              <div
-                key={n.id}
-                className={`notif-item ${!readIds.includes(n.id) ? 'unread' : ''} ${n.page ? 'clickable' : ''}`}
-                onClick={() => handleNotifClick(n)}
-              >
-                <div className={`notif-icon-wrap type-${n.type}`}>{n.icon}</div>
-                <div className="notif-text">
-                  <div className="notif-title">{n.title}</div>
-                  <div className="notif-sub">{n.sub}</div>
-                  {n.time && <div className="notif-time">🕐 {n.time}</div>}
-                  {n.page && <div className="notif-nav-hint">{n.hint} ↗</div>}
+            ) : notifications.map(n => {
+              const isLong = n.sub && n.sub.length > PREVIEW_LENGTH;
+              const preview = isLong ? n.sub.slice(0, PREVIEW_LENGTH) + '...' : n.sub;
+              return (
+                <div
+                  key={n.id}
+                  className={`notif-item ${!readIds.includes(n.id) ? 'unread' : ''} ${n.page ? 'clickable' : ''}`}
+                  onClick={() => handleNotifClick(n)}
+                  style={{ position: 'relative' }}
+                >
+                  <div className={`notif-icon-wrap type-${n.type}`}>{n.icon}</div>
+                  <div className="notif-text" style={{ flex: 1, minWidth: 0 }}>
+                    <div className="notif-title">{n.title}</div>
+                    <div className="notif-sub">{preview}</div>
+                    {isLong && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setExpandedNotif(n); setOpen(false); }}
+                        style={{
+                          background: 'none', border: 'none', padding: 0,
+                          fontSize: 11, fontWeight: 700,
+                          color: typeColors[n.type] || 'var(--primary-light)',
+                          cursor: 'pointer', fontFamily: 'Cairo,sans-serif',
+                          marginTop: 3, display: 'block',
+                        }}
+                      >
+                        قراءة المزيد ↗
+                      </button>
+                    )}
+                    {n.time && <div className="notif-time">🕐 {n.time}</div>}
+                    {n.page && <div className="notif-nav-hint">{n.hint} ↗</div>}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    {!readIds.includes(n.id) && <div className="notif-dot" />}
+                    <button
+                      onClick={e => deleteNotif(e, n.id)}
+                      title="حذف"
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: 'var(--text-muted)', fontSize: 13, padding: '2px 4px',
+                        borderRadius: 5, opacity: 0.5, transition: 'all .15s',
+                        lineHeight: 1,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.color='#ef4444'; e.currentTarget.style.background='rgba(239,68,68,0.1)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity='0.5'; e.currentTarget.style.color='var(--text-muted)'; e.currentTarget.style.background='none'; }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
-                {!readIds.includes(n.id) && <div className="notif-dot" />}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
