@@ -2674,7 +2674,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
 // المالك يقدر يشيل المدير ويغير كلمة سره
 // لما تضيف عامل من هنا، يتضاف في قائمة العمال تلقائياً
 const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser, workers, onAddWorker }) => {
-  const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'manager' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', name: '', role: 'worker' });
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [errors, setErrors] = useState({});
@@ -2683,6 +2683,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const [newPassErr, setNewPassErr] = useState('');
   const [inviteWorkerName, setInviteWorkerName] = useState('');
   const [invites, setInvites] = useState([]);
+  const [addingUser, setAddingUser] = useState(false);
 
   // جيب الدعوات من Firebase عند فتح الصفحة
   useEffect(() => {
@@ -2694,7 +2695,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
     };
     loadInvites();
   }, []);
-  const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const toast = useToast();
   const ownerCode = currentUser.ownerCode || 'STAT-????';
   const appUrl = window.location.origin;
@@ -2704,38 +2705,72 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   const validateUser = (u) => {
     const e = {};
     if (!u.username?.trim()) e.username = 'اسم المستخدم مطلوب';
+    else if (/\s/.test(u.username.trim())) e.username = 'اسم المستخدم لا يحتوي على مسافات';
     if (!u.password || u.password.length < 6) e.password = 'كلمة المرور 6 أحرف على الأقل';
     if (!u.name?.trim()) e.name = 'الاسم مطلوب';
     if (users.find(x => x.username === u.username && x.id !== u.id)) e.username = 'اسم المستخدم موجود مسبقاً';
     return e;
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const errs = validateUser(newUser);
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    const newId = Date.now();
-    const fullUser = { ...newUser, id: newId, roleLabel: roleLabels[newUser.role], ownerId: currentUser.id };
-    onAddUser(fullUser);
-    // احفظه في users_data عشان يقدر يسجل دخول
-    const savedGlobal = localStorage.getItem("users_data");
-    const globalUsers = savedGlobal ? JSON.parse(savedGlobal) : [];
-    localStorage.setItem("users_data", JSON.stringify([...globalUsers, fullUser]));
-    // لو role عامل، يتضاف في قائمة العمال بنفس الـ id
-    if (newUser.role === 'worker' && onAddWorker) {
-      onAddWorker({
-        id: newId,
-        name: newUser.name,
-        pump: 'غير محدد',
-        workDays: 0,
-        salary: 0,
-        phone: '',
-        avatar: newUser.name[0] || '؟',
-        delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
-      });
+    setAddingUser(true);
+    try {
+      // تحويل اسم المستخدم لـ fake email — نستبدل المسافات بـ _ ونشيل الرموز الغريبة
+      const safeUsername = newUser.username.trim().replace(/\s+/g, '_');
+      // encode اسم المستخدم عشان ينفع يكون في email (حروف عربية مش مقبولة في Firebase email)
+      const encodedUsername = encodeURIComponent(safeUsername).replace(/%/g, 'x').toLowerCase();
+      const fakeEmail = `${encodedUsername}@waqoudpro.worker`;
+      const cred = await createUserWithEmailAndPassword(auth, fakeEmail, newUser.password);
+      const uid = cred.user.uid;
+
+      const fullUser = {
+        id: uid,
+        email: fakeEmail,
+        username: safeUsername,
+        name: newUser.name.trim(),
+        role: 'worker',
+        roleLabel: 'عامل',
+        ownerId: currentUser.id,
+        password: newUser.password,
+      };
+
+      // احفظ في users collection
+      await setDoc(doc(db, 'users', uid), fullUser);
+
+      // أضف كـ member عند المالك
+      await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, currentUser.id, `${COLLECTION_PREFIX}members`, uid), fullUser);
+
+      onAddUser(fullUser);
+
+      // أضفه في قائمة العمال
+      if (onAddWorker) {
+        const workerEntry = {
+          id: uid,
+          name: newUser.name.trim(),
+          pump: 'غير محدد',
+          workDays: 0,
+          salary: 0,
+          phone: '',
+          avatar: newUser.name[0] || '؟',
+          delays: [], absences: [], absences_no_reason: [], discipline: [], cash_withdrawals: []
+        };
+        await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, currentUser.id, `${COLLECTION_PREFIX}workers`, uid), workerEntry);
+        onAddWorker(workerEntry);
+      }
+
+      setNewUser({ username: '', password: '', name: '', role: 'worker' });
+      setErrors({});
+      toast('تم إضافة حساب العامل ✓ — يقدر يسجل دخول دلوقتي', 'success');
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        setErrors({ username: 'اسم المستخدم ده موجود مسبقاً، اختار اسم تاني' });
+      } else {
+        toast('حدث خطأ: ' + err.message, 'error');
+      }
     }
-    setNewUser({ username: '', password: '', name: '', role: 'manager' });
-    setErrors({});
-    toast('تم إضافة الحساب ✓', 'success');
+    setAddingUser(false);
   };
 
   const handleSaveEdit = () => {
@@ -2853,33 +2888,29 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
       )}
 
       <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>➕ إضافة حساب جديد</div>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>➕ إضافة عامل جديد</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>العامل هيقدر يسجل دخول فوراً بعد الإضافة باسم المستخدم وكلمة المرور دول</div>
         <div className="form-grid-2">
           <div className="form-group">
-            <label className="form-label">اسم المستخدم</label>
-            <input type="text" className={`form-input ${errors.username ? 'error' : ''}`} placeholder="أدخل اسم المستخدم" value={newUser.username} onChange={e => { setNewUser({...newUser, username: e.target.value}); setErrors({...errors, username: ''});}} />
+            <label className="form-label">اسم المستخدم (للدخول)</label>
+            <input type="text" className={`form-input ${errors.username ? 'error' : ''}`} placeholder="مثال: ahmed123 أو أحمد" value={newUser.username} onChange={e => { setNewUser({...newUser, username: e.target.value.replace(/\s/g,'')}); setErrors({...errors, username: ''});}} />
             {errors.username && <div className="form-error">{errors.username}</div>}
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>بدون مسافات — عربي أو إنجليزي</div>
           </div>
           <div className="form-group">
             <label className="form-label">كلمة المرور</label>
-            <input type="password" className={`form-input ${errors.password ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newUser.password} onChange={e => { setNewUser({...newUser, password: e.target.value}); setErrors({...errors, password: ''});}} />
+            <input type="password" className={`form-input ${errors.password ? 'error' : ''}`} placeholder="6 أحرف على الأقل" value={newUser.password} onChange={e => { setNewUser({...newUser, password: e.target.value}); setErrors({...errors, password: ''});}} dir="ltr" />
             {errors.password && <div className="form-error">{errors.password}</div>}
           </div>
-          <div className="form-group">
-            <label className="form-label">الاسم الكامل</label>
-            <input type="text" className={`form-input ${errors.name ? 'error' : ''}`} placeholder="أدخل الاسم الكامل" value={newUser.name} onChange={e => { setNewUser({...newUser, name: e.target.value}); setErrors({...errors, name: ''});}} />
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label className="form-label">الاسم الكامل (للعرض)</label>
+            <input type="text" className={`form-input ${errors.name ? 'error' : ''}`} placeholder="مثال: أحمد محمد" value={newUser.name} onChange={e => { setNewUser({...newUser, name: e.target.value}); setErrors({...errors, name: ''});}} />
             {errors.name && <div className="form-error">{errors.name}</div>}
           </div>
-          <div className="form-group">
-            <label className="form-label">الصلاحية</label>
-            <select className="form-input" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
-              <option value="manager">مدير</option>
-              <option value="worker">عامل</option>
-              <option value="owner">مالك</option>
-            </select>
-          </div>
         </div>
-        <button className="btn btn-primary" onClick={handleAdd} style={{ marginTop: 12 }}>➕ إضافة الحساب</button>
+        <button className="btn btn-primary" onClick={handleAdd} style={{ marginTop: 4 }} disabled={addingUser}>
+          {addingUser ? '⏳ جاري الإضافة...' : '➕ إضافة العامل'}
+        </button>
       </div>
 
       <div className="table-container">
@@ -2896,9 +2927,8 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
                     <td>
                       <select className="form-input" value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} style={{ width: '100%' }}
                         disabled={u.role === 'owner'}>
-                        <option value="manager">مدير</option>
                         <option value="worker">عامل</option>
-                        <option value="owner">مالك</option>
+                        <option value="owner" disabled>مالك</option>
                       </select>
                     </td>
                     <td style={{ display: 'flex', gap: 6 }}>
@@ -3027,10 +3057,11 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     try {
       let emailToUse = loginForm.emailOrUsername.trim();
 
-      // لو عامل، حول الـ username لـ fake email
+      // لو عامل، حول الـ username لـ fake email بنفس طريقة الإنشاء
       if (loginForm.loginRole === 'worker') {
-        const uname = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
-        emailToUse = `${uname}@waqoudpro.worker`;
+        const safeUsername = loginForm.emailOrUsername.trim().replace(/\s+/g, '_');
+        const encodedUsername = encodeURIComponent(safeUsername).replace(/%/g, 'x').toLowerCase();
+        emailToUse = `${encodedUsername}@waqoudpro.worker`;
       }
 
       const cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
@@ -3106,9 +3137,9 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
     setLoading(true);
     try {
       const roleLabels = { owner: 'المالك', worker: 'عامل' };
-      // العامل يستخدم fake email من username
+      // العامل يستخدم fake email من username مع encode للعربي
       const emailForAuth = regForm.role === 'worker'
-        ? `${regForm.username.trim().toLowerCase().replace(/\s+/g, '_')}@waqoudpro.worker`
+        ? `${encodeURIComponent(regForm.username.trim().replace(/\s+/g,'_')).replace(/%/g,'x').toLowerCase()}@waqoudpro.worker`
         : regForm.email.trim();
 
       const cred = await createUserWithEmailAndPassword(auth, emailForAuth, regForm.password);
