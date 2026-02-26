@@ -1152,7 +1152,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
             {editMode
               ? <input className="form-input" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ fontSize: 17, fontWeight: 700, marginBottom: 6, padding: '7px 12px' }} />
               : <div style={{ fontSize: 21, fontWeight: 800 }}>{w.name}</div>}
-            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{w.pump} · عامل في المحطة</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>⛽ {w.pump || 'غير محدد'}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -2478,7 +2478,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
           <div className="detail-avatar">{w.avatar}</div>
           <div>
             <div style={{ fontSize: 21, fontWeight: 800 }}>{w.name}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{w.pump} · عامل في المحطة</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>⛽ {w.pump || 'غير محدد'}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -3342,7 +3342,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 };
 
 // ==================== SIDEBAR ====================
-const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
+const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) => {
   const navs = {
     owner: [
       { id: 'dashboard', icon: '📊', label: 'لوحة التحكم' },
@@ -3365,7 +3365,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose }) => {
   return (
     <>
       <div className={`mobile-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
-      <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{ transform: collapsed ? 'translateX(100%)' : undefined, transition: 'transform 0.3s ease' }}>
         <div className="sidebar-logo"><div className="logo-icon">⛽</div><div><div className="logo-text">WaqoudPro</div><div className="logo-sub">نظام المحطات الذكي</div></div></div>
         <nav className="sidebar-nav">
           <div className="nav-section-title">القائمة الرئيسية</div>
@@ -4940,6 +4940,7 @@ const App = ({ onShowPricing }) => {
   const [workPlaces, setWorkPlaces] = useState([]);
   const [ownerUsers, setOwnerUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [stations, setStations] = useState([]);
   const [activeStation, setActiveStation] = useState(null);
   const unsubscribeListeners = useRef([]);
@@ -5185,11 +5186,25 @@ const App = ({ onShowPricing }) => {
 
   return (
     <div className="app-shell">
-      <Sidebar user={user} page={page} setPage={setPage} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="main-content">
+      <Sidebar user={user} page={page} setPage={setPage} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={sidebarCollapsed} />
+      <div className="main-content" style={{ marginRight: sidebarCollapsed ? 0 : 'var(--sidebar-w)', transition: 'margin-right 0.3s ease' }}>
         <div className="topbar no-print">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="hamburger" onClick={() => setSidebarOpen(true)}>☰</button>
+            <button
+              onClick={() => setSidebarCollapsed(v => !v)}
+              className="no-print"
+              title={sidebarCollapsed ? 'إظهار القائمة الجانبية' : 'إخفاء القائمة الجانبية'}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 36, height: 36, borderRadius: 9,
+                background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)',
+                cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16,
+                transition: 'all 0.2s',
+              }}
+            >
+              {sidebarCollapsed ? '▶' : '◀'}
+            </button>
             <div>
               <div className="topbar-title">{titles[page]}</div>
               {user.role === 'owner' && activeStation && ['workers','reports','salary_payment'].includes(page) && (
