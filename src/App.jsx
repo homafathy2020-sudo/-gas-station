@@ -3064,7 +3064,41 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         emailToUse = `${encodedUsername}@waqoudpro.worker`;
       }
 
-      const cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
+      let cred;
+      try {
+        // أول محاولة: سجّل دخول بالباسورد اللي كتبها المستخدم
+        cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
+      } catch (authErr) {
+        // لو Firebase رفض الباسورد وده عامل — جرّب الباسورد المحفوظة في Firestore
+        if (
+          loginForm.loginRole === 'worker' &&
+          (authErr.code === 'auth/invalid-credential' ||
+           authErr.code === 'auth/wrong-password' ||
+           authErr.code === 'auth/user-not-found')
+        ) {
+          // دور على العامل في Firestore عن طريق الـ email
+          const usersSnap = await getDocs(query(collection(db, 'users'), where('email', '==', emailToUse)));
+          if (!usersSnap.empty) {
+            const storedData = usersSnap.docs[0].data();
+            const storedPassword = storedData.password;
+            if (storedPassword) {
+              // جرّب الباسورد المحفوظة في Firestore
+              cred = await signInWithEmailAndPassword(auth, emailToUse, storedPassword);
+              // لو نجح — حدّث الباسورد في Firebase Auth عشان تتطابق مع اللي كتبه المستخدم
+              await updatePassword(cred.user, loginForm.password);
+              // وحدّث الباسورد في Firestore كمان
+              await updateDoc(doc(db, 'users', cred.user.uid), { password: loginForm.password });
+            } else {
+              throw authErr;
+            }
+          } else {
+            throw authErr;
+          }
+        } else {
+          throw authErr;
+        }
+      }
+
       const uid  = cred.user.uid;
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (!userDoc.exists()) { setErrors({ form: 'بيانات المستخدم غير موجودة' }); setLoading(false); return; }
