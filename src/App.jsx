@@ -3072,15 +3072,17 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       const encodedOld = encodeURIComponent(usernameWithUnderscore).replace(/%/g, 'x').toLowerCase();
 
       const emailVariants = [
-        emailToUse,                                              // encoded lowercase + waqoudpro
-        `${encodedOld}@waqoudpro.worker`,                       // encoded original case + waqoudpro
-        `${usernameWithUnderscore.toLowerCase()}@waqoudpro.worker`, // raw lowercase + waqoudpro
-        `${usernameWithUnderscore}@waqoudpro.worker`,           // raw original + waqoudpro
-        `${encodedNew}@petromin.worker`,                        // encoded lowercase + petromin
-        `${encodedOld}@petromin.worker`,                        // encoded original case + petromin
-        `${usernameWithUnderscore.toLowerCase()}@petromin.worker`,  // raw lowercase + petromin
-        `${usernameWithUnderscore}@petromin.worker`,            // raw original + petromin ✅ الأرجح
+        emailToUse,
+        `${encodedOld}@waqoudpro.worker`,
+        `${usernameWithUnderscore.toLowerCase()}@waqoudpro.worker`,
+        `${usernameWithUnderscore}@waqoudpro.worker`,
+        `${encodedNew}@petromin.worker`,
+        `${encodedOld}@petromin.worker`,
+        `${usernameWithUnderscore.toLowerCase()}@petromin.worker`,
+        `${usernameWithUnderscore}@petromin.worker`,
       ];
+      console.log('[DEBUG] username entered:', rawUsername);
+      console.log('[DEBUG] will try these emails:', emailVariants);
 
       let lastErr = null;
       for (const email of emailVariants) {
