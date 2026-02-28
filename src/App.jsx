@@ -3059,38 +3059,31 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 
       // لو عامل، حول الـ username لـ fake email بنفس طريقة الإنشاء
       if (loginForm.loginRole === 'worker') {
-        const safeUsername = loginForm.emailOrUsername.trim().replace(/\s+/g, '_');
+        const safeUsername = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
         const encodedUsername = encodeURIComponent(safeUsername).replace(/%/g, 'x').toLowerCase();
         emailToUse = `${encodedUsername}@waqoudpro.worker`;
       }
 
       let cred;
       try {
-        // أول محاولة: سجّل دخول بالباسورد اللي كتبها المستخدم
         cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
       } catch (authErr) {
-        // لو Firebase رفض الباسورد وده عامل — جرّب الباسورد المحفوظة في Firestore
         if (
           loginForm.loginRole === 'worker' &&
           (authErr.code === 'auth/invalid-credential' ||
            authErr.code === 'auth/wrong-password' ||
            authErr.code === 'auth/user-not-found')
         ) {
-          // دور على العامل في Firestore عن طريق الـ email
-          const usersSnap = await getDocs(query(collection(db, 'users'), where('email', '==', emailToUse)));
-          if (!usersSnap.empty) {
-            const storedData = usersSnap.docs[0].data();
-            const storedPassword = storedData.password;
-            if (storedPassword) {
-              // جرّب الباسورد المحفوظة في Firestore
-              cred = await signInWithEmailAndPassword(auth, emailToUse, storedPassword);
-              // لو نجح — حدّث الباسورد في Firebase Auth عشان تتطابق مع اللي كتبه المستخدم
-              await updatePassword(cred.user, loginForm.password);
-              // وحدّث الباسورد في Firestore كمان
-              await updateDoc(doc(db, 'users', cred.user.uid), { password: loginForm.password });
-            } else {
-              throw authErr;
-            }
+          // الـ workerAuth collection مفتوحة للقراءة بدون login
+          const safeKey = emailToUse.replace('@waqoudpro.worker', '');
+          const workerAuthDoc = await getDoc(doc(db, 'workerAuth', safeKey));
+          if (workerAuthDoc.exists() && workerAuthDoc.data().password) {
+            const storedPassword = workerAuthDoc.data().password;
+            cred = await signInWithEmailAndPassword(auth, emailToUse, storedPassword);
+            // حدّث الباسورد في Auth و Firestore
+            await updatePassword(cred.user, loginForm.password);
+            await updateDoc(doc(db, 'workerAuth', safeKey), { password: loginForm.password });
+            await updateDoc(doc(db, 'users', cred.user.uid), { password: loginForm.password });
           } else {
             throw authErr;
           }
