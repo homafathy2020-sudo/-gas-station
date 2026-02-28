@@ -3066,29 +3066,26 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 
       let cred;
       try {
+        // أول محاولة بالـ domain الجديد
         cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
-      } catch (authErr) {
+      } catch (firstErr) {
         if (
           loginForm.loginRole === 'worker' &&
-          (authErr.code === 'auth/invalid-credential' ||
-           authErr.code === 'auth/wrong-password' ||
-           authErr.code === 'auth/user-not-found')
+          (firstErr.code === 'auth/invalid-credential' ||
+           firstErr.code === 'auth/wrong-password' ||
+           firstErr.code === 'auth/user-not-found')
         ) {
-          // الـ workerAuth collection مفتوحة للقراءة بدون login
-          const safeKey = emailToUse.replace('@waqoudpro.worker', '');
-          const workerAuthDoc = await getDoc(doc(db, 'workerAuth', safeKey));
-          if (workerAuthDoc.exists() && workerAuthDoc.data().password) {
-            const storedPassword = workerAuthDoc.data().password;
-            cred = await signInWithEmailAndPassword(auth, emailToUse, storedPassword);
-            // حدّث الباسورد في Auth و Firestore
-            await updatePassword(cred.user, loginForm.password);
-            await updateDoc(doc(db, 'workerAuth', safeKey), { password: loginForm.password });
-            await updateDoc(doc(db, 'users', cred.user.uid), { password: loginForm.password });
-          } else {
-            throw authErr;
+          // جرب الـ domain القديم petromin.worker
+          const safeUsername2 = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
+          const encodedUsername2 = encodeURIComponent(safeUsername2).replace(/%/g, 'x').toLowerCase();
+          const oldEmail = `${encodedUsername2}@petromin.worker`;
+          try {
+            cred = await signInWithEmailAndPassword(auth, oldEmail, loginForm.password);
+          } catch (secondErr) {
+            throw secondErr;
           }
         } else {
-          throw authErr;
+          throw firstErr;
         }
       }
 
