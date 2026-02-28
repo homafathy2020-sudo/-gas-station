@@ -3065,29 +3065,36 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       }
 
       let cred;
-      try {
-        // أول محاولة بالـ domain الجديد
-        cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
-      } catch (firstErr) {
-        if (
-          loginForm.loginRole === 'worker' &&
-          (firstErr.code === 'auth/invalid-credential' ||
-           firstErr.code === 'auth/wrong-password' ||
-           firstErr.code === 'auth/user-not-found')
-        ) {
-          // جرب الـ domain القديم petromin.worker
-          const safeUsername2 = loginForm.emailOrUsername.trim().toLowerCase().replace(/\s+/g, '_');
-          const encodedUsername2 = encodeURIComponent(safeUsername2).replace(/%/g, 'x').toLowerCase();
-          const oldEmail = `${encodedUsername2}@petromin.worker`;
-          try {
-            cred = await signInWithEmailAndPassword(auth, oldEmail, loginForm.password);
-          } catch (secondErr) {
-            throw secondErr;
+      // جهّز كل الـ email variants الممكنة
+      const rawUsername = loginForm.emailOrUsername.trim();
+      const usernameWithUnderscore = rawUsername.replace(/\s+/g, '_');
+      const encodedNew = encodeURIComponent(usernameWithUnderscore.toLowerCase()).replace(/%/g, 'x').toLowerCase();
+      const encodedOld = encodeURIComponent(usernameWithUnderscore).replace(/%/g, 'x').toLowerCase();
+
+      const emailVariants = [
+        emailToUse,                                              // encoded lowercase + waqoudpro
+        `${encodedOld}@waqoudpro.worker`,                       // encoded original case + waqoudpro
+        `${usernameWithUnderscore.toLowerCase()}@waqoudpro.worker`, // raw lowercase + waqoudpro
+        `${usernameWithUnderscore}@waqoudpro.worker`,           // raw original + waqoudpro
+        `${encodedNew}@petromin.worker`,                        // encoded lowercase + petromin
+        `${encodedOld}@petromin.worker`,                        // encoded original case + petromin
+        `${usernameWithUnderscore.toLowerCase()}@petromin.worker`,  // raw lowercase + petromin
+        `${usernameWithUnderscore}@petromin.worker`,            // raw original + petromin ✅ الأرجح
+      ];
+
+      let lastErr = null;
+      for (const email of emailVariants) {
+        try {
+          cred = await signInWithEmailAndPassword(auth, email, loginForm.password);
+          break; // نجح!
+        } catch (e) {
+          lastErr = e;
+          if (e.code !== 'auth/invalid-credential' && e.code !== 'auth/wrong-password' && e.code !== 'auth/user-not-found') {
+            throw e; // خطأ تاني مش متعلق بالباسورد
           }
-        } else {
-          throw firstErr;
         }
       }
+      if (!cred) throw lastErr;
 
       const uid  = cred.user.uid;
       const userDoc = await getDoc(doc(db, 'users', uid));
