@@ -3071,18 +3071,13 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       const encodedNew = encodeURIComponent(usernameWithUnderscore.toLowerCase()).replace(/%/g, 'x').toLowerCase();
       const encodedOld = encodeURIComponent(usernameWithUnderscore).replace(/%/g, 'x').toLowerCase();
 
+      // جرب الـ variants الأهم بس عشان نقلل الـ failed requests
       const emailVariants = [
-        emailToUse,
-        `${encodedOld}@waqoudpro.worker`,
-        `${usernameWithUnderscore.toLowerCase()}@waqoudpro.worker`,
-        `${usernameWithUnderscore}@waqoudpro.worker`,
-        `${encodedNew}@petromin.worker`,
-        `${encodedOld}@petromin.worker`,
-        `${usernameWithUnderscore.toLowerCase()}@petromin.worker`,
-        `${usernameWithUnderscore}@petromin.worker`,
+        `${usernameWithUnderscore}@petromin.worker`,           // الأكثر شيوعاً للحسابات القديمة
+        `${usernameWithUnderscore.toLowerCase()}@petromin.worker`, // lowercase القديم
+        emailToUse,                                             // encoded جديد
+        `${usernameWithUnderscore}@waqoudpro.worker`,          // raw جديد
       ];
-      console.log('[DEBUG] username entered:', rawUsername);
-      console.log('[DEBUG] will try these emails:', emailVariants);
 
       let lastErr = null;
       for (const email of emailVariants) {
