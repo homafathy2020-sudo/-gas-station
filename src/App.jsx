@@ -3065,33 +3065,36 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       }
 
       let cred;
-      // جهّز كل الـ email variants الممكنة
-      const rawUsername = loginForm.emailOrUsername.trim();
-      const usernameWithUnderscore = rawUsername.replace(/\s+/g, '_');
-      const encodedNew = encodeURIComponent(usernameWithUnderscore.toLowerCase()).replace(/%/g, 'x').toLowerCase();
-      const encodedOld = encodeURIComponent(usernameWithUnderscore).replace(/%/g, 'x').toLowerCase();
 
-      // جرب الـ variants الأهم بس عشان نقلل الـ failed requests
-      const emailVariants = [
-        `${usernameWithUnderscore}@petromin.worker`,           // الأكثر شيوعاً للحسابات القديمة
-        `${usernameWithUnderscore.toLowerCase()}@petromin.worker`, // lowercase القديم
-        emailToUse,                                             // encoded جديد
-        `${usernameWithUnderscore}@waqoudpro.worker`,          // raw جديد
-      ];
+      if (loginForm.loginRole === 'owner') {
+        // المالك بيدخل بالـ email مباشرة
+        cred = await signInWithEmailAndPassword(auth, emailToUse, loginForm.password);
+      } else {
+        // العامل — جرب كل الـ variants
+        const rawUsername = loginForm.emailOrUsername.trim();
+        const usernameWithUnderscore = rawUsername.replace(/\s+/g, '_');
 
-      let lastErr = null;
-      for (const email of emailVariants) {
-        try {
-          cred = await signInWithEmailAndPassword(auth, email, loginForm.password);
-          break; // نجح!
-        } catch (e) {
-          lastErr = e;
-          if (e.code !== 'auth/invalid-credential' && e.code !== 'auth/wrong-password' && e.code !== 'auth/user-not-found') {
-            throw e; // خطأ تاني مش متعلق بالباسورد
+        const emailVariants = [
+          `${usernameWithUnderscore}@petromin.worker`,
+          `${usernameWithUnderscore.toLowerCase()}@petromin.worker`,
+          emailToUse,
+          `${usernameWithUnderscore}@waqoudpro.worker`,
+        ];
+
+        let lastErr = null;
+        for (const email of emailVariants) {
+          try {
+            cred = await signInWithEmailAndPassword(auth, email, loginForm.password);
+            break;
+          } catch (e) {
+            lastErr = e;
+            if (e.code !== 'auth/invalid-credential' && e.code !== 'auth/wrong-password' && e.code !== 'auth/user-not-found') {
+              throw e;
+            }
           }
         }
+        if (!cred) throw lastErr;
       }
-      if (!cred) throw lastErr;
 
       const uid  = cred.user.uid;
       const userDoc = await getDoc(doc(db, 'users', uid));
