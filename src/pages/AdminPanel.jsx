@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { COLLECTION_PREFIX } from '../../config/env';
-import { NotificationBell } from '../../features/owner/NotificationBell';
 import { db } from '../../firebase';
 import { useToast } from '../../shared/components/Toast';
 import { calcNet, fmt, totalDed } from '../../utils/helpers';
