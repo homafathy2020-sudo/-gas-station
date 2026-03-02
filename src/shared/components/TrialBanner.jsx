@@ -147,5 +147,3 @@ const AVATAR_BG_OPTIONS = [
   { label: 'سماوي', value: 'linear-gradient(135deg,#0891b2,#06b6d4)' },
   { label: 'برتقالي', value: 'linear-gradient(135deg,#ea580c,#f97316)' },
 ];
-
-const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, ownerUsers }) => {
