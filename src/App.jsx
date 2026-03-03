@@ -865,7 +865,7 @@ const WorkPlacesManager = ({ workPlaces, onAdd, onEdit, onDelete, onClose }) => 
 };
 
 // ==================== WORKER MODAL ====================
-const WorkerModal = ({ worker, onSave, onClose }) => {
+const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
   const [form, setForm] = useState(worker || { name: '', pump: '', workDays: '', salary: '', phone: '' });
   const [errors, setErrors] = useState({});
   const toast = useToast();
@@ -882,7 +882,7 @@ const WorkerModal = ({ worker, onSave, onClose }) => {
   const submit = (e) => {
     e.preventDefault(); const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    onSave({ ...form, workDays: +form.workDays, salary: +form.salary, phone: form.phone || '', id: worker?.id || Date.now(), avatar: form.name[0] || '؟', delays: worker?.delays || [], absences: worker?.absences || [], absences_no_reason: worker?.absences_no_reason || [], discipline: worker?.discipline || [] });
+    onSave({ ...form, workDays: +form.workDays, salary: +form.salary, phone: form.phone || '', id: worker?.id || Date.now(), avatar: form.name[0] || '؟', delays: worker?.delays || [], absences: worker?.absences || [], absences_no_reason: worker?.absences_no_reason || [], discipline: worker?.discipline || [], stationId: worker?.stationId || activeStationId });
     toast(worker ? 'تم تعديل البيانات' : 'تمت الإضافة', 'success');
   };
   const f = k => ({ value: form[k] || '', onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
@@ -908,7 +908,7 @@ const WorkerModal = ({ worker, onSave, onClose }) => {
 };
 
 // ==================== ENTRY MODAL ====================
-const TODAY = new Date().toISOString().split('T')[0];
+const TODAY = new Date(new Date().toLocaleString('en-US', { timeZone: 'Africa/Cairo' })).toISOString().split('T')[0];
 const EntryModal = ({ type, onSave, onClose }) => {
   const isDelay = type === 'delay';
   const [form, setForm] = useState({ date: '', minutes: '', reason: '', deduction: '' });
@@ -1414,7 +1414,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
 };
 
 // ==================== WORKERS PAGE ====================
-const WorkersPage = ({ workers, setWorkers, ownerId }) => {
+const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [ddOpen, setDdOpen] = useState(false);
   const [workerModal, setWorkerModal] = useState(null);
@@ -1452,7 +1452,7 @@ const WorkersPage = ({ workers, setWorkers, ownerId }) => {
   return (
     <div style={{ animation: 'fadeIn .3s ease' }}>
       {loading && <Loader />}
-      {workerModal !== null && <WorkerModal worker={workerModal === 'add' ? null : workerModal} onSave={saveWorker} onClose={() => setWorkerModal(null)} />}
+      {workerModal !== null && <WorkerModal worker={workerModal === 'add' ? null : workerModal} onSave={saveWorker} onClose={() => setWorkerModal(null)} activeStationId={activeStationId} />}
       {deleteW && <ConfirmModal message={`هل تريد حذف "${deleteW.name}" نهائياً؟`} onConfirm={deleteWorker} onClose={() => setDeleteW(null)} />}
 
       <div className="worker-selector">
@@ -5428,7 +5428,7 @@ const App = ({ onShowPricing }) => {
           )}
 
           {page === 'workers' && (user.role === 'owner' || user.role === 'manager') && (
-            <WorkersPage workers={workers} ownerId={getOwnerId(user)} setWorkers={async (updater) => {
+            <WorkersPage workers={workers.filter(w => !w.stationId || w.stationId === activeStation)} activeStationId={activeStation} ownerId={getOwnerId(user)} setWorkers={async (updater) => {
               const oid = getOwnerId(user);
               const newList = typeof updater === 'function' ? updater(workers) : updater;
               // اعرف مين اتحذف
@@ -5443,7 +5443,7 @@ const App = ({ onShowPricing }) => {
               }
             }} />
           )}
-          {page === 'reports' && <ReportsPage workers={workers} ownerId={getOwnerId(user)} onResetMonth={(resetWorkers) => {
+          {page === 'reports' && <ReportsPage workers={workers.filter(w => !w.stationId || w.stationId === activeStation)} ownerId={getOwnerId(user)} onResetMonth={(resetWorkers) => {
               const oid = getOwnerId(user);
               resetWorkers.forEach(async w => {
                 await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, oid, `${COLLECTION_PREFIX}workers`, String(w.id)), w);
@@ -5451,7 +5451,7 @@ const App = ({ onShowPricing }) => {
             }} />}
           {page === 'salary_payment' && user.role === 'owner' && (
             planHasSalaryPay(getPlan())
-              ? <SalaryPaymentPage workers={workers} ownerId={getOwnerId(user)} />
+              ? <SalaryPaymentPage workers={workers.filter(w => !w.stationId || w.stationId === activeStation)} ownerId={getOwnerId(user)} />
               : <div style={{ textAlign: 'center', padding: 60 }}>
                   <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تقرير صرف الرواتب</div>
