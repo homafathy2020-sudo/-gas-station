@@ -1,4 +1,3 @@
-// ==================== STAGING/PRODUCTION MODE ====================
 const IS_STAGING = import.meta.env.VITE_APP_ENV === 'staging' ||
   (typeof window !== 'undefined' && localStorage.getItem('app_mode') === 'staging');
 
