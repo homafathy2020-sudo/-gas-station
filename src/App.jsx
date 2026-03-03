@@ -2088,11 +2088,11 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
                         (w.absences.length > 0 ? '\n🚫 الغيابات:\n' + w.absences.map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
                         ((w.absences_no_reason||[]).length > 0 ? '\n⚠️ العجز:\n' + (w.absences_no_reason||[]).map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
                         ((w.discipline||[]).filter(d=>d.reward>0).length > 0 ? '\n🎁 الحوافز:\n' + (w.discipline||[]).filter(d=>d.reward>0).map(d => '   • ' + (d.date || '—') + ' ← +' + fmt(d.reward||0)).join('\n') + '\n' : '') +
-                        (w.cash_withdrawals && w.cash_withdrawals.length > 0 ? '\n💵 السحوبات النقدية:\n' + w.cash_withdrawals.map(c => '   • ' + (c.date || '—') + ' ← -' + fmt(c.amount||0)).join('\n') + '\n' : '') +
+                        ((w.cash_withdrawals||[]).length > 0 ? '\n💵 السحوبات النقدية:\n' + (w.cash_withdrawals||[]).map(c => '   • ' + (c.date || '—') + ' ← -' + fmt(c.amount||0)).join('\n') + '\n' : '') +
                         '\n─────────────────\n' +
-                        '✅ *صافي المدفوع: ' + fmt(net) + '*\n' +
+                        '✅ صافي المدفوع: ' + fmt(net) + '\n' +
                         '─────────────────\n' +
-                        '🕐 تاريخ الصرف: ' + new Date().toLocaleDateString(\'ar-EG\') + '\n\n' +
+                        '🕐 تاريخ الصرف: ' + new Date().toLocaleDateString('ar-EG') + '\n\n' +
                         'شكراً على مجهودك وتفانيك في العمل 💪\n' +
                         '_تم الإرسال عبر WaqoudPro_'
                       );
