@@ -2077,15 +2077,24 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
                       const net = calcNet(w);
                       const phone = w.phone.startsWith('0') ? '2' + w.phone : w.phone;
                       const msg = encodeURIComponent(
-                        'مرحباً يا ' + w.name + ' 👋\n\n⛽ WaqoudPro\n─────────────────\n' +
-                        '💵 راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '\n' +
+                        'مرحباً يا ' + w.name + ' 👋\n' +
+                        'أرسلت إليك WaqoudPro تفاصيل راتبك ⛽\n' +
+                        '─────────────────\n' +
+                        '📅 راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '\n' +
+                        '📍 مكان العمل: ' + (w.pump || '—') + '\n' +
                         '─────────────────\n' +
                         '💰 الراتب الأساسي: ' + fmt(w.salary) + '\n' +
-                        '➖ الخصومات: -' + fmt(totalDed(w)) + '\n' +
-                        (totalRewards(w) > 0 ? '🎁 الحوافز: +' + fmt(totalRewards(w)) + '\n' : '') +
-                        (totalCash(w) > 0 ? '💸 السحوبات: -' + fmt(totalCash(w)) + '\n' : '') +
+                        (w.delays.length > 0 ? '\n⏰ التأخيرات:\n' + w.delays.map(d => '   • ' + (d.date || '—') + ' ← -' + fmt(d.deduction||0)).join('\n') + '\n' : '') +
+                        (w.absences.length > 0 ? '\n🚫 الغيابات:\n' + w.absences.map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
+                        ((w.absences_no_reason||[]).length > 0 ? '\n⚠️ العجز:\n' + (w.absences_no_reason||[]).map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
+                        ((w.discipline||[]).filter(d=>d.reward>0).length > 0 ? '\n🎁 الحوافز:\n' + (w.discipline||[]).filter(d=>d.reward>0).map(d => '   • ' + (d.date || '—') + ' ← +' + fmt(d.reward||0)).join('\n') + '\n' : '') +
+                        (w.cash_withdrawals && w.cash_withdrawals.length > 0 ? '\n💵 السحوبات النقدية:\n' + w.cash_withdrawals.map(c => '   • ' + (c.date || '—') + ' ← -' + fmt(c.amount||0)).join('\n') + '\n' : '') +
+                        '\n─────────────────\n' +
+                        '✅ *صافي المدفوع: ' + fmt(net) + '*\n' +
                         '─────────────────\n' +
-                        '✅ صافي المدفوع: ' + fmt(net) + '\n─────────────────\nشكراً على مجهودك! 🙏'
+                        '🕐 تاريخ الصرف: ' + new Date().toLocaleDateString(\'ar-EG\') + '\n\n' +
+                        'شكراً على مجهودك وتفانيك في العمل 💪\n' +
+                        '_تم الإرسال عبر WaqoudPro_'
                       );
                       window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
                     }}>💬 أبلغه</button>
