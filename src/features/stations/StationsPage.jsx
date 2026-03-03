@@ -1,16 +1,9 @@
 import { useState } from 'react';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, onSnapshot, setDoc } from 'firebase/firestore';
 import { COLLECTION_PREFIX } from '../../config/env';
 import { db } from '../../firebase';
 import { useToast } from '../../shared/components/Toast';
-import { getPlan, getStationLimit, ACTIVE_STATION_KEY } from '../../utils/planUtils';
-
-const saveStation = async (ownerId, station) => {
-  await setDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}stations`, String(station.id)), station);
-};
-const deleteStation = async (ownerId, stationId) => {
-  await deleteDoc(doc(db, `${COLLECTION_PREFIX}owners`, ownerId, `${COLLECTION_PREFIX}stations`, String(stationId)));
-};
+import { getPlan, getStationLimit } from '../../utils/planUtils';
 
 export const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh }) => {
   const toast = useToast();
@@ -106,3 +99,5 @@ export const StationsPage = ({ ownerId, stations, activeStation, onSetActive, on
   );
 };
 
+// ===== شاشة انتهاء التجربة / الخطط =====
+const PricingScreen = ({ onBack, onSelectFree }) => {

@@ -4,6 +4,7 @@ import { useToast } from '../../shared/components/Toast';
 import { calcNet, fmt, totalCash, totalDed, totalRewards } from '../../utils/helpers';
 import { getMonthArchives, saveMonthArchives } from '../../utils/monthArchive';
 
+// ==================== MONTH RESET MODAL ====================
 export const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
   const [confirm, setConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,6 +20,7 @@ export const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
 
   const handleReset = async () => {
     setLoading(true);
+    // أرشفة الشهر الحالي
     const archive = {
       id: Date.now(),
       month: now.getMonth(),
@@ -44,6 +46,7 @@ export const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
     };
     const archives = getMonthArchives(ownerId);
     await saveMonthArchives(ownerId, [...archives, archive]);
+    // مسح كل البيانات الشهرية لكل العمال
     await onReset(workers.map(w => ({
       ...w,
       delays: [],
@@ -103,9 +106,9 @@ export const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
             <div style={{ background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.4)', borderRadius: 14, padding: '18px 20px', textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 10 }}>⚠️</div>
               <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>تأكيد إغلاق شهر {monthLabel}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18 }}>هذا الإجراء لا يمكن التراجع عنه</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18 }}>هذا الإجراء لا يمكن التراجع عنه — تأكد من تحميل تقرير Excel قبل المتابعة</div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                <button className="btn btn-danger" onClick={handleReset} disabled={loading}>
+                <button className="btn btn-danger" style={{ justifyContent: 'center' }} onClick={handleReset} disabled={loading}>
                   {loading ? '⏳ جاري الإغلاق...' : '✅ نعم، أغلق الشهر'}
                 </button>
                 <button className="btn btn-ghost" onClick={() => setConfirm(false)}>رجوع</button>
@@ -117,3 +120,5 @@ export const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
     </div>
   );
 };
+
+// ==================== MONTH ARCHIVE PAGE ====================

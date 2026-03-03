@@ -1,7 +1,8 @@
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { COLLECTION_PREFIX } from '../config/env';
 import { db } from '../firebase';
 
+// ==================== MONTH ARCHIVE UTILS ====================
 export const getMonthArchives = (ownerId) => {
   try { return JSON.parse(localStorage.getItem('owner_' + ownerId + '_month_archives') || '[]'); } catch { return []; }
 };

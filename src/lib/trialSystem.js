@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { COLLECTION_PREFIX } from '../config/env';
 import { db } from '../firebase';
 
@@ -126,64 +125,6 @@ const planHasSalaryPay  = (plan) => ['enterprise', 'lifetime', 'trial'].includes
 const planHasMonthReset = (plan) => ['enterprise', 'lifetime', 'trial'].includes(plan);
 
 
-
-
-// ===== HOOKS =====
-
-export const useTrialSystem = (ownerId) => {
-  const [trialInfo, setTrialInfo] = useState({ remaining: 0, expired: false, elapsedDays: 0, startDate: null, plan: 'trial' });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!ownerId) { setLoading(false); return; }
-    initTrialIfNeeded(ownerId).then(() =>
-      getTrialInfoFromDB(ownerId).then(info => { setTrialInfo(info); setLoading(false); })
-    );
-  }, [ownerId]);
-
-  const setPlan = async (plan) => {
-    await setPlanInDB(ownerId, plan);
-    const info = await getTrialInfoFromDB(ownerId);
-    setTrialInfo(info);
-  };
-
-  return { trialInfo, loading, setPlan };
-};
-
-export const useStationSystem = (ownerId) => {
-  const [stations, setStations] = useState([]);
-  const [activeStation, setActiveStation] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = async () => {
-    if (!ownerId) { setLoading(false); return; }
-    const data = await getStations(ownerId);
-    setStations(data);
-    const saved = localStorage.getItem(ACTIVE_STATION_KEY(ownerId));
-    setActiveStation(saved || (data[0]?.id ?? null));
-    setLoading(false);
-  };
-
-  useEffect(() => { refresh(); }, [ownerId]);
-
-  const switchStation = (id) => {
-    setActiveStation(id);
-    localStorage.setItem(ACTIVE_STATION_KEY(ownerId), id);
-  };
-
-  const addStation = async (station) => {
-    await saveStation(ownerId, station);
-    await refresh();
-  };
-
-  const removeStation = async (stationId) => {
-    await deleteStation(ownerId, stationId);
-    if (activeStation === stationId) {
-      const remaining = stations.filter(s => s.id !== stationId);
-      switchStation(remaining[0]?.id ?? null);
-    }
-    await refresh();
-  };
-
-  return { stations, activeStation, loading, switchStation, addStation, removeStation, refresh };
-};
+// ===== STATION SWITCHER COMPONENT =====
+const StationSwitcher = ({ stations, activeStation, onSwitch, onManage }) => {
+  const [open, setOpen] = useState(false);

@@ -40,3 +40,6 @@ export const StationSwitcher = ({ stations, activeStation, onSwitch, onManage })
     </div>
   );
 };
+
+// ===== STATIONS MANAGEMENT PAGE =====
+const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh }) => {

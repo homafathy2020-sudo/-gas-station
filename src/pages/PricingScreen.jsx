@@ -187,3 +187,6 @@ export const PricingScreen = ({ onBack, onSelectFree }) => {
     </div>
   );
 };
+
+// ===== شريط التجربة المجانية =====
+const TrialBanner = ({ remaining, onViewPlans, userName }) => {
