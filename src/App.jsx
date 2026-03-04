@@ -1629,6 +1629,208 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
   );
 };
 
+// ==================== XLSX BUILDER ====================
+const loadJSZip = (cb) => {
+  if (window.JSZip) { cb(window.JSZip); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  s.onload = () => cb(window.JSZip);
+  document.head.appendChild(s);
+};
+
+const buildXlsxBlob = (sheets) => {
+  const runWithJSZip = (JSZip, filename) => {
+    const zip = new JSZip();
+
+    const STYLES = {
+      // 0=default, 1=title, 2=header-blue, 3=header-green, 4=header-red, 5=header-orange
+      // 6=row-even, 7=row-odd, 8=total, 9=total-red, 10=num-red, 11=num-green, 12=num-red-odd, 13=num-green-odd
+      // 14=salary, 15=subtitle, 16=net
+      fills: ['none','#1a56db','#1a56db','#059669','#dc2626','#d97706','#f0f4ff','#e8edf8','#1e293b','#1e293b','#f0f4ff','#f0fdf4','#e8edf8','#f0fdf4','#fff8e1','#334155','#064e3b'],
+      fgColors: ['000000','ffffff','ffffff','ffffff','ffffff','ffffff','1e293b','1e293b','f8fafc','ef4444','ef4444','10b981','ef4444','10b981','d97706','f8fafc','ffffff'],
+      bold: [false,true,true,true,true,true,false,false,true,true,false,false,false,false,true,true,true],
+      sz: [11,14,11,11,11,11,11,11,12,12,11,11,11,11,13,12,13],
+      align: ['right','center','center','center','center','center','right','right','center','center','right','right','right','right','right','center','center'],
+    };
+
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+    const colLetter = n => {
+      let r = ''; n++;
+      while (n > 0) { r = String.fromCharCode(65 + ((n-1)%26)) + r; n = Math.floor((n-1)/26); }
+      return r;
+    };
+
+    sheets.forEach((sh, si) => {
+      const rows = sh.rows || [];
+      const colWidths = sh.colWidths || [];
+      const merges = sh.merges || [];
+
+      let sharedStrings = [];
+      let ssMap = {};
+      const addSS = v => { const s = String(v); if (ssMap[s] === undefined) { ssMap[s] = sharedStrings.length; sharedStrings.push(s); } return ssMap[s]; };
+
+      let wsRows = '';
+      rows.forEach((row, ri) => {
+        const ht = row.ht ? ` ht="${row.ht}" customHeight="1"` : '';
+        wsRows += `<row r="${ri+1}"${ht}>`;
+        (row.cells || []).forEach((cell, ci) => {
+          if (!cell) return;
+          const addr = colLetter(ci) + (ri+1);
+          const si2 = cell.s ?? 0;
+          if (cell.t === 'n' && cell.v !== '' && cell.v !== undefined) {
+            wsRows += `<c r="${addr}" s="${si2}" t="n"><v>${cell.v}</v></c>`;
+          } else if (cell.v !== '' && cell.v !== undefined) {
+            const idx = addSS(cell.v);
+            wsRows += `<c r="${addr}" s="${si2}" t="s"><v>${idx}</v></c>`;
+          } else {
+            wsRows += `<c r="${addr}" s="${si2}"/>`;
+          }
+        });
+        wsRows += '</row>';
+      });
+
+      const maxCol = Math.max(...rows.map(r => (r.cells||[]).length)) - 1;
+      const colDefs = colWidths.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+      const mergeDefs = merges.length ? `<mergeCells>${merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '';
+      const sheetRef = `A1:${colLetter(maxCol)}${rows.length}`;
+
+      const wsXml = `<?xml version="1.0" encoding="UTF-8"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetViews><sheetView rightToLeft="1" workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colDefs}</cols>
+<sheetData>${wsRows}</sheetData>
+${mergeDefs}
+</worksheet>`;
+
+      zip.file(`xl/worksheets/sheet${si+1}.xml`, wsXml);
+
+      // shared strings per sheet — collect all
+      sh._ss = sharedStrings;
+      sh._ssMap = ssMap;
+    });
+
+    // merge all shared strings
+    let allSS = [];
+    let allSSMap = {};
+    sheets.forEach(sh => {
+      (sh._ss||[]).forEach(s => { if (allSSMap[s] === undefined) { allSSMap[s] = allSS.length; allSS.push(s); } });
+    });
+
+    // rebuild sheets with unified shared string indices
+    sheets.forEach((sh, si) => {
+      const rows = sh.rows || [];
+      let wsRows = '';
+      rows.forEach((row, ri) => {
+        const ht = row.ht ? ` ht="${row.ht}" customHeight="1"` : '';
+        wsRows += `<row r="${ri+1}"${ht}>`;
+        (row.cells||[]).forEach((cell, ci) => {
+          if (!cell) return;
+          const addr = colLetter(ci) + (ri+1);
+          const s = cell.s ?? 0;
+          if (cell.t === 'n' && cell.v !== '' && cell.v !== undefined) {
+            wsRows += `<c r="${addr}" s="${s}" t="n"><v>${cell.v}</v></c>`;
+          } else if (cell.v !== '' && cell.v !== undefined) {
+            const idx = allSSMap[String(cell.v)];
+            wsRows += `<c r="${addr}" s="${s}" t="s"><v>${idx}</v></c>`;
+          } else {
+            wsRows += `<c r="${addr}" s="${s}"/>`;
+          }
+        });
+        wsRows += '</row>';
+      });
+
+      const colWidths = sh.colWidths || [];
+      const merges = sh.merges || [];
+      const maxCol = Math.max(...rows.map(r => (r.cells||[]).length)) - 1;
+      const colDefs = colWidths.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+      const mergeDefs = merges.length ? `<mergeCells>${merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '';
+
+      const wsXml = `<?xml version="1.0" encoding="UTF-8"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetViews><sheetView rightToLeft="1" workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colDefs}</cols>
+<sheetData>${wsRows}</sheetData>
+${mergeDefs}
+</worksheet>`;
+      zip.file(`xl/worksheets/sheet${si+1}.xml`, wsXml);
+    });
+
+    // shared strings xml
+    const ssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${allSS.length}" uniqueCount="${allSS.length}">
+${allSS.map(s=>`<si><t xml:space="preserve">${esc(s)}</t></si>`).join('')}
+</sst>`;
+    zip.file('xl/sharedStrings.xml', ssXml);
+
+    // styles
+    const stylesXml = `<?xml version="1.0" encoding="UTF-8"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="${STYLES.sz.length}">
+${STYLES.sz.map((sz,i)=>`<font><sz val="${sz}"/><name val="Cairo"/>${STYLES.bold[i]?'<b/>':''}<color rgb="FF${STYLES.fgColors[i]}"/></font>`).join('')}
+</fonts>
+<fills count="${STYLES.fills.length+2}">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+${STYLES.fills.map(f=>f==='none'?'<fill><patternFill patternType="none"/></fill>':`<fill><patternFill patternType="solid"><fgColor rgb="FF${f.replace('#','')}"/></patternFill></fill>`).join('')}
+</fills>
+<borders count="2">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFCBD5E1"/></left><right style="thin"><color rgb="FFCBD5E1"/></right><top style="thin"><color rgb="FFCBD5E1"/></top><bottom style="thin"><color rgb="FFCBD5E1"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="${STYLES.sz.length}">
+${STYLES.sz.map((_,i)=>`<xf numFmtId="${i>=10&&i<=13?4:0}" fontId="${i}" fillId="${i+2}" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${STYLES.align[i]}" vertical="center" wrapText="1"/></xf>`).join('')}
+</cellXfs>
+</styleSheet>`;
+    zip.file('xl/styles.xml', stylesXml);
+
+    // workbook
+    const wbXml = `<?xml version="1.0" encoding="UTF-8"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets>
+${sheets.map((sh,i)=>`<sheet name="${esc(sh.name||('Sheet'+(i+1)))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}
+</sheets>
+</workbook>`;
+    zip.file('xl/workbook.xml', wbXml);
+
+    // rels
+    const wbRels = `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}
+<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+<Relationship Id="rId${sheets.length+2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+    zip.file('xl/_rels/workbook.xml.rels', wbRels);
+
+    zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`);
+
+    zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}
+<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`);
+
+    zip.generateAsync({ type: 'blob' }).then(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  };
+  return { runWithJSZip };
+};
+
 // ==================== REPORTS ====================
 const generateMonthlyReport = (workers, month, year, monthName) => {
   const C = (v, s, t) => ({ v, s: s ?? 0, t: t ?? (typeof v === 'number' ? 'n' : 's') });
