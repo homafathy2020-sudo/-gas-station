@@ -2122,6 +2122,7 @@ const MonthArchivePage = ({ ownerId }) => {
 
 // ==================== SALARY PAYMENT PAGE ====================
 const SalaryPaymentPage = ({ workers, ownerId }) => {
+  const plan = usePlan();
   const toast = useToast();
   const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   const now = new Date();
