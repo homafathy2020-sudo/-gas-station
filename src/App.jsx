@@ -3712,41 +3712,46 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
 
 
 // ==================== SHIFT LOG HELPERS ====================
-const getShiftKey = (date) => date; // YYYY-MM-DD
-const saveShiftLog = async (ownerId, date, entries) => {
-  await setDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date)), { date, entries, savedAt: new Date().toISOString() });
+const getShiftKey = (date, stationId) => stationId ? `${stationId}_${date}` : date;
+const saveShiftLog = async (ownerId, date, entries, stationId) => {
+  await setDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date, stationId)), { date, stationId: stationId || null, entries, savedAt: new Date().toISOString() });
 };
-const getShiftLog = async (ownerId, date) => {
+const getShiftLog = async (ownerId, date, stationId) => {
   try {
-    const snap = await getDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date)));
+    const snap = await getDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date, stationId)));
     return snap.exists() ? snap.data() : null;
   } catch { return null; }
 };
-const getShiftLogs = async (ownerId, limitDays = 30) => {
+const getShiftLogs = async (ownerId, limitDays = 30, stationId) => {
   try {
     const snap = await getDocs(collection(db, 'owners', ownerId, 'shifts'));
-    return snap.docs.map(d => d.data()).sort((a, b) => b.date.localeCompare(a.date)).slice(0, limitDays);
+    return snap.docs.map(d => d.data())
+      .filter(d => stationId ? d.stationId === stationId : true)
+      .sort((a, b) => b.date.localeCompare(a.date)).slice(0, limitDays);
   } catch { return []; }
 };
 
 // ==================== FUEL LOG HELPERS ====================
-const saveFuelLog = async (ownerId, log) => {
+const saveFuelLog = async (ownerId, log, stationId) => {
   const id = log.id || String(Date.now());
-  await setDoc(doc(db, 'owners', ownerId, 'fuelLogs', id), { ...log, id });
+  const col = stationId ? `fuelLogs_${stationId}` : 'fuelLogs';
+  await setDoc(doc(db, 'owners', ownerId, col, id), { ...log, id, stationId: stationId || null });
   return id;
 };
-const deleteFuelLog = async (ownerId, id) => {
-  await deleteDoc(doc(db, 'owners', ownerId, 'fuelLogs', id));
+const deleteFuelLog = async (ownerId, id, stationId) => {
+  const col = stationId ? `fuelLogs_${stationId}` : 'fuelLogs';
+  await deleteDoc(doc(db, 'owners', ownerId, col, id));
 };
-const getFuelLogs = async (ownerId) => {
+const getFuelLogs = async (ownerId, stationId) => {
   try {
-    const snap = await getDocs(collection(db, 'owners', ownerId, 'fuelLogs'));
+    const col = stationId ? `fuelLogs_${stationId}` : 'fuelLogs';
+    const snap = await getDocs(collection(db, 'owners', ownerId, col));
     return snap.docs.map(d => d.data()).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
   } catch { return []; }
 };
 
 // ==================== DAILY SHIFT PAGE ====================
-const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
+const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
   const plan = usePlan();
   const toast = useToast();
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -3762,7 +3767,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   useEffect(() => {
     if (!ownerId) return;
     setLoading(true);
-    getShiftLog(ownerId, date).then(data => {
+    getShiftLog(ownerId, date, activeStation).then(data => {
       if (data?.entries) {
         const map = {};
         data.entries.forEach(e => { map[e.workerId] = e; });
@@ -3774,11 +3779,11 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
       }
       setLoading(false);
     });
-  }, [date, ownerId]);
+    }, [date, ownerId, activeStation]);
 
   useEffect(() => {
-    if (tab === 'history' && ownerId) getShiftLogs(ownerId, 30).then(setHistory);
-  }, [tab, ownerId]);
+    if (tab === 'history' && ownerId) getShiftLogs(ownerId, 30, activeStation).then(setHistory);
+    }, [tab, ownerId, activeStation]);
 
   const setStatus = (workerId, status) => {
     setEntries(prev => ({ ...prev, [workerId]: { ...prev[workerId], workerId, status, deduction: '', minutes: '', reason: '' } }));
@@ -3806,7 +3811,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
         minutes: entries[w.id]?.minutes || '',
         reason: entries[w.id]?.reason || '',
       }));
-      await saveShiftLog(ownerId, date, allEntries);
+      await saveShiftLog(ownerId, date, allEntries, activeStation);
 
       for (const w of workers) {
         const e = entries[w.id];
@@ -3993,7 +3998,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
 };
 
 // ==================== FUEL LOG PAGE ====================
-const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
+const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
   const toast = useToast();
   const todayStr = new Date().toISOString().slice(0, 10);
   const [logs, setLogs] = useState([]);
@@ -4016,8 +4021,8 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   useEffect(() => {
     if (!ownerId) return;
     setLoading(true);
-    getFuelLogs(ownerId).then(data => { setLogs(data); setLoading(false); });
-  }, [ownerId]);
+    getFuelLogs(ownerId, activeStation).then(data => { setLogs(data); setLoading(false); });
+  }, [ownerId, activeStation]);
 
   // When date/shift changes, check if already saved
   useEffect(() => {
@@ -4108,7 +4113,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
     try {
       // delete old logs for this shift first
       const oldLogs = logs.filter(l => l.date === shiftDate && l.shift === shiftType);
-      for (const l of oldLogs) await deleteFuelLog(ownerId, l.id);
+      for (const l of oldLogs) await deleteFuelLog(ownerId, l.id, activeStation);
 
       const newLogs = [];
       for (const w of filled) {
@@ -4127,7 +4132,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
           result, deduction: +e.deduction || 0,
           notes: e.notes || '', createdAt: new Date().toISOString(),
         };
-        await saveFuelLog(ownerId, log);
+        await saveFuelLog(ownerId, log, activeStation);
         newLogs.push(log);
 
         // مزامنة مع بيانات العامل
@@ -4163,7 +4168,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   };
 
   const handleDeleteLog = async (id) => {
-    await deleteFuelLog(ownerId, id);
+    await deleteFuelLog(ownerId, id, activeStation);
     setLogs(prev => prev.filter(l => l.id !== id));
     setDelConfirm(null);
     toast('تم الحذف', 'info');
@@ -4634,7 +4639,7 @@ const StationSwitcher = ({ stations, activeStation, onSwitch, onManage }) => {
 };
 
 // ===== STATIONS MANAGEMENT PAGE =====
-const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh }) => {
+const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh, workers }) => {
   const plan = usePlan();
   const toast = useToast();
   const limit = getStationLimit(plan);
@@ -4700,7 +4705,10 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
               <div className="station-card-name">{s.name}</div>
               {s.id === activeStation && <span style={{ background: 'rgba(26,86,219,0.2)', color: 'var(--primary-light)', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>✓ نشطة</span>}
             </div>
-            <div className="station-card-meta">{s.address && <span>📍 {s.address}</span>}</div>
+            <div className="station-card-meta">
+                {s.address && <span>📍 {s.address}</span>}
+                <span>👷 {(workers||[]).filter(w => !w.stationId || w.stationId === s.id).length} عامل</span>
+              </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {s.id !== activeStation && <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}>⚡ تفعيل</button>}
@@ -6416,7 +6424,7 @@ const App = ({ onShowPricing }) => {
             </button>
             <div>
               <div className="topbar-title">{titles[page]}</div>
-              {user.role === 'owner' && activeStation && ['workers','reports','salary_payment'].includes(page) && (
+              {user.role === 'owner' && activeStation && ['workers','reports','salary_payment','shift_log','fuel_log'].includes(page) && (
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>⛽ {stations.find(s => s.id === activeStation)?.name || ''}</div>
               )}
             </div>
@@ -6462,7 +6470,7 @@ const App = ({ onShowPricing }) => {
             </div>
           )}
           {page === 'dashboard' && user.role === 'owner' && (
-            <OwnerDashboard workers={workers} workPlaces={workPlaces}
+            <OwnerDashboard workers={activeStation ? workers.filter(w => !w.stationId || w.stationId === activeStation) : workers} workPlaces={workPlaces}
               onAddPlace={async (p) => {
                 const oid = getOwnerId(user);
                 const id = String(Date.now());
@@ -6500,6 +6508,7 @@ const App = ({ onShowPricing }) => {
             <ShiftLogPage
               workers={workers.filter(w => !w.stationId || w.stationId === activeStation)}
               ownerId={getOwnerId(user)}
+              activeStation={activeStation}
               onUpdateWorker={async (updated) => {
                 const oid = getOwnerId(user);
                 await setDoc(doc(db, 'owners', oid, 'workers', String(updated.id)), updated);
@@ -6511,6 +6520,7 @@ const App = ({ onShowPricing }) => {
             <FuelLogPage
               workers={workers.filter(w => !w.stationId || w.stationId === activeStation)}
               ownerId={getOwnerId(user)}
+              activeStation={activeStation}
               onUpdateWorker={async (updated) => {
                 const oid = getOwnerId(user);
                 await setDoc(doc(db, 'owners', oid, 'workers', String(updated.id)), updated);
@@ -6578,6 +6588,7 @@ const App = ({ onShowPricing }) => {
               ownerId={getOwnerId(user)}
               stations={stations}
               activeStation={activeStation}
+              workers={workers}
               onSetActive={(id) => { setActiveStation(id); const oid = getOwnerId(user); if (oid) localStorage.setItem(ACTIVE_STATION_KEY(oid), id); }}
               onRefresh={async () => { const stList = await getStations(getOwnerId(user)); setStations(stList); }}
             />
