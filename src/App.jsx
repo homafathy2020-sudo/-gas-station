@@ -3624,6 +3624,8 @@ const WHATSAPP_NUMBER = '201220523598';
 
 // ---- Firebase-based trial & plan helpers ----
 
+const getOwnerTrialDoc = (ownerId) => doc(db, 'owners', ownerId, 'meta', 'trial');
+
 const initTrialIfNeeded = async (ownerId) => {
   try {
     const ref = getOwnerTrialDoc(ownerId);
@@ -3715,6 +3717,13 @@ const getStationLimit = (plan) => STATION_LIMITS[plan] ?? 1;
 
 // Firestore helpers للمحطات
 const getStations = async (ownerId) => {
+  try {
+    const snap = await getDocs(collection(db, 'owners', ownerId, 'stations'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    console.error('getStations error:', e);
+    return [];
+  }
 };
 const saveStation = async (ownerId, station) => {
   await setDoc(doc(db, 'owners', ownerId, `stations`, String(station.id)), station);
@@ -5369,10 +5378,17 @@ const App = ({ onShowPricing }) => {
         try {
           // انتظر شوية عشان الـ listeners يجيبوا البيانات الأول
           setTimeout(async () => {
-            const ws = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const ps = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const ms = mSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => !m.deleted);
-            await createBackup(oid, ws, ps, ms, 'تلقائي');
+            try {
+              const [wSnap, pSnap, mSnap] = await Promise.all([
+                getDocs(collection(db, 'owners', oid, 'workers')),
+                getDocs(collection(db, 'owners', oid, 'workplaces')),
+                getDocs(collection(db, 'owners', oid, 'members')),
+              ]);
+              const ws = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+              const ps = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+              const ms = mSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => !m.deleted);
+              await createBackup(oid, ws, ps, ms, 'تلقائي');
+            } catch {}
           }, 4000);
         } catch {}
       });
