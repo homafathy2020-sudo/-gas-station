@@ -923,9 +923,10 @@ const WorkPlacesManager = ({ workPlaces, onAdd, onEdit, onDelete, onClose }) => 
 
 // ==================== WORKER MODAL ====================
 const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
-  const [form, setForm] = useState(worker || { name: '', pump: '', workDays: '', salary: '', phone: '' });
+  const [form, setForm] = useState(worker || { name: '', pump: '', workDays: '', salary: '', phone: '', defaultShiftType: 'morning', defaultFuelType: 'بنزين 92' });
   const [errors, setErrors] = useState({});
   const toast = useToast();
+  const fuelTypes = ['بنزين 80', 'بنزين 92', 'بنزين 95', 'سولار'];
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = 'الاسم مطلوب';
@@ -939,7 +940,7 @@ const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
   const submit = (e) => {
     e.preventDefault(); const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    onSave({ ...form, workDays: +form.workDays, salary: +form.salary, phone: form.phone || '', id: worker?.id || Date.now(), avatar: form.name[0] || '؟', delays: worker?.delays || [], absences: worker?.absences || [], absences_no_reason: worker?.absences_no_reason || [], discipline: worker?.discipline || [], stationId: worker?.stationId || activeStationId });
+    onSave({ ...form, workDays: +form.workDays, salary: +form.salary, phone: form.phone || '', defaultShiftType: form.defaultShiftType || 'morning', defaultFuelType: form.defaultFuelType || 'بنزين 92', id: worker?.id || Date.now(), avatar: form.name[0] || '؟', delays: worker?.delays || [], absences: worker?.absences || [], absences_no_reason: worker?.absences_no_reason || [], discipline: worker?.discipline || [], stationId: worker?.stationId || activeStationId });
     toast(worker ? 'تم تعديل البيانات' : 'تمت الإضافة', 'success');
   };
   const f = k => ({ value: form[k] || '', onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
@@ -956,6 +957,25 @@ const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
               <div className="form-group"><label className="form-label">الراتب (ج.م)</label><input type="number" min="0" max="1000000" placeholder="3500" {...f('salary')} />{errors.salary && <div className="form-error">{errors.salary}</div>}</div>
             </div>
             <div className="form-group"><label className="form-label">📱 رقم التليفون</label><input type="tel" placeholder="مثال: 01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} {...f('phone')} /></div>
+            <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 12, padding: '14px 16px', marginTop: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 12 }}>⛽ إعدادات التصفية الافتراضية</div>
+              <div className="form-grid-2">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">🕐 الوردية الافتراضية</label>
+                  <select value={form.defaultShiftType || 'morning'} onChange={e => setForm({ ...form, defaultShiftType: e.target.value })}>
+                    <option value="morning">🌅 صباحية</option>
+                    <option value="evening">🌆 مسائية</option>
+                    <option value="night">🌙 ليلية</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">🛢️ نوع الوقود الافتراضي</label>
+                  <select value={form.defaultFuelType || 'بنزين 92'} onChange={e => setForm({ ...form, defaultFuelType: e.target.value })}>
+                    {fuelTypes.map(ft => <option key={ft} value={ft}>{ft}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="modal-footer"><button type="submit" className="btn btn-primary">💾 حفظ</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
         </form>
@@ -1410,9 +1430,6 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
             </table>
           </div>}
       </div>}
-
-      {/* تصفية الوردية - للمالك فقط (إذا كان ownerId موجود) */}
-      {!isWorkerView && ownerId && <ShiftSettlement worker={w} ownerId={ownerId} />}
 
       {/* السحب النقدي - عرض للعامل */}
       {isWorkerView && <div className="detail-section">
@@ -2492,8 +2509,8 @@ const ShiftSettlement = ({ worker, ownerId }) => {
   const [price, setPrice] = useState('');
   const [received, setReceived] = useState('');
   const [shiftDate, setShiftDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [shiftType, setShiftType] = useState('morning');
-  const [fuelType, setFuelType] = useState('بنزين 92');
+  const [shiftType, setShiftType] = useState(worker.defaultShiftType || 'morning');
+  const [fuelType, setFuelType] = useState(worker.defaultFuelType || 'بنزين 92');
   const [note, setNote] = useState('');
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState(() => {
