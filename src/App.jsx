@@ -923,10 +923,9 @@ const WorkPlacesManager = ({ workPlaces, onAdd, onEdit, onDelete, onClose }) => 
 
 // ==================== WORKER MODAL ====================
 const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
-  const [form, setForm] = useState(worker || { name: '', pump: '', workDays: '', salary: '', phone: '', defaultShiftType: 'morning', defaultFuelType: 'بنزين 92' });
+  const [form, setForm] = useState(worker || { name: '', pump: '', workDays: '', salary: '', phone: '' });
   const [errors, setErrors] = useState({});
   const toast = useToast();
-  const fuelTypes = ['بنزين 80', 'بنزين 92', 'بنزين 95', 'سولار'];
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = 'الاسم مطلوب';
@@ -940,7 +939,7 @@ const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
   const submit = (e) => {
     e.preventDefault(); const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    onSave({ ...form, workDays: +form.workDays, salary: +form.salary, phone: form.phone || '', defaultShiftType: form.defaultShiftType || 'morning', defaultFuelType: form.defaultFuelType || 'بنزين 92', id: worker?.id || Date.now(), avatar: form.name[0] || '؟', delays: worker?.delays || [], absences: worker?.absences || [], absences_no_reason: worker?.absences_no_reason || [], discipline: worker?.discipline || [], stationId: worker?.stationId || activeStationId });
+    onSave({ ...form, workDays: +form.workDays, salary: +form.salary, phone: form.phone || '', id: worker?.id || Date.now(), avatar: form.name[0] || '؟', delays: worker?.delays || [], absences: worker?.absences || [], absences_no_reason: worker?.absences_no_reason || [], discipline: worker?.discipline || [], stationId: worker?.stationId || activeStationId });
     toast(worker ? 'تم تعديل البيانات' : 'تمت الإضافة', 'success');
   };
   const f = k => ({ value: form[k] || '', onChange: e => { setForm({ ...form, [k]: e.target.value }); setErrors({ ...errors, [k]: '' }); }, className: `form-input ${errors[k] ? 'error' : ''}` });
@@ -957,25 +956,6 @@ const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
               <div className="form-group"><label className="form-label">الراتب (ج.م)</label><input type="number" min="0" max="1000000" placeholder="3500" {...f('salary')} />{errors.salary && <div className="form-error">{errors.salary}</div>}</div>
             </div>
             <div className="form-group"><label className="form-label">📱 رقم التليفون</label><input type="tel" placeholder="مثال: 01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} {...f('phone')} /></div>
-            <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 12, padding: '14px 16px', marginTop: 4 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 12 }}>⛽ إعدادات التصفية الافتراضية</div>
-              <div className="form-grid-2">
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">🕐 الوردية الافتراضية</label>
-                  <select value={form.defaultShiftType || 'morning'} onChange={e => setForm({ ...form, defaultShiftType: e.target.value })}>
-                    <option value="morning">🌅 صباحية</option>
-                    <option value="evening">🌆 مسائية</option>
-                    <option value="night">🌙 ليلية</option>
-                  </select>
-                </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">🛢️ نوع الوقود الافتراضي</label>
-                  <select value={form.defaultFuelType || 'بنزين 92'} onChange={e => setForm({ ...form, defaultFuelType: e.target.value })}>
-                    {fuelTypes.map(ft => <option key={ft} value={ft}>{ft}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
           </div>
           <div className="modal-footer"><button type="submit" className="btn btn-primary">💾 حفظ</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
         </form>
@@ -1430,6 +1410,9 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
             </table>
           </div>}
       </div>}
+
+      {/* تصفية الوردية - للمالك فقط (إذا كان ownerId موجود) */}
+      {!isWorkerView && ownerId && <ShiftSettlement worker={w} ownerId={ownerId} />}
 
       {/* السحب النقدي - عرض للعامل */}
       {isWorkerView && <div className="detail-section">
@@ -2509,8 +2492,8 @@ const ShiftSettlement = ({ worker, ownerId }) => {
   const [price, setPrice] = useState('');
   const [received, setReceived] = useState('');
   const [shiftDate, setShiftDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [shiftType, setShiftType] = useState(worker.defaultShiftType || 'morning');
-  const [fuelType, setFuelType] = useState(worker.defaultFuelType || 'بنزين 92');
+  const [shiftType, setShiftType] = useState('morning');
+  const [fuelType, setFuelType] = useState('بنزين 92');
   const [note, setNote] = useState('');
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState(() => {
@@ -3682,7 +3665,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
       { id: 'dashboard', icon: '📊', label: 'لوحة التحكم' },
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
       { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
-      { id: 'fuel_log', icon: '⛽', label: 'عدادات الوقود' },
+      { id: 'fuel_log', icon: '⛽', label: 'تصفية الورديات' },
       { id: 'reports', icon: '📋', label: 'التقارير' },
       { id: 'salary_payment', icon: '💵', label: 'صرف الرواتب' },
       { id: 'month_archive', icon: '📦', label: 'أرشيف الشهور' },
@@ -3693,7 +3676,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
     manager: [
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
       { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
-      { id: 'fuel_log', icon: '⛽', label: 'عدادات الوقود' },
+      { id: 'fuel_log', icon: '⛽', label: 'تصفية الورديات' },
       { id: 'reports', icon: '📋', label: 'التقارير' }
     ],
     worker: [
@@ -4003,26 +3986,28 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   );
 };
 
-// ==================== FUEL LOG PAGE ====================
-const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
+// ==================== SHIFT SETTLEMENT PAGE ====================
+const ShiftSettlementPage = ({ workers, ownerId, onUpdateWorker }) => {
   const toast = useToast();
   const todayStr = new Date().toISOString().slice(0, 10);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('shift'); // shift | history | report
-  // shift tab state — one entry per worker
+  const [tab, setTab] = useState('shift');
   const [shiftDate, setShiftDate] = useState(todayStr);
   const [shiftType, setShiftType] = useState('صباحي');
-  const [fuelType,  setFuelType]  = useState('بنزين 92');
+  const [globalFuelType, setGlobalFuelType] = useState('');
+  const [globalPrice, setGlobalPrice] = useState('');
   const [alreadySaved, setAlreadySaved] = useState(false);
-  // entries: { workerId: { startMeter, endMeter, result, deduction, reward, notes } }
   const [entries, setEntries] = useState({});
   const [saving, setSaving] = useState(false);
   const [delConfirm, setDelConfirm] = useState(null);
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth());
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
 
   const fuelTypes = ['بنزين 80', 'بنزين 92', 'بنزين 95', 'سولار', 'غاز طبيعي'];
-  const shifts    = ['صباحي', 'مسائي', 'ليلي'];
-  const [globalFuelPrice, setGlobalFuelPrice] = useState('');
+  const shifts = ['صباحي', 'مسائي', 'ليلي'];
+  const shiftIcons = { 'صباحي': '🌅', 'مسائي': '🌆', 'ليلي': '🌙' };
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
   useEffect(() => {
     if (!ownerId) return;
@@ -4030,94 +4015,86 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
     getFuelLogs(ownerId).then(data => { setLogs(data); setLoading(false); });
   }, [ownerId]);
 
-  // When date/shift changes, check if already saved
+  // When date/shift changes, load saved data or reset
   useEffect(() => {
-    const key = `${shiftDate}_${shiftType}`;
     const existing = logs.filter(l => l.date === shiftDate && l.shift === shiftType);
     if (existing.length > 0) {
       const map = {};
       existing.forEach(l => {
-        const sold = (l.endMeter || 0) - (l.startMeter || 0);
-        map[l.workerId] = { startMeter: String(l.startMeter || ''), endMeter: String(l.endMeter || ''), result: l.result || 'ok', deduction: String(l.deduction || ''), reward: String(l.reward || ''), notes: l.notes || '', sold };
+        const qty = (l.endMeter || 0) - (l.startMeter || 0);
+        map[l.workerId] = {
+          startMeter: String(l.startMeter || ''), endMeter: String(l.endMeter || ''),
+          fuelType: l.fuelType || (workers.find(w => w.id === l.workerId)?.defaultFuelType || 'بنزين 92'),
+          price: String(l.price || ''), received: String(l.received || ''),
+          required: l.required || 0, diff: l.diff ?? null,
+          qty, result: l.result || 'ok',
+          deduction: String(l.deduction || ''), notes: l.notes || '',
+        };
       });
       setEntries(map);
       setAlreadySaved(true);
     } else {
-      setEntries({});
+      // initialize entries with worker defaults
+      const map = {};
+      workers.forEach(w => {
+        map[w.id] = {
+          startMeter: '', endMeter: '',
+          fuelType: w.defaultFuelType || 'بنزين 92',
+          price: '', received: '', required: 0, diff: null, qty: 0, result: 'ok', deduction: '', notes: '',
+        };
+      });
+      setEntries(map);
       setAlreadySaved(false);
     }
   }, [shiftDate, shiftType, logs]);
 
+  const recalc = (e) => {
+    const start = parseFloat(e.startMeter) || 0;
+    const end = parseFloat(e.endMeter) || 0;
+    const price = parseFloat(e.price) || 0;
+    const received = parseFloat(e.received) || 0;
+    const qty = (start > 0 && end > 0) ? end - start : 0;
+    const required = qty > 0 && price > 0 ? qty * price : 0;
+    const diff = (required > 0 && received > 0) ? received - required : null;
+    const result = qty < 0 ? 'shortage' : 'ok';
+    return { ...e, qty, required, diff, result };
+  };
+
   const setField = (workerId, key, val) => {
     setEntries(prev => {
-      const e = { ...prev[workerId], [key]: val };
-      // auto-calc sold and result when both meters filled
-      if (key === 'startMeter' || key === 'endMeter') {
-        const start = parseFloat(key === 'startMeter' ? val : e.startMeter) || 0;
-        const end   = parseFloat(key === 'endMeter'   ? val : e.endMeter)   || 0;
-        if (start > 0 && end > 0) {
-          e.sold = end - start;
-          e.result = e.sold < 0 ? 'shortage' : 'ok';
-        } else {
-          e.sold = 0; e.result = 'ok';
-        }
-      }
-      // auto-calc settlement diff when price or received changes
-      const price    = parseFloat(key === 'price'    ? val : e.price)    || 0;
-      const received = parseFloat(key === 'received' ? val : e.received) || 0;
-      const sold     = e.sold ?? 0;
-      if (price > 0 && received > 0 && sold > 0) {
-        e.required = sold * price;
-        e.diff     = received - e.required;
-      } else {
-        e.required = 0; e.diff = null;
-      }
+      const e = recalc({ ...prev[workerId], [key]: val });
       return { ...prev, [workerId]: e };
     });
   };
 
-  // Apply global price to all workers
-  const applyGlobalPrice = () => {
-    if (!globalFuelPrice || parseFloat(globalFuelPrice) <= 0) return;
+  const applyGlobal = () => {
     setEntries(prev => {
       const next = { ...prev };
       workers.forEach(w => {
         const e = { ...next[w.id] };
-        e.price = globalFuelPrice;
-        const price    = parseFloat(globalFuelPrice) || 0;
-        const received = parseFloat(e.received) || 0;
-        const sold     = e.sold ?? 0;
-        if (price > 0 && received > 0 && sold > 0) {
-          e.required = sold * price;
-          e.diff     = received - e.required;
-        }
-        next[w.id] = e;
+        if (globalFuelType) e.fuelType = globalFuelType;
+        if (globalPrice) e.price = globalPrice;
+        next[w.id] = recalc(e);
       });
       return next;
     });
   };
 
-  const getResult = (e) => {
-    if (!e?.startMeter || !e?.endMeter) return null;
-    const sold = (parseFloat(e.endMeter) || 0) - (parseFloat(e.startMeter) || 0);
-    if (sold < 0) return 'shortage';
-    return 'ok';
-  };
-
   const handleSaveShift = async () => {
-    const filled = workers.filter(w => entries[w.id]?.startMeter && entries[w.id]?.endMeter);
-    if (filled.length === 0) { toast('أدخل قراءات العداد لعامل واحد على الأقل', 'warning'); return; }
-    // validate: shortage needs deduction, surplus needs reward
+    const filled = workers.filter(w => {
+      const e = entries[w.id];
+      return e?.startMeter && e?.endMeter;
+    });
+    if (filled.length === 0) { toast('أدخل قراءات على الأقل لعامل واحد', 'warning'); return; }
     for (const w of filled) {
       const e = entries[w.id];
-      const sold = (parseFloat(e.endMeter) || 0) - (parseFloat(e.startMeter) || 0);
-      if (sold < 0 && (!e.deduction || +e.deduction <= 0)) {
-        toast(`في عجز عند ${w.name} — أدخل قيمة الخصم`, 'error'); return;
+      const qty = (parseFloat(e.endMeter) || 0) - (parseFloat(e.startMeter) || 0);
+      if (qty < 0 && (!e.deduction || +e.deduction <= 0)) {
+        toast(`عجز عند ${w.name} — أدخل قيمة الخصم`, 'error'); return;
       }
     }
     setSaving(true);
     try {
-      // delete old logs for this shift first
       const oldLogs = logs.filter(l => l.date === shiftDate && l.shift === shiftType);
       for (const l of oldLogs) await deleteFuelLog(ownerId, l.id);
 
@@ -4125,16 +4102,16 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
       for (const w of filled) {
         const e = entries[w.id];
         const start = parseFloat(e.startMeter) || 0;
-        const end   = parseFloat(e.endMeter)   || 0;
-        const sold  = end - start;
-        const result = sold < 0 ? 'shortage' : 'ok';
+        const end = parseFloat(e.endMeter) || 0;
+        const qty = end - start;
+        const result = qty < 0 ? 'shortage' : 'ok';
         const log = {
           id: String(Date.now() + w.id), workerId: w.id, workerName: w.name,
-          date: shiftDate, shift: shiftType, fuelType,
-          startMeter: start, endMeter: end, sold,
+          date: shiftDate, shift: shiftType, fuelType: e.fuelType || 'بنزين 92',
+          startMeter: start, endMeter: end, sold: qty,
           price: +e.price || 0, received: +e.received || 0,
           required: +e.required || 0, diff: e.diff ?? null,
-          result, deduction: +e.deduction || 0, reward: +e.reward || 0,
+          result, deduction: +e.deduction || 0,
           notes: e.notes || '', createdAt: new Date().toISOString(),
         };
         await saveFuelLog(ownerId, log);
@@ -4170,160 +4147,172 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
     toast('تم الحذف', 'info');
   };
 
-  // Monthly report
-  const now = new Date();
-  const [reportMonth, setReportMonth] = useState(now.getMonth());
-  const [reportYear,  setReportYear]  = useState(now.getFullYear());
-  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   const monthLogs = logs.filter(l => { const d = new Date(l.date); return d.getMonth() === reportMonth && d.getFullYear() === reportYear; });
   const totalSoldMonth = monthLogs.filter(l => l.sold >= 0).reduce((s, l) => s + l.sold, 0);
+  const totalDiffMonth = monthLogs.reduce((s, l) => s + (l.diff || 0), 0);
+  const totalShortageMonth = monthLogs.filter(l => l.result === 'shortage').reduce((s, l) => s + Math.abs(l.sold || 0), 0);
   const workerReport = workers.map(w => {
     const wLogs = monthLogs.filter(l => l.workerId == w.id);
     const totalSold = wLogs.filter(l => l.sold >= 0).reduce((s, l) => s + l.sold, 0);
-    const totalShortage = wLogs.filter(l => l.result === 'shortage').reduce((s, l) => s + Math.abs(l.sold), 0);
+    const totalShortage = wLogs.filter(l => l.result === 'shortage').reduce((s, l) => s + Math.abs(l.sold || 0), 0);
     const totalDed = wLogs.reduce((s, l) => s + (l.deduction || 0), 0);
-    return { ...w, totalSold, totalShortage, totalDed, sessions: wLogs.length };
+    const totalDiff = wLogs.reduce((s, l) => s + (l.diff || 0), 0);
+    return { ...w, totalSold, totalShortage, totalDed, totalDiff, sessions: wLogs.length };
   }).filter(w => w.sessions > 0).sort((a, b) => b.totalSold - a.totalSold);
 
   const getWorkerName = (id) => workers.find(w => w.id == id)?.name || 'غير معروف';
 
+  // Input style helper
+  const inp = (err) => ({
+    background: err ? 'rgba(239,68,68,0.07)' : 'rgba(255,255,255,0.05)',
+    border: `1px solid ${err ? '#ef4444' : 'rgba(255,255,255,0.08)'}`,
+    borderRadius: 9, color: 'var(--text)', fontFamily: "'Cairo',sans-serif",
+    fontSize: 13, outline: 'none', padding: '8px 11px', width: '100%', textAlign: 'right',
+  });
+
   return (
-    <div className="fuel-page">
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+
+      {/* ===== HEADER ===== */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 22, flexWrap: 'wrap', gap: 14 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>⛽ عدادات الوقود</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>سجّل قراءات العداد لكل وردية — العجز والزيادة تتسجل تلقائياً على العامل</div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>⛽ تصفية الورديات</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>سجّل قراءات العداد وحساب التصفية لكل عامل في كل وردية</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[['shift','⛽ تسجيل الوردية'],['history','📋 السجل'],['report','📊 تقرير شهري']].map(([t,l]) => (
-            <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>{l}</button>
+        <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 12 }}>
+          {[['shift','⛽ تسجيل وردية'],['history','📋 السجل'],['report','📊 تقرير شهري']].map(([t,l]) => (
+            <button key={t} onClick={() => setTab(t)} style={{ padding: '7px 16px', borderRadius: 9, border: 'none', cursor: 'pointer', fontFamily: "'Cairo',sans-serif", fontSize: 12, fontWeight: 700, background: tab===t ? 'linear-gradient(135deg,var(--primary),var(--primary-light))' : 'transparent', color: tab===t ? 'white' : 'var(--text-muted)', transition: 'all .2s' }}>{l}</button>
           ))}
         </div>
       </div>
 
-      {/* ===== SHIFT TAB ===== */}
+      {/* ===== TAB: تسجيل وردية ===== */}
       {tab === 'shift' && (<>
-        {/* Top bar */}
-        <div className="shift-date-bar" style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+
+        {/* شريط الوردية */}
+        <div style={{ background: 'linear-gradient(135deg,rgba(26,86,219,0.12),rgba(26,86,219,0.04))', border: '1px solid rgba(26,86,219,0.25)', borderRadius: 16, padding: '16px 20px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>التاريخ</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 700 }}>📅 التاريخ</div>
               <input type="date" value={shiftDate} max={todayStr} onChange={e => setShiftDate(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 12px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }} />
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, padding: '8px 12px', color: 'var(--text)', fontFamily: "'Cairo',sans-serif", fontSize: 13 }} />
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>الوردية</div>
-              <select value={shiftType} onChange={e => setShiftType(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 14px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }}>
-                {shifts.map(s => <option key={s}>{s}</option>)}
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 700 }}>🕐 الوردية</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {shifts.map(s => (
+                  <button key={s} onClick={() => setShiftType(s)} style={{ padding: '8px 14px', borderRadius: 9, border: `1.5px solid`, cursor: 'pointer', fontFamily: "'Cairo',sans-serif", fontSize: 12, fontWeight: 700, background: shiftType===s ? 'rgba(26,86,219,0.25)' : 'transparent', borderColor: shiftType===s ? 'var(--primary-light)' : 'rgba(255,255,255,0.1)', color: shiftType===s ? 'var(--primary-light)' : 'var(--text-muted)', transition: 'all .15s' }}>
+                    {shiftIcons[s]} {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {alreadySaved && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 9, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', fontSize: 12, fontWeight: 700 }}>
+                ✅ تم تسجيل هذه الوردية مسبقاً
+              </div>
+            )}
+          </div>
+
+          {/* إعدادات مشتركة للكل */}
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, alignSelf: 'center' }}>⚡ تطبيق على الكل:</div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>نوع الوقود</div>
+              <select value={globalFuelType} onChange={e => setGlobalFuelType(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, padding: '7px 12px', color: 'var(--text)', fontFamily: "'Cairo',sans-serif", fontSize: 13, minWidth: 130 }}>
+                <option value="">— بدون تغيير —</option>
+                {fuelTypes.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>نوع الوقود</div>
-              <select value={fuelType} onChange={e => setFuelType(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 14px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }}>
-                {fuelTypes.map(f => <option key={f}>{f}</option>)}
-              </select>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>سعر اللتر (ج.م)</div>
+              <input type="number" step="0.01" placeholder="مثال: 10.25" value={globalPrice} onChange={e => setGlobalPrice(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, padding: '7px 12px', color: 'var(--text)', fontFamily: "'Cairo',sans-serif", fontSize: 13, width: 130 }} />
             </div>
-          </div>
-          {alreadySaved && <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', padding: '4px 12px', borderRadius: 20, fontWeight: 700 }}>✅ محفوظة</span>}
-        </div>
-
-        {/* Global fuel price */}
-        <div style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.02))', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 14, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 16 }}>💰</div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>سعر اللتر (ج.م) — يُطبّق على جميع العمال</div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
-                value={globalFuelPrice} onChange={ev => setGlobalFuelPrice(ev.target.value)} />
-              <button className="btn btn-accent btn-sm" onClick={applyGlobalPrice}>تطبيق على الكل ⚡</button>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>أو أدخل السعر لكل عامل على حدة</span>
-            </div>
+            <button onClick={applyGlobal} className="btn btn-ghost btn-sm">✔ تطبيق</button>
           </div>
         </div>
 
-        {/* Worker cards */}
+        {/* بطاقات العمال */}
         {workers.length === 0
-          ? <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
-          : <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
-              {workers.map(w => {
-                const e = entries[w.id] || {};
-                const result = getResult(e);
-                const sold = e.startMeter && e.endMeter ? (parseFloat(e.endMeter) || 0) - (parseFloat(e.startMeter) || 0) : null;
-                const isShortage = result === 'shortage';
-                const borderColor = result === null ? 'var(--border)' : isShortage ? '#ef444488' : '#10b98188';
-                return (
-                  <div key={w.id} style={{ background: 'var(--card)', border: `2px solid ${borderColor}`, borderRadius: 16, padding: '16px 20px', transition: 'border-color .2s' }}>
-                    {/* Worker header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
-                      <div style={{ width: 42, height: 42, borderRadius: 12, background: result === null ? 'linear-gradient(135deg,var(--primary),var(--accent))' : isShortage ? 'linear-gradient(135deg,#ef444466,#ef444422)' : 'linear-gradient(135deg,#10b98166,#10b98122)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 17, flexShrink: 0, border: `2px solid ${result === null ? 'transparent' : isShortage ? '#ef444466' : '#10b98166'}` }}>{w.name[0]}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 800, fontSize: 15 }}>{w.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{w.pump}</div>
-                      </div>
-                      {sold !== null && (
-                        <div style={{ textAlign: 'center', background: isShortage ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${isShortage ? '#ef444444' : '#10b98144'}`, borderRadius: 12, padding: '8px 16px' }}>
-                          <div style={{ fontSize: 18, fontWeight: 900, color: isShortage ? '#ef4444' : '#10b981' }}>
-                            {isShortage ? '⚠️' : '✅'} {Math.abs(sold).toLocaleString('ar-EG')} لتر
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{isShortage ? 'عجز' : 'مباع'}</div>
-                        </div>
-                      )}
-                    </div>
+          ? <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافون</div></div>
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {workers.map(w => {
+              const e = entries[w.id] || {};
+              const qty = e.qty || 0;
+              const isShortage = qty < 0;
+              const hasBothMeters = e.startMeter && e.endMeter;
 
-                    {/* Meter inputs */}
-                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              return (
+                <div key={w.id} style={{ background: 'var(--card)', border: `1px solid ${isShortage && hasBothMeters ? 'rgba(239,68,68,0.4)' : e.diff > 0 ? 'rgba(16,185,129,0.3)' : 'var(--border)'}`, borderRadius: 18, overflow: 'hidden', transition: 'border-color .2s' }}>
+                  {/* رأس البطاقة */}
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.02)', flexWrap: 'wrap' }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{w.avatar}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{w.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{w.pump}</div>
+                    </div>
+                    {/* نوع الوقود لهذا العامل */}
+                    <div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3, fontWeight: 600 }}>🛢️ نوع الوقود</div>
+                      <select value={e.fuelType || w.defaultFuelType || 'بنزين 92'} onChange={ev => setField(w.id, 'fuelType', ev.target.value)}
+                        style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '6px 10px', color: 'var(--text)', fontFamily: "'Cairo',sans-serif", fontSize: 12, fontWeight: 600 }}>
+                        {fuelTypes.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                    {hasBothMeters && (
+                      <div style={{ textAlign: 'center', minWidth: 80, padding: '6px 12px', borderRadius: 10, background: isShortage ? 'rgba(239,68,68,0.12)' : 'rgba(26,86,219,0.12)', border: `1px solid ${isShortage ? 'rgba(239,68,68,0.3)' : 'rgba(26,86,219,0.3)'}` }}>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: isShortage ? '#ef4444' : 'var(--primary-light)' }}>{isShortage ? '⚠️ ' : ''}{Math.abs(qty).toLocaleString('ar-EG')}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{isShortage ? 'عجز لتر' : 'لتر مباع'}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* حقول الإدخال */}
+                  <div style={{ padding: '16px 20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12, marginBottom: 14 }}>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>العداد — البداية (لتر)</div>
-                        <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="مثال: 125000"
-                          value={e.startMeter || ''} onChange={ev => setField(w.id, 'startMeter', ev.target.value)} />
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>📊 قراءة البداية (لتر)</div>
+                        <input type="number" min="0" placeholder="مثال: 125000" value={e.startMeter || ''} onChange={ev => setField(w.id, 'startMeter', ev.target.value)} style={inp()} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>العداد — النهاية (لتر)</div>
-                        <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="مثال: 126500"
-                          value={e.endMeter || ''} onChange={ev => setField(w.id, 'endMeter', ev.target.value)} />
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>📊 قراءة النهاية (لتر)</div>
+                        <input type="number" min="0" placeholder="مثال: 126500" value={e.endMeter || ''} onChange={ev => setField(w.id, 'endMeter', ev.target.value)} style={inp()} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>سعر اللتر (ج.م)</div>
-                        <input className="shift-mini-input" style={{ width: 110 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
-                          value={e.price || ''} onChange={ev => setField(w.id, 'price', ev.target.value)} />
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>💰 سعر اللتر (ج.م)</div>
+                        <input type="number" step="0.01" placeholder="10.25" value={e.price || ''} onChange={ev => setField(w.id, 'price', ev.target.value)} style={inp()} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>الواصل فعلياً (ج.م)</div>
-                        <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="المبلغ المستلم"
-                          value={e.received || ''} onChange={ev => setField(w.id, 'received', ev.target.value)} />
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>💵 الواصل فعلياً (ج.م)</div>
+                        <input type="number" placeholder="المبلغ المستلم" value={e.received || ''} onChange={ev => setField(w.id, 'received', ev.target.value)} style={inp()} />
                       </div>
-                      {/* Show deduction field if shortage */}
-                      {isShortage && (
+                      {isShortage && hasBothMeters && (
                         <div>
                           <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 5, fontWeight: 700 }}>⚠️ خصم العجز (ج.م) *</div>
-                          <input className="shift-mini-input" style={{ width: 120, borderColor: '#ef444466' }} type="number" min="0" placeholder="0"
-                            value={e.deduction || ''} onChange={ev => setField(w.id, 'deduction', ev.target.value)} />
+                          <input type="number" min="0" placeholder="0" value={e.deduction || ''} onChange={ev => setField(w.id, 'deduction', ev.target.value)} style={{ ...inp(true), borderColor: '#ef444466' }} />
                         </div>
                       )}
-                      {/* Notes */}
-                      <div style={{ flex: 1, minWidth: 150 }}>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>ملاحظات</div>
-                        <input className="shift-mini-input" style={{ width: '100%' }} type="text" placeholder="اختياري..."
-                          value={e.notes || ''} onChange={ev => setField(w.id, 'notes', ev.target.value)} />
+                      <div style={{ gridColumn: isShortage && hasBothMeters ? 'auto' : 'span 1' }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>📝 ملاحظة</div>
+                        <input type="text" placeholder="اختياري..." value={e.notes || ''} onChange={ev => setField(w.id, 'notes', ev.target.value)} style={inp()} />
                       </div>
                     </div>
 
-                    {/* Settlement result */}
+                    {/* نتيجة التصفية */}
                     {e.diff !== null && e.diff !== undefined && e.required > 0 && (
-                      <div style={{ marginTop: 14, borderRadius: 12, overflow: 'hidden', border: `2px solid ${e.diff > 0 ? 'rgba(16,185,129,0.35)' : e.diff < 0 ? 'rgba(239,68,68,0.35)' : 'rgba(148,163,184,0.3)'}`, animation: 'fadeIn 0.3s ease' }}>
+                      <div style={{ borderRadius: 12, overflow: 'hidden', border: `2px solid ${e.diff > 0 ? 'rgba(16,185,129,0.35)' : e.diff < 0 ? 'rgba(239,68,68,0.35)' : 'rgba(148,163,184,0.3)'}`, animation: 'fadeIn 0.3s ease' }}>
                         <div style={{ padding: '12px 16px', background: e.diff > 0 ? 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.04))' : e.diff < 0 ? 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.04))' : 'linear-gradient(135deg,rgba(148,163,184,0.08),rgba(148,163,184,0.02))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                           <div style={{ fontWeight: 800, fontSize: 14 }}>{e.diff > 0 ? '✅ زيادة في التصفية' : e.diff < 0 ? '❌ عجز في التصفية' : '✔️ تمام بالظبط'}</div>
-                          <div style={{ fontSize: 24, fontWeight: 900, color: e.diff > 0 ? '#10b981' : e.diff < 0 ? '#ef4444' : '#94a3b8' }}>
+                          <div style={{ fontSize: 26, fontWeight: 900, color: e.diff > 0 ? '#10b981' : e.diff < 0 ? '#ef4444' : '#94a3b8' }}>
                             {e.diff > 0 ? '+' : ''}{e.diff.toFixed(2)} ج
                           </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', background: 'rgba(0,0,0,0.12)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                           {[
-                            { label: 'الكمية المباعة', value: `${Math.abs(sold ?? 0).toLocaleString('ar-EG')} لتر`, icon: '⚡', color: 'var(--text)' },
-                            { label: 'المبلغ المطلوب', value: `${(e.required||0).toFixed(2)} ج`, icon: '🎯', color: '#f59e0b' },
+                            { label: 'الكمية المباعة', value: `${Math.abs(qty).toLocaleString('ar-EG')} لتر`, icon: '⚡', color: 'var(--text)' },
+                            { label: 'المطلوب', value: `${(e.required||0).toFixed(2)} ج`, icon: '🎯', color: '#f59e0b' },
                             { label: e.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(e.diff).toFixed(2)} ج`, icon: e.diff >= 0 ? '📈' : '📉', color: e.diff >= 0 ? '#10b981' : '#ef4444' },
                           ].map(({ label, value, icon, color }, i) => (
                             <div key={i} style={{ padding: '10px 14px', borderLeft: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
@@ -4335,62 +4324,62 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
                       </div>
                     )}
 
-                    {/* Shortage warning */}
-                    {isShortage && (
-                      <div style={{ marginTop: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: '8px 14px', fontSize: 12, color: '#ef4444', fontWeight: 600 }}>
-                        ⚠️ عجز {Math.abs(sold).toLocaleString('ar-EG')} لتر — الخصم سيتسجل في صفحة العامل تحت قسم "العجز"
+                    {isShortage && hasBothMeters && (
+                      <div style={{ marginTop: 10, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 9, padding: '8px 13px', fontSize: 12, color: '#ef4444', fontWeight: 600 }}>
+                        ⚠️ عجز {Math.abs(qty).toLocaleString('ar-EG')} لتر — الخصم سيُضاف لسجل العامل تلقائياً
                       </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
+          </div>
         }
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn btn-primary" style={{ minWidth: 200 }} onClick={handleSaveShift} disabled={saving}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+          <button className="btn btn-primary" style={{ minWidth: 220, padding: '11px 24px', fontSize: 14 }} onClick={handleSaveShift} disabled={saving}>
             {saving ? '⏳ جاري الحفظ...' : alreadySaved ? '🔄 تحديث الوردية' : '💾 حفظ وتطبيق على العمال'}
           </button>
         </div>
       </>)}
 
-      {/* ===== HISTORY TAB ===== */}
+      {/* ===== TAB: السجل ===== */}
       {tab === 'history' && (
         <div className="table-container">
-          <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>📋 آخر القراءات</div></div>
+          <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>📋 سجل الورديات</div></div>
           {loading ? <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
-          : logs.length === 0 ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">⛽</div><div className="empty-title">لا توجد قراءات مسجّلة بعد</div></div>
-          : logs.slice(0, 50).map(l => {
+          : logs.length === 0 ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">⛽</div><div className="empty-title">لا توجد ورديات مسجّلة بعد</div></div>
+          : logs.slice(0, 60).map(l => {
             const isShortage = l.result === 'shortage';
             return (
               <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: isShortage ? 'rgba(239,68,68,0.15)' : 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>⛽</div>
-                <div style={{ flex: 1, minWidth: 120 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 11, background: isShortage ? 'rgba(239,68,68,0.15)' : 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>⛽</div>
+                <div style={{ flex: 1, minWidth: 130 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{getWorkerName(l.workerId)}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.date} — {l.shift} — {l.fuelType}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{l.date} · {shiftIcons[l.shift] || ''} {l.shift} · {l.fuelType}</div>
                 </div>
                 <div style={{ textAlign: 'center', minWidth: 90 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>من {(l.startMeter || 0).toLocaleString('ar-EG')}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>إلى {(l.endMeter || 0).toLocaleString('ar-EG')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>من {(l.startMeter||0).toLocaleString('ar-EG')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>إلى {(l.endMeter||0).toLocaleString('ar-EG')}</div>
                 </div>
                 <div style={{ textAlign: 'center', minWidth: 80 }}>
                   <div style={{ fontSize: 16, fontWeight: 900, color: isShortage ? '#ef4444' : 'var(--primary-light)' }}>
-                    {isShortage ? '⚠️' : ''} {Math.abs(l.sold || 0).toLocaleString('ar-EG')}
+                    {isShortage ? '⚠️ ' : ''}{Math.abs(l.sold||0).toLocaleString('ar-EG')}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{isShortage ? 'عجز لتر' : 'لتر مباع'}</div>
                 </div>
-                {isShortage && l.deduction > 0 && (
-                  <span style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
-                    خصم {l.deduction.toLocaleString('ar-EG')} ج.م
-                  </span>
-                )}
                 {l.diff !== null && l.diff !== undefined && (
                   <div style={{ textAlign: 'center', minWidth: 90, background: l.diff > 0 ? 'rgba(16,185,129,0.1)' : l.diff < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(148,163,184,0.08)', border: `1px solid ${l.diff > 0 ? '#10b98144' : l.diff < 0 ? '#ef444444' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: '6px 10px' }}>
                     <div style={{ fontSize: 14, fontWeight: 900, color: l.diff > 0 ? '#10b981' : l.diff < 0 ? '#ef4444' : '#94a3b8' }}>{l.diff > 0 ? '+' : ''}{l.diff.toFixed(2)} ج</div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{l.diff > 0 ? 'زيادة' : l.diff < 0 ? 'عجز مالي' : 'تمام'}</div>
                   </div>
                 )}
-                {l.notes && <div style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 130 }}>{l.notes}</div>}
+                {isShortage && l.deduction > 0 && (
+                  <span style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                    خصم {l.deduction.toLocaleString('ar-EG')} ج.م
+                  </span>
+                )}
+                {l.notes && <div style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 120 }}>{l.notes}</div>}
                 {delConfirm === l.id
                   ? <div style={{ display:'flex', gap:6 }}><button className="btn btn-xs btn-danger" onClick={() => handleDeleteLog(l.id)}>تأكيد</button><button className="btn btn-xs btn-ghost" onClick={() => setDelConfirm(null)}>إلغاء</button></div>
                   : <button className="btn btn-xs btn-danger" onClick={() => setDelConfirm(l.id)}>🗑️</button>
@@ -4401,43 +4390,49 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
         </div>
       )}
 
-      {/* ===== REPORT TAB ===== */}
+      {/* ===== TAB: تقرير شهري ===== */}
       {tab === 'report' && (<>
+        {/* فلتر الشهر */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select className="form-input" style={{ width: 'auto' }} value={reportMonth} onChange={e => setReportMonth(+e.target.value)}>
+          <select style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 9, padding: '8px 13px', color: 'var(--text)', fontFamily: "'Cairo',sans-serif", fontSize: 13 }} value={reportMonth} onChange={e => setReportMonth(+e.target.value)}>
             {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </select>
-          <select className="form-input" style={{ width: 'auto' }} value={reportYear} onChange={e => setReportYear(+e.target.value)}>
+          <select style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 9, padding: '8px 13px', color: 'var(--text)', fontFamily: "'Cairo',sans-serif", fontSize: 13 }} value={reportYear} onChange={e => setReportYear(+e.target.value)}>
             {[2024,2025,2026].map(y => <option key={y}>{y}</option>)}
           </select>
         </div>
-        <div style={{ display: 'flex', gap: 14, marginBottom: 22, flexWrap: 'wrap' }}>
-          <div className="fuel-stat-card">
-            <div className="fuel-stat-num" style={{ color: 'var(--primary-light)' }}>{totalSoldMonth.toLocaleString('ar-EG')}</div>
-            <div className="fuel-stat-lbl">إجمالي اللترات المباعة</div>
-          </div>
-          <div className="fuel-stat-card">
-            <div className="fuel-stat-num" style={{ color: '#f59e0b' }}>{monthLogs.length}</div>
-            <div className="fuel-stat-lbl">عدد الورديات</div>
-          </div>
-          <div className="fuel-stat-card">
-            <div className="fuel-stat-num" style={{ color: '#ef4444' }}>{monthLogs.filter(l => l.result === 'shortage').length}</div>
-            <div className="fuel-stat-lbl">حالات عجز</div>
-          </div>
+
+        {/* إحصائيات شهرية */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, marginBottom: 22 }}>
+          {[
+            { icon: '⛽', label: 'إجمالي اللترات', value: `${totalSoldMonth.toLocaleString('ar-EG')} لتر`, color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+            { icon: '📅', label: 'عدد الورديات', value: monthLogs.length, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+            { icon: '⚠️', label: 'حالات عجز', value: monthLogs.filter(l => l.result==='shortage').length, color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+            { icon: totalDiffMonth >= 0 ? '✅' : '❌', label: 'صافي التصفية', value: `${totalDiffMonth >= 0 ? '+' : ''}${totalDiffMonth.toFixed(2)} ج`, color: totalDiffMonth >= 0 ? '#10b981' : '#ef4444', bg: totalDiffMonth >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: s.bg, border: `1px solid ${s.color}33`, borderRadius: 14, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ fontSize: 26 }}>{s.icon}</div>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{s.label}</div>
+              </div>
+            </div>
+          ))}
         </div>
+
         {workerReport.length === 0
-          ? <div className="empty-state"><div className="empty-icon">📭</div><div className="empty-title">لا توجد قراءات لهذا الشهر</div></div>
+          ? <div className="empty-state"><div className="empty-icon">📭</div><div className="empty-title">لا توجد ورديات لهذا الشهر</div></div>
           : workerReport.map((w, i) => {
             const pct = totalSoldMonth > 0 ? (w.totalSold / totalSoldMonth) * 100 : 0;
             return (
               <div key={w.id} style={{ background: 'var(--card)', border: `1px solid ${w.totalShortage > 0 ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`, borderRadius: 14, padding: '16px 20px', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{w.name[0]}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 11, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{w.name[0]}</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>#{i+1} {w.name} — {w.pump}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{w.sessions} وردية</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>#{i+1} {w.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{w.pump} · {w.sessions} وردية</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--primary-light)' }}>{w.totalSold.toLocaleString('ar-EG')} لتر</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>مباع</div>
@@ -4445,9 +4440,13 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
                     {w.totalShortage > 0 && (
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 17, fontWeight: 900, color: '#ef4444' }}>⚠️ {w.totalShortage.toLocaleString('ar-EG')} لتر</div>
-                        <div style={{ fontSize: 10, color: '#ef4444' }}>عجز — خصم {w.totalDed.toLocaleString('ar-EG')} ج.م</div>
+                        <div style={{ fontSize: 10, color: '#ef4444' }}>عجز · خصم {w.totalDed.toLocaleString('ar-EG')} ج.م</div>
                       </div>
                     )}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 17, fontWeight: 900, color: w.totalDiff >= 0 ? '#10b981' : '#ef4444' }}>{w.totalDiff >= 0 ? '+' : ''}{w.totalDiff.toFixed(2)} ج</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>صافي التصفية</div>
+                    </div>
                   </div>
                 </div>
                 <div style={{ height: 6, background: 'var(--dark-3)', borderRadius: 3, overflow: 'hidden' }}>
@@ -6356,7 +6355,7 @@ const App = ({ onShowPricing }) => {
     }
   };
 
-  const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي', stations: '⛽ إدارة المحطات' };
+  const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي', stations: '⛽ إدارة المحطات', fuel_log: '⛽ تصفية الورديات' };
   const workerRecord = user?.role === 'worker' ? workers.find(w => w.id === user.id) : null;
 
   const updateWorker = async (updated) => {
@@ -6509,7 +6508,7 @@ const App = ({ onShowPricing }) => {
             />
           )}
           {page === 'fuel_log' && (user.role === 'owner' || user.role === 'manager') && (
-            <FuelLogPage
+            <ShiftSettlementPage
               workers={workers.filter(w => !w.stationId || w.stationId === activeStation)}
               ownerId={getOwnerId(user)}
               onUpdateWorker={async (updated) => {
