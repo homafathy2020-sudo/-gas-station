@@ -4038,7 +4038,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
       const map = {};
       existing.forEach(l => {
         const sold = (l.endMeter || 0) - (l.startMeter || 0);
-        map[l.workerId] = { startMeter: String(l.startMeter || ''), endMeter: String(l.endMeter || ''), result: l.result || 'ok', deduction: String(l.deduction || ''), reward: String(l.reward || ''), notes: l.notes || '', sold };
+        map[l.workerId] = { startMeter: String(l.startMeter || ''), endMeter: String(l.endMeter || ''), result: l.result || 'ok', deduction: String(l.deduction || ''), reward: String(l.reward || ''), notes: l.notes || '', sold, fuelType: l.fuelType || '', price: String(l.price || ''), received: String(l.received || '') };
       });
       setEntries(map);
       setAlreadySaved(true);
@@ -4285,6 +4285,15 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
 
                     {/* Meter inputs */}
                     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>⛽ نوع الوقود</div>
+                        <select
+                          value={e.fuelType || w.defaultFuelType || 'بنزين 92'}
+                          onChange={ev => setField(w.id, 'fuelType', ev.target.value)}
+                          style={{ padding: '6px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13, outline: 'none', minWidth: 130 }}>
+                          {fuelTypes.map(f => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                      </div>
                       <div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>العداد — البداية (لتر)</div>
                         <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="مثال: 125000"
