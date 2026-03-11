@@ -774,6 +774,10 @@ const ToastProvider = ({ children }) => {
 };
 const useToast = () => useContext(ToastCtx);
 
+// ==================== PLAN CONTEXT ====================
+const PlanCtx = createContext('trial');
+const usePlan = () => useContext(PlanCtx);
+
 // ==================== LOADER ====================
 const Loader = () => <div className="loader-overlay"><div className="spinner" /></div>;
 
@@ -1044,6 +1048,7 @@ const CashWithdrawalModal = ({ onSave, onClose }) => {
 
 // ==================== WORKER DETAIL ====================
 const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, ownerId }) => {
+  const plan = usePlan();
   const toast = useToast();
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({ name: worker.name, pump: worker.pump, workDays: worker.workDays, salary: worker.salary, phone: worker.phone || '' });
@@ -1140,7 +1145,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
           ) : (
             <button className="btn btn-accent btn-sm" onClick={() => setEditMode(true)}>✏️ تعديل</button>
           ))}
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(getPlan())) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري التحميل', 'info'); }}>📄{!planHasExcelAdv(getPlan()) && '🔒'}</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري التحميل', 'info'); }}>📄{!planHasExcelAdv(plan) && '🔒'}</button>
           <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
         </div>
       </div>
@@ -1196,7 +1201,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ fontWeight: 600 }}>{d.date}</td>
                     <td><span className="badge badge-warning">{d.minutes} دقيقة</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(d.deduction)}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'delay', id: d.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w, delays:[...w.delays]}, 'delay', d)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'delay', id: d.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w, delays:[...w.delays]}, 'delay', d)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
@@ -1227,7 +1232,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ fontWeight: 600 }}>{a.date}</td>
                     <td><span className="badge badge-danger">{a.reason}</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence', a)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence', a)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
@@ -1257,7 +1262,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{a.date}</td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence_no_reason', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence_no_reason', a)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence_no_reason', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence_no_reason', a)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
@@ -1319,7 +1324,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ fontWeight: 600 }}>{c.date}</td>
                     <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'cash', id: c.id })}>🗑️</button>{w.phone && planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'cash', c)}>💬</button>}{w.phone && !planHasWhatsApp(getPlan()) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'cash', id: c.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'cash', c)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
@@ -1394,6 +1399,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
 
 // ==================== WORKERS PAGE ====================
 const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
+  const plan = usePlan();
   const [selectedId, setSelectedId] = useState(null);
   const [ddOpen, setDdOpen] = useState(false);
   const [workerModal, setWorkerModal] = useState(null);
@@ -1406,8 +1412,7 @@ const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
   const saveWorker = async (data) => {
     // تحقق من حد الباقة المجانية
     const isNewWorker = !workers.find(w => w.id === data.id);
-    const _plan = getPlan();
-    const _limit = getWorkerLimit(_plan);
+    const _limit = getWorkerLimit(plan);
     if (isNewWorker && workers.length >= _limit && _limit !== Infinity) {
       toast(`باقتك الحالية تسمح بـ ${_limit} عمال فقط — قم بالترقية لإضافة المزيد 🔒`, 'warning');
       setWorkerModal(null);
@@ -2253,7 +2258,7 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
                 </div>
                 <div className="payment-net">{fmt(calcNet(w))}</div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {w.phone && planHasWhatsApp(getPlan()) && (
+                  {w.phone && planHasWhatsApp(plan) && (
                     <button className="wa-btn wa-btn-sm" onClick={() => {
                       const net = calcNet(w);
                       const phone = w.phone.startsWith('0') ? '2' + w.phone : w.phone;
@@ -2316,6 +2321,7 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
 
 
 const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
+  const plan = usePlan();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
@@ -2336,9 +2342,9 @@ const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }} className="no-print">
         <select className="form-input" style={{ width: 'auto' }} value={month} onChange={e => setMonth(+e.target.value)}>{months.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>
         <select className="form-input" style={{ width: 'auto' }} value={year} onChange={e => setYear(+e.target.value)}>{[2023, 2024, 2025, 2026].map(y => <option key={y}>{y}</option>)}</select>
-        <button className="btn btn-accent" onClick={() => { if (!planHasExcelAdv(getPlan())) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateMonthlyReport(displayWorkers, month, year, months[month]); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تحميل Excel {!planHasExcelAdv(getPlan()) && '🔒'}</button>
+        <button className="btn btn-accent" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateMonthlyReport(displayWorkers, month, year, months[month]); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تحميل Excel {!planHasExcelAdv(plan) && '🔒'}</button>
         <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️ طباعة</button>
-        {onResetMonth && planHasMonthReset(getPlan()) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>🔄 إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(getPlan()) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط 👑','warning')}>🔄 إغلاق الشهر 🔒</button>}
+        {onResetMonth && planHasMonthReset(plan) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>🔄 إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(plan) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط 👑','warning')}>🔄 إغلاق الشهر 🔒</button>}
       </div>
       {showReset && <MonthResetModal workers={workers} ownerId={ownerId} onReset={onResetMonth} onClose={() => setShowReset(false)} />}
       {archivedMonth && (
@@ -2672,6 +2678,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
 
 // ==================== WORKER PROFILE (self) ====================
 const WorkerProfile = ({ worker, onUpdate }) => {
+  const plan = usePlan();
   const toast = useToast();
   const w = worker;
   const ded = totalDed(w);
@@ -2690,7 +2697,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(getPlan())) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تقريري Excel {!planHasExcelAdv(getPlan()) && '🔒'}</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تقريري Excel {!planHasExcelAdv(plan) && '🔒'}</button>
           <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
         </div>
       </div>
@@ -3792,8 +3799,8 @@ const StationSwitcher = ({ stations, activeStation, onSwitch, onManage }) => {
 
 // ===== STATIONS MANAGEMENT PAGE =====
 const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh }) => {
+  const plan = usePlan();
   const toast = useToast();
-  const plan = getPlan();
   const limit = getStationLimit(plan);
   const [showModal, setShowModal] = useState(false);
   const [editStation, setEditStation] = useState(null);
@@ -4220,6 +4227,7 @@ const AVATAR_BG_OPTIONS = [
 ];
 
 const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, ownerUsers }) => {
+  const plan = usePlan();
   const toast = useToast();
   const [phone, setPhone] = useState(user.phone || '');
   const [name, setName] = useState(user.name || '');
@@ -4235,7 +4243,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   const planLabels = { free: '🆓 المجانية', starter: '⭐ الأساسية', enterprise: '👑 المميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية', basic: '🚀 الأساسية', pro: '⭐ الاحترافية' };
-  const currentPlan = getPlan();
+  const currentPlan = plan;
   const planLabel = planLabels[currentPlan] || currentPlan;
   const isPremium = currentPlan === 'enterprise' || currentPlan === 'lifetime';
   const totalWorkersCount = workers.length;
@@ -5274,6 +5282,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
 
 // ==================== APP ====================
 const App = ({ onShowPricing }) => {
+  const plan = usePlan();
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [page, setPage] = useState('dashboard');
@@ -5305,7 +5314,7 @@ const App = ({ onShowPricing }) => {
           setUser(userData);
           const defaults = { owner: 'dashboard', manager: 'workers', worker: 'profile' };
           setPage(defaults[userData.role] || 'dashboard');
-          // مزامنة الباقة من Firestore عشان getPlan() يشتغل صح
+          // مزامنة الباقة من Firestore عشان plan يشتغل صح
           const ownId = userData.role === 'owner' ? userData.id : userData.ownerId;
           if (ownId) {
             try {
@@ -5655,7 +5664,7 @@ const App = ({ onShowPricing }) => {
               });
             }} />}
           {page === 'salary_payment' && user.role === 'owner' && (
-            planHasSalaryPay(getPlan())
+            planHasSalaryPay(plan)
               ? <SalaryPaymentPage workers={workers.filter(w => !w.stationId || w.stationId === activeStation)} ownerId={getOwnerId(user)} />
               : <div style={{ textAlign: 'center', padding: 60 }}>
                   <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
@@ -5665,7 +5674,7 @@ const App = ({ onShowPricing }) => {
                 </div>
           )}
           {page === 'month_archive' && user.role === 'owner' && (
-            planHasMonthReset(getPlan())
+            planHasMonthReset(plan)
               ? <MonthArchivePage ownerId={getOwnerId(user)} />
               : <div style={{ textAlign: 'center', padding: 60 }}>
                   <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
@@ -5710,7 +5719,6 @@ const App = ({ onShowPricing }) => {
               activeStation={activeStation}
               onSetActive={(id) => { setActiveStation(id); const oid = getOwnerId(user); if (oid) localStorage.setItem(ACTIVE_STATION_KEY(oid), id); }}
               onRefresh={async () => { const stList = await getStations(getOwnerId(user)); setStations(stList); }}
-              plan={getPlan()}
             />
           )}
         </div>
@@ -5723,28 +5731,38 @@ export default function Root() {
   const [showPricing, setShowPricing] = useState(false);
   const [trialInfo, setTrialInfo] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const planUnsubRef = useRef(null);
 
-  // تابع حالة Auth عشان نعرف المستخدم الحالي
+  // تابع حالة Auth + onSnapshot على trial doc عشان التزامن الفوري مع الأدمن
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      // وقف أي listener قديم
+      if (planUnsubRef.current) { planUnsubRef.current(); planUnsubRef.current = null; }
+
       if (firebaseUser) {
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = { id: firebaseUser.uid, ...userDoc.data() };
           setCurrentUser(userData);
-          // حمّل الـ trial من Firebase
           const ownerId = userData.role === 'owner' ? userData.id : userData.ownerId;
           if (ownerId) {
             await initTrialIfNeeded(ownerId);
-            const info = await getTrialInfoFromDB(ownerId);
-            setTrialInfo(info);
-            // مزامنة الباقة وتاريخ بداية الـ trial من Firestore مع localStorage
-            if (info?.plan) {
-              localStorage.setItem('app_plan', info.plan);
-            }
-            if (info?.startDate) {
-              localStorage.setItem('app_trial_start', info.startDate);
-            }
+            // ← onSnapshot بدل getDoc: أي تغيير من الأدمن يوصل فوراً
+            const trialRef = getOwnerTrialDoc(ownerId);
+            planUnsubRef.current = onSnapshot(trialRef, (snap) => {
+              const data = snap.exists() ? snap.data() : null;
+              if (!data) return;
+              const start = new Date(data.trialStart);
+              const now = new Date();
+              const elapsedDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+              const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
+              const expired = elapsedDays >= TRIAL_DAYS;
+              const info = { remaining, expired, elapsedDays, startDate: data.trialStart, plan: data.plan || 'trial' };
+              setTrialInfo(info);
+              // مزامنة مع localStorage عشان plan يشتغل صح
+              if (info.plan) localStorage.setItem('app_plan', info.plan);
+              if (info.startDate) localStorage.setItem('app_trial_start', info.startDate);
+            });
           }
         }
       } else {
@@ -5752,12 +5770,15 @@ export default function Root() {
         setTrialInfo(null);
       }
     });
-    return () => unsub();
+    return () => {
+      unsub();
+      if (planUnsubRef.current) planUnsubRef.current();
+    };
   }, []);
 
   const trial = trialInfo || getTrialInfo();
   const userName = currentUser?.name || currentUser?.email?.split('@')[0] || '';
-  const currentPlan = trialInfo?.plan || getPlan();
+  const currentPlan = trialInfo?.plan || plan;
 
   // لو الـ trial خلص وما اختارش خطة → حوّله تلقائياً للمجانية
   useEffect(() => {
@@ -5801,7 +5822,7 @@ export default function Root() {
 
   // التطبيق دايماً شغال — مفيش قفل بأي حال
   return (
-    <>
+    <PlanCtx.Provider value={currentPlan}>
       <style>{globalStyles}</style>
       <ToastProvider>
         {/* أثناء الـ trial: بانر العد التنازلي */}
@@ -5842,6 +5863,6 @@ export default function Root() {
           </div>
         )}
       </ToastProvider>
-    </>
+    </PlanCtx.Provider>
   );
 }
