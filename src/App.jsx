@@ -3745,17 +3745,14 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   const toast = useToast();
   const todayStr = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(todayStr);
-  const [entries, setEntries] = useState({});   // { workerId: { status, minutes, reason } }
+  // entries: { workerId: { status, deduction, minutes, reason } }
+  const [entries, setEntries] = useState({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
-  const [tab, setTab] = useState('today'); // today | history
+  const [tab, setTab] = useState('today');
   const [alreadySaved, setAlreadySaved] = useState(false);
 
-  const deductPerDay  = (w) => Math.round(w.salary / (w.workDays || 26));
-  const deductPerMin  = (w) => Math.round(w.salary / (w.workDays || 26) / 8 / 60 * 10) / 10;
-
-  // Load existing shift for selected date
   useEffect(() => {
     if (!ownerId) return;
     setLoading(true);
@@ -3773,206 +3770,216 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
     });
   }, [date, ownerId]);
 
-  // Load history
   useEffect(() => {
-    if (tab === 'history' && ownerId) {
-      getShiftLogs(ownerId, 30).then(setHistory);
-    }
+    if (tab === 'history' && ownerId) getShiftLogs(ownerId, 30).then(setHistory);
   }, [tab, ownerId]);
 
   const setStatus = (workerId, status) => {
-    setEntries(prev => ({ ...prev, [workerId]: { ...prev[workerId], workerId, status, minutes: '', reason: '' } }));
+    setEntries(prev => ({ ...prev, [workerId]: { ...prev[workerId], workerId, status, deduction: '', minutes: '', reason: '' } }));
   };
-  const setExtra = (workerId, key, val) => {
+  const setField = (workerId, key, val) => {
     setEntries(prev => ({ ...prev, [workerId]: { ...prev[workerId], [key]: val } }));
   };
 
   const handleSave = async () => {
-    const entryList = Object.values(entries).filter(e => e.status && e.status !== 'present');
     if (Object.keys(entries).length === 0) { toast('سجّل حالة العمال أولاً', 'warning'); return; }
+    // validate deductions entered for non-present workers
+    for (const w of workers) {
+      const e = entries[w.id];
+      if (!e || e.status === 'present' || !e.status) continue;
+      if (!e.deduction || isNaN(+e.deduction) || +e.deduction < 0) {
+        toast(`أدخل قيمة الخصم للعامل: ${w.name}`, 'error'); return;
+      }
+    }
     setSaving(true);
     try {
       const allEntries = workers.map(w => ({
-        workerId: w.id,
-        workerName: w.name,
+        workerId: w.id, workerName: w.name,
         status: entries[w.id]?.status || 'present',
+        deduction: entries[w.id]?.deduction || 0,
         minutes: entries[w.id]?.minutes || '',
         reason: entries[w.id]?.reason || '',
       }));
       await saveShiftLog(ownerId, date, allEntries);
 
-      // Apply deductions to workers automatically
       for (const w of workers) {
         const e = entries[w.id];
-        if (!e || e.status === 'present') continue;
+        if (!e || e.status === 'present' || !e.status) continue;
+        const ded = +e.deduction || 0;
         const updated = { ...w };
         if (e.status === 'late') {
-          const mins = parseInt(e.minutes) || 30;
-          const ded = Math.round(deductPerMin(w) * mins);
-          updated.delays = [...(w.delays || []), { id: Date.now() + w.id, date, minutes: mins, deduction: ded, fromShift: true }];
+          updated.delays = [...(w.delays || []), { id: Date.now() + w.id, date, minutes: +e.minutes || 0, deduction: ded, fromShift: true }];
         } else if (e.status === 'absent') {
-          const ded = deductPerDay(w);
           updated.absences = [...(w.absences || []), { id: Date.now() + w.id, date, reason: e.reason || 'غياب', deduction: ded, fromShift: true }];
         } else if (e.status === 'no-reason') {
-          const ded = Math.round(deductPerDay(w) * 1.5);
           updated.absences_no_reason = [...(w.absences_no_reason || []), { id: Date.now() + w.id, date, deduction: ded, fromShift: true }];
         }
         await onUpdateWorker(updated);
       }
-
       setAlreadySaved(true);
-      toast('✅ تم حفظ الوردية وتطبيق الخصومات تلقائياً', 'success');
-    } catch (e) { toast('خطأ في الحفظ', 'error'); }
+      toast('✅ تم حفظ الوردية وتطبيق الخصومات', 'success');
+    } catch { toast('خطأ في الحفظ', 'error'); }
     setSaving(false);
   };
 
-  const statusLabel = { present: '✅ حاضر', late: '⏰ متأخر', absent: '❌ غايب', 'no-reason': '🚫 عجز' };
-  const statusColor = { present: '#10b981', late: '#f59e0b', absent: '#ef4444', 'no-reason': '#a855f7' };
+  const statusCfg = [
+    { id: 'present',   label: '✅ حاضر',   color: '#10b981' },
+    { id: 'late',      label: '⏰ متأخر',   color: '#f59e0b' },
+    { id: 'absent',    label: '❌ غايب',    color: '#ef4444' },
+    { id: 'no-reason', label: '🚫 عجز',    color: '#a855f7' },
+  ];
 
-  const presentCount  = workers.filter(w => (entries[w.id]?.status || 'present') === 'present').length;
-  const lateCount     = workers.filter(w => entries[w.id]?.status === 'late').length;
-  const absentCount   = workers.filter(w => entries[w.id]?.status === 'absent').length;
-  const noReasonCount = workers.filter(w => entries[w.id]?.status === 'no-reason').length;
+  const count = (s) => workers.filter(w => (entries[w.id]?.status || 'present') === s).length;
 
   return (
     <div className="shift-page">
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 900 }}>📅 سجل الوردية اليومية</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>سجّل حضور وغياب كل العمال دفعة واحدة</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {['today','history'].map(t => (
-            <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
-              {t === 'today' ? '📝 تسجيل الوردية' : '📋 السجل السابق'}
-            </button>
+          {[['today','📝 تسجيل الوردية'],['history','📋 السجل السابق']].map(([t,l]) => (
+            <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>{l}</button>
           ))}
         </div>
       </div>
 
-      {tab === 'today' && (
-        <>
-          <div className="shift-date-bar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 20 }}>📅</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>تاريخ الوردية</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {alreadySaved && <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>✅ محفوظة</span>}
-              <input type="date" value={date} max={todayStr} onChange={e => setDate(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 12px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }} />
+      {tab === 'today' && (<>
+        {/* Date bar */}
+        <div className="shift-date-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 20 }}>📅</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>تاريخ الوردية</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
             </div>
           </div>
-
-          {/* Summary */}
-          <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-            {[
-              { n: presentCount,  l: 'حاضر',  c: '#10b981', e: '✅' },
-              { n: lateCount,     l: 'متأخر', c: '#f59e0b', e: '⏰' },
-              { n: absentCount,   l: 'غايب',  c: '#ef4444', e: '❌' },
-              { n: noReasonCount, l: 'عجز',   c: '#a855f7', e: '🚫' },
-            ].map(s => (
-              <div key={s.l} className="shift-sum-card">
-                <div className="shift-sum-num" style={{ color: s.c }}>{s.e} {s.n}</div>
-                <div className="shift-sum-lbl">{s.l}</div>
-              </div>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {alreadySaved && <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>✅ محفوظة</span>}
+            <input type="date" value={date} max={todayStr} onChange={e => setDate(e.target.value)}
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 12px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }} />
           </div>
+        </div>
 
-          {/* Workers list */}
-          {loading ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></div> : (
-            <div className="table-container" style={{ marginBottom: 20 }}>
-              {workers.length === 0 ? (
-                <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
-              ) : workers.map(w => {
-                const e = entries[w.id] || {};
-                const status = e.status || 'present';
-                return (
-                  <div key={w.id} className="shift-worker-row">
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{w.name[0]}</div>
-                    <div style={{ flex: 1, minWidth: 100 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{w.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{w.pump}</div>
-                    </div>
-                    <div style={{ flex: 2, minWidth: 240 }}>
-                      <div className="shift-status-btns">
-                        {[
-                          { id: 'present',   label: '✅ حاضر' },
-                          { id: 'late',      label: '⏰ متأخر' },
-                          { id: 'absent',    label: '❌ غايب' },
-                          { id: 'no-reason', label: '🚫 عجز' },
-                        ].map(s => (
-                          <button key={s.id} className={`shift-status-btn ${s.id} ${status === s.id ? 'sel' : ''}`}
-                            onClick={() => setStatus(w.id, s.id)}>{s.label}</button>
-                        ))}
+        {/* Summary pills */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 22, flexWrap: 'wrap' }}>
+          {statusCfg.map(s => (
+            <div key={s.id} className="shift-sum-card">
+              <div className="shift-sum-num" style={{ color: s.color }}>{count(s.id)}</div>
+              <div className="shift-sum-lbl">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Worker cards */}
+        {loading
+          ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></div>
+          : workers.length === 0
+            ? <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
+            : <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
+                {workers.map(w => {
+                  const e = entries[w.id] || {};
+                  const status = e.status || 'present';
+                  const cfg = statusCfg.find(s => s.id === status);
+                  return (
+                    <div key={w.id} style={{
+                      background: 'var(--card)', border: `2px solid ${status === 'present' ? 'var(--border)' : cfg.color + '55'}`,
+                      borderRadius: 16, padding: '16px 20px', transition: 'border-color .2s',
+                    }}>
+                      {/* Top row: avatar + name + status buttons */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                        <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg,${cfg.color}99,${cfg.color}44)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 17, flexShrink: 0, border: `2px solid ${cfg.color}66` }}>{w.name[0]}</div>
+                        <div style={{ flex: 1, minWidth: 80 }}>
+                          <div style={{ fontWeight: 800, fontSize: 15 }}>{w.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{w.pump}</div>
+                        </div>
+                        <div className="shift-status-btns">
+                          {statusCfg.map(s => (
+                            <button key={s.id} className={`shift-status-btn ${s.id} ${status === s.id ? 'sel' : ''}`}
+                              onClick={() => setStatus(w.id, s.id)}>{s.label}</button>
+                          ))}
+                        </div>
                       </div>
-                      {status === 'late' && (
-                        <div className="shift-extra">
-                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>مدة التأخير:</span>
-                          <input className="shift-mini-input" type="number" min="1" max="480" placeholder="دقيقة" value={e.minutes || ''} onChange={ev => setExtra(w.id, 'minutes', ev.target.value)} />
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                            خصم تقريبي: {e.minutes ? Math.round(deductPerMin(w) * parseInt(e.minutes)) : 0} ج.م
-                          </span>
-                        </div>
-                      )}
-                      {status === 'absent' && (
-                        <div className="shift-extra">
-                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>السبب:</span>
-                          <input className="shift-mini-input" style={{ width: 150 }} type="text" placeholder="مرض / إجازة..." value={e.reason || ''} onChange={ev => setExtra(w.id, 'reason', ev.target.value)} />
-                          <span style={{ fontSize: 11, color: '#ef4444' }}>خصم: {deductPerDay(w)} ج.م</span>
-                        </div>
-                      )}
-                      {status === 'no-reason' && (
-                        <div className="shift-extra">
-                          <span style={{ fontSize: 11, color: '#a855f7' }}>خصم عجز: {Math.round(deductPerDay(w) * 1.5)} ج.م</span>
+
+                      {/* Extra fields for non-present */}
+                      {status !== 'present' && (
+                        <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${cfg.color}33`, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                          {/* Deduction — always required */}
+                          <div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>قيمة الخصم (ج.م) *</div>
+                            <input className="shift-mini-input" style={{ width: 110 }} type="number" min="0" placeholder="0"
+                              value={e.deduction || ''}
+                              onChange={ev => setField(w.id, 'deduction', ev.target.value)} />
+                          </div>
+                          {/* Minutes — for late */}
+                          {status === 'late' && (
+                            <div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>مدة التأخير (دقيقة)</div>
+                              <input className="shift-mini-input" type="number" min="1" max="480" placeholder="دقيقة"
+                                value={e.minutes || ''}
+                                onChange={ev => setField(w.id, 'minutes', ev.target.value)} />
+                            </div>
+                          )}
+                          {/* Reason — for absent */}
+                          {status === 'absent' && (
+                            <div>
+                              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>السبب</div>
+                              <input className="shift-mini-input" style={{ width: 170 }} type="text" placeholder="مرض / إجازة / ظروف..."
+                                value={e.reason || ''}
+                                onChange={ev => setField(w.id, 'reason', ev.target.value)} />
+                            </div>
+                          )}
+                          {/* Summary badge */}
+                          {e.deduction > 0 && (
+                            <div style={{ marginRight: 'auto', background: `${cfg.color}18`, border: `1px solid ${cfg.color}44`, borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 800, color: cfg.color }}>
+                              خصم: {Number(e.deduction).toLocaleString('ar-EG')} ج.م
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+        }
 
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button className="btn btn-primary" style={{ minWidth: 180 }} onClick={handleSave} disabled={saving || loading}>
-              {saving ? '⏳ جاري الحفظ...' : alreadySaved ? '🔄 تحديث الوردية' : '💾 حفظ الوردية وتطبيق الخصومات'}
-            </button>
-          </div>
-        </>
-      )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="btn btn-primary" style={{ minWidth: 200 }} onClick={handleSave} disabled={saving || loading}>
+            {saving ? '⏳ جاري الحفظ...' : alreadySaved ? '🔄 تحديث الوردية' : '💾 حفظ الوردية وتطبيق الخصومات'}
+          </button>
+        </div>
+      </>)}
 
       {tab === 'history' && (
         <div className="table-container">
-          <div className="table-hdr">
-            <div style={{ fontSize: 15, fontWeight: 700 }}>📋 سجل الورديات السابقة</div>
-          </div>
-          {history.length === 0 ? (
-            <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">📭</div><div className="empty-title">لا يوجد سجل بعد</div></div>
-          ) : history.map(h => {
-            const present  = h.entries.filter(e => e.status === 'present').length;
-            const absent   = h.entries.filter(e => e.status === 'absent').length;
-            const late     = h.entries.filter(e => e.status === 'late').length;
-            const noReason = h.entries.filter(e => e.status === 'no-reason').length;
-            return (
-              <div key={h.date} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 20 }}>📅</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{new Date(h.date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{h.entries.length} عامل مسجّل</div>
+          <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>📋 سجل الورديات السابقة</div></div>
+          {history.length === 0
+            ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">📭</div><div className="empty-title">لا يوجد سجل بعد</div></div>
+            : history.map(h => {
+              const present  = h.entries.filter(e => e.status === 'present').length;
+              const absent   = h.entries.filter(e => e.status === 'absent').length;
+              const late     = h.entries.filter(e => e.status === 'late').length;
+              const noReason = h.entries.filter(e => e.status === 'no-reason').length;
+              const totalDed = h.entries.reduce((s, e) => s + (+e.deduction || 0), 0);
+              return (
+                <div key={h.date} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 20 }}>📅</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{new Date(h.date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{h.entries.length} عامل{totalDed > 0 ? ` — إجمالي خصومات: ${totalDed.toLocaleString('ar-EG')} ج.م` : ''}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {present  > 0 && <span style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#10b981', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>✅ {present}</span>}
+                    {late     > 0 && <span style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', color:'#f59e0b', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>⏰ {late}</span>}
+                    {absent   > 0 && <span style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)', color:'#ef4444', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>❌ {absent}</span>}
+                    {noReason > 0 && <span style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)', color:'#a855f7', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>🚫 {noReason}</span>}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {present  > 0 && <span style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#10b981', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>✅ {present} حاضر</span>}
-                  {late     > 0 && <span style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', color:'#f59e0b', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>⏰ {late} متأخر</span>}
-                  {absent   > 0 && <span style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)', color:'#ef4444', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>❌ {absent} غايب</span>}
-                  {noReason > 0 && <span style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)', color:'#a855f7', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>🚫 {noReason} عجز</span>}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          }
         </div>
       )}
     </div>
