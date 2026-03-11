@@ -3671,7 +3671,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
       { id: 'dashboard', icon: '📊', label: 'لوحة التحكم' },
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
       { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
-      { id: 'fuel_log', icon: '⛽', label: 'عدادات الوقود' },
+      { id: 'fuel_log', icon: '⛽', label: 'تصفية الوردية' },
       { id: 'reports', icon: '📋', label: 'التقارير' },
       { id: 'salary_payment', icon: '💵', label: 'صرف الرواتب' },
       { id: 'month_archive', icon: '📦', label: 'أرشيف الشهور' },
@@ -3682,7 +3682,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
     manager: [
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
       { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
-      { id: 'fuel_log', icon: '⛽', label: 'عدادات الوقود' },
+      { id: 'fuel_log', icon: '⛽', label: 'تصفية الوردية' },
       { id: 'reports', icon: '📋', label: 'التقارير' }
     ],
     worker: [
@@ -4027,7 +4027,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
       const map = {};
       existing.forEach(l => {
         const sold = (l.endMeter || 0) - (l.startMeter || 0);
-        map[l.workerId] = { startMeter: String(l.startMeter || ''), endMeter: String(l.endMeter || ''), result: l.result || 'ok', deduction: String(l.deduction || ''), reward: String(l.reward || ''), notes: l.notes || '', sold, fuelType: l.fuelType || '', pumpNumber: l.pumpNumber || '' };
+        map[l.workerId] = { startMeter: String(l.startMeter || ''), endMeter: String(l.endMeter || ''), result: l.result || 'ok', deduction: String(l.deduction || ''), reward: String(l.reward || ''), notes: l.notes || '', sold };
       });
       setEntries(map);
       setAlreadySaved(true);
@@ -4121,7 +4121,6 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
         const log = {
           id: String(Date.now() + w.id), workerId: w.id, workerName: w.name,
           date: shiftDate, shift: shiftType, fuelType: workerFuelType,
-          pumpNumber: e.pumpNumber || w.pump || '',
           startMeter: start, endMeter: end, sold: qty,
           price: +e.price || 0, received: +e.received || 0,
           required: +e.required || 0, diff: e.diff ?? null,
@@ -4192,7 +4191,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>⛽ عدادات الوقود</div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>⛽ تصفية الوردية</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>سجّل قراءات العداد لكل وردية — العجز والزيادة تتسجل تلقائياً على العامل</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -4220,10 +4219,9 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
               </select>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>🔍 تصفية بنوع الوقود</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>نوع الوقود</div>
               <select value={fuelType} onChange={e => setFuelType(e.target.value)}
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 10, padding: '7px 14px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }}>
-                <option value="">الكل</option>
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 14px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }}>
                 {fuelTypes.map(f => <option key={f}>{f}</option>)}
               </select>
             </div>
@@ -4248,97 +4246,65 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
         {/* Worker cards */}
         {workers.length === 0
           ? <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
-          : <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 22 }}>
-              {workers.filter(w => {
-                if (!fuelType) return true;
-                const ef = entries[w.id] || {};
-                const wFuelType = ef.fuelType || w.defaultFuelType || 'بنزين 92';
-                return wFuelType === fuelType;
-              }).map(w => {
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
+              {workers.map(w => {
                 const e = entries[w.id] || {};
                 const result = getResult(e);
                 const sold = e.startMeter && e.endMeter ? (parseFloat(e.endMeter) || 0) - (parseFloat(e.startMeter) || 0) : null;
                 const isShortage = result === 'shortage';
                 const borderColor = result === null ? 'var(--border)' : isShortage ? '#ef444488' : '#10b98188';
-                const workerFuelType = e.fuelType || w.defaultFuelType || 'بنزين 92';
-                const workerPump = e.pumpNumber || w.pump || '';
                 return (
-                  <div key={w.id} style={{ background: 'rgba(255,255,255,0.04)', border: `2px solid ${borderColor}`, borderRadius: 20, padding: '22px 26px', transition: 'border-color .2s', boxShadow: result !== null ? `0 4px 20px ${isShortage ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)'}` : 'none' }}>
+                  <div key={w.id} style={{ background: 'var(--card)', border: `2px solid ${borderColor}`, borderRadius: 16, padding: '16px 20px', transition: 'border-color .2s' }}>
                     {/* Worker header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18, flexWrap: 'wrap' }}>
-                      <div style={{ width: 56, height: 56, borderRadius: 16, background: result === null ? 'linear-gradient(135deg,var(--primary),var(--accent))' : isShortage ? 'linear-gradient(135deg,#ef444466,#ef444422)' : 'linear-gradient(135deg,#10b98166,#10b98122)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 22, flexShrink: 0, border: `2px solid ${result === null ? 'transparent' : isShortage ? '#ef444466' : '#10b98166'}` }}>{w.name[0]}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
+                      <div style={{ width: 42, height: 42, borderRadius: 12, background: result === null ? 'linear-gradient(135deg,var(--primary),var(--accent))' : isShortage ? 'linear-gradient(135deg,#ef444466,#ef444422)' : 'linear-gradient(135deg,#10b98166,#10b98122)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 17, flexShrink: 0, border: `2px solid ${result === null ? 'transparent' : isShortage ? '#ef444466' : '#10b98166'}` }}>{w.name[0]}</div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 900, fontSize: 17 }}>{w.name}</div>
-                        <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 12, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 8, padding: '2px 10px' }}>⛽ {workerFuelType}</span>
-                          {workerPump && <span style={{ fontSize: 12, color: '#3b82f6', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 8, padding: '2px 10px' }}>🔢 {workerPump}</span>}
-                        </div>
+                        <div style={{ fontWeight: 800, fontSize: 15 }}>{w.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{w.pump}</div>
                       </div>
                       {sold !== null && (
-                        <div style={{ textAlign: 'center', background: isShortage ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${isShortage ? '#ef444444' : '#10b98144'}`, borderRadius: 14, padding: '10px 20px' }}>
-                          <div style={{ fontSize: 22, fontWeight: 900, color: isShortage ? '#ef4444' : '#10b981' }}>
+                        <div style={{ textAlign: 'center', background: isShortage ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${isShortage ? '#ef444444' : '#10b98144'}`, borderRadius: 12, padding: '8px 16px' }}>
+                          <div style={{ fontSize: 18, fontWeight: 900, color: isShortage ? '#ef4444' : '#10b981' }}>
                             {isShortage ? '⚠️' : '✅'} {Math.abs(sold).toLocaleString('ar-EG')} لتر
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{isShortage ? 'عجز' : 'إجمالي مباع'}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{isShortage ? 'عجز' : 'مباع'}</div>
                         </div>
                       )}
-                    </div>
-
-                    {/* Per-worker fuel type + pump row */}
-                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16, padding: '14px 16px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 14 }}>
-                      <div>
-                        <div style={{ fontSize: 11, color: '#3b82f6', marginBottom: 6, fontWeight: 700 }}>⛽ نوع الوقود لهذا العامل</div>
-                        <select
-                          value={e.fuelType || w.defaultFuelType || 'بنزين 92'}
-                          onChange={ev => setField(w.id, 'fuelType', ev.target.value)}
-                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 10, padding: '8px 14px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 14, fontWeight: 600, minWidth: 160 }}>
-                          {fuelTypes.map(f => <option key={f}>{f}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 11, color: '#3b82f6', marginBottom: 6, fontWeight: 700 }}>🔢 رقم الطرمبة</div>
-                        <input
-                          type="text"
-                          placeholder={w.pump || 'مثال: طرمبة 3'}
-                          value={e.pumpNumber || ''}
-                          onChange={ev => setField(w.id, 'pumpNumber', ev.target.value)}
-                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 10, padding: '8px 14px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 14, fontWeight: 600, width: 160, outline: 'none' }} />
-                      </div>
                     </div>
 
                     {/* Meter inputs */}
                     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>📊 العداد — البداية (لتر)</div>
-                        <input className="shift-mini-input" style={{ width: 145 }} type="number" min="0" placeholder="مثال: 125000"
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>العداد — البداية (لتر)</div>
+                        <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="مثال: 125000"
                           value={e.startMeter || ''} onChange={ev => setField(w.id, 'startMeter', ev.target.value)} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>📊 العداد — النهاية (لتر)</div>
-                        <input className="shift-mini-input" style={{ width: 145 }} type="number" min="0" placeholder="مثال: 126500"
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>العداد — النهاية (لتر)</div>
+                        <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="مثال: 126500"
                           value={e.endMeter || ''} onChange={ev => setField(w.id, 'endMeter', ev.target.value)} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>💰 سعر اللتر (ج.م)</div>
-                        <input className="shift-mini-input" style={{ width: 120 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>سعر اللتر (ج.م)</div>
+                        <input className="shift-mini-input" style={{ width: 110 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
                           value={e.price || ''} onChange={ev => setField(w.id, 'price', ev.target.value)} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>💵 الواصل فعلياً (ج.م)</div>
-                        <input className="shift-mini-input" style={{ width: 145 }} type="number" min="0" placeholder="المبلغ المستلم"
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>الواصل فعلياً (ج.م)</div>
+                        <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="المبلغ المستلم"
                           value={e.received || ''} onChange={ev => setField(w.id, 'received', ev.target.value)} />
                       </div>
                       {/* Show deduction field if shortage */}
                       {isShortage && (
                         <div>
-                          <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 6, fontWeight: 700 }}>⚠️ خصم العجز (ج.م) *</div>
-                          <input className="shift-mini-input" style={{ width: 130, borderColor: '#ef444466' }} type="number" min="0" placeholder="0"
+                          <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 5, fontWeight: 700 }}>⚠️ خصم العجز (ج.م) *</div>
+                          <input className="shift-mini-input" style={{ width: 120, borderColor: '#ef444466' }} type="number" min="0" placeholder="0"
                             value={e.deduction || ''} onChange={ev => setField(w.id, 'deduction', ev.target.value)} />
                         </div>
                       )}
                       {/* Notes */}
-                      <div style={{ flex: 1, minWidth: 160 }}>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6, fontWeight: 700 }}>📝 ملاحظات</div>
+                      <div style={{ flex: 1, minWidth: 150 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>ملاحظات</div>
                         <input className="shift-mini-input" style={{ width: '100%' }} type="text" placeholder="اختياري..."
                           value={e.notes || ''} onChange={ev => setField(w.id, 'notes', ev.target.value)} />
                       </div>
@@ -4400,7 +4366,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
                 <div style={{ width: 38, height: 38, borderRadius: 10, background: isShortage ? 'rgba(239,68,68,0.15)' : 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>⛽</div>
                 <div style={{ flex: 1, minWidth: 120 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{getWorkerName(l.workerId)}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.date} — {l.shift} — {l.fuelType}{l.pumpNumber ? ` — 🔢 ${l.pumpNumber}` : ''}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.date} — {l.shift} — {l.fuelType}</div>
                 </div>
                 <div style={{ textAlign: 'center', minWidth: 90 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>من {(l.startMeter || 0).toLocaleString('ar-EG')}</div>
