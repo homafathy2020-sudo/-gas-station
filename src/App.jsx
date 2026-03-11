@@ -3716,12 +3716,12 @@ const getPlan = () => {
 // trial = كل المميزات مفتوحة، free = محدود
 // حدود العمال لكل باقة
 // free=5, basic=10, pro=20, enterprise=∞, lifetime=∞, trial=∞
-const WORKER_LIMITS = { free: 5, basic: 10, pro: 20, enterprise: Infinity, lifetime: Infinity, trial: Infinity };
+const WORKER_LIMITS = { free: 5, starter: 15, pro: 30, enterprise: Infinity, lifetime: Infinity, trial: Infinity };
 const getWorkerLimit  = (plan) => WORKER_LIMITS[plan] ?? 5;
 const FREE_WORKER_LIMIT = 5;
 
 // حدود المحطات
-const STATION_LIMITS = { free: 1, basic: 1, pro: 3, enterprise: 3, lifetime: Infinity, trial: Infinity };
+const STATION_LIMITS = { free: 1, starter: 1, pro: 3, enterprise: Infinity, lifetime: Infinity, trial: Infinity };
 const getStationLimit = (plan) => STATION_LIMITS[plan] ?? 1;
 
 // Firestore helpers للمحطات
@@ -3751,10 +3751,10 @@ const ACTIVE_STATION_KEY = (ownerId) => `owner_${ownerId}_active_station`;
 // | صرف الرواتب     |  ❌  |  ❌   | ❌  |    ✅      |   ✅     |  ✅   |
 // | أرشيف الشهور    |  ❌  |  ❌   | ❌  |    ✅      |   ✅     |  ✅   |
 const planIsFree        = (plan) => plan === 'free';
-const planHasExcelAdv   = (plan) => ['basic', 'pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
-const planHasWhatsApp   = (plan) => ['pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
-const planHasSalaryPay  = (plan) => ['enterprise', 'lifetime', 'trial'].includes(plan);
-const planHasMonthReset = (plan) => ['enterprise', 'lifetime', 'trial'].includes(plan);
+const planHasExcelAdv   = (plan) => ['starter', 'pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
+const planHasWhatsApp   = (plan) => ['starter', 'pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
+const planHasSalaryPay  = (plan) => ['pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
+const planHasMonthReset = (plan) => ['pro', 'enterprise', 'lifetime', 'trial'].includes(plan);
 
 
 // ===== STATION SWITCHER COMPONENT =====
@@ -3842,7 +3842,7 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
     } catch { toast('حدث خطأ في الحذف', 'error'); }
     setDeleting(null);
   };
-  const planLabels = { free: 'مجانية', basic: 'أساسية', pro: 'احترافية', enterprise: 'مميزة', lifetime: 'مدى الحياة', trial: 'تجريبية' };
+  const planLabels = { free: '🆓 مجانية', starter: '🚀 أساسية', pro: '⭐ احترافية', enterprise: '👑 مميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية' };
   return (
     <div className="stations-page">
       <div className="station-limit-bar">
@@ -3906,20 +3906,20 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       className: 'free',
       free: true,
       features: [
-        { yes: true,  text: 'حتى 5 عمال فقط' },
+        { yes: true,  text: 'حتى 5 عمال' },
+        { yes: true,  text: 'محطة واحدة' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
         { yes: false, text: 'تقارير Excel' },
         { yes: false, text: 'إشعارات واتساب للعمال' },
         { yes: false, text: 'تقرير صرف الرواتب' },
         { yes: false, text: 'أرشيف وإغلاق الشهر' },
-        { yes: false, text: 'دعم فني' },
       ],
       btnClass: 'btn-success',
       btnLabel: '✅ استمر مجاناً',
       isFreePlan: true,
     },
     {
-      id: 'basic',
+      id: 'starter',
       emoji: '🚀',
       name: 'الأساسية',
       desc: 'مناسبة للمحطات الصغيرة',
@@ -3927,13 +3927,13 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       period: 'شهرياً',
       className: '',
       features: [
-        { yes: true,  text: 'حتى 10 عمال' },
+        { yes: true,  text: 'حتى 15 عاملاً' },
+        { yes: true,  text: 'محطة واحدة' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تقارير Excel' },
-        { yes: false, text: 'إشعارات واتساب للعمال' },
+        { yes: true,  text: '📊 تقارير Excel' },
+        { yes: true,  text: '💬 إشعارات واتساب للعمال' },
         { yes: false, text: 'تقرير صرف الرواتب' },
         { yes: false, text: 'أرشيف وإغلاق الشهر' },
-        { yes: false, text: 'عمال غير محدودين' },
       ],
       btnClass: 'btn-ghost',
       btnLabel: 'اشترك الآن',
@@ -3943,18 +3943,18 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       emoji: '⭐',
       name: 'الاحترافية',
       desc: 'الأكثر مبيعاً — للمحطات المتوسطة',
-      price: '299',
+      price: '349',
       period: 'شهرياً',
       className: 'popular',
       popular: true,
       features: [
-        { yes: true,  text: 'حتى 20 عاملاً' },
+        { yes: true,  text: 'حتى 30 عاملاً' },
+        { yes: true,  text: 'حتى 3 محطات' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تقارير Excel متقدمة' },
+        { yes: true,  text: '📊 تقارير Excel متقدمة' },
         { yes: true,  text: '💬 إشعارات واتساب للعمال' },
-        { yes: false, text: 'عمال غير محدودين' },
-        { yes: false, text: '💵 تقرير صرف الرواتب' },
-        { yes: false, text: '📦 أرشيف وإغلاق الشهر' },
+        { yes: true,  text: '💵 تقرير صرف الرواتب' },
+        { yes: true,  text: '📦 أرشيف وإغلاق الشهر' },
       ],
       btnClass: 'btn-primary',
       btnLabel: '🔥 اشترك الآن',
@@ -3964,17 +3964,18 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       emoji: '👑',
       name: 'المميزة',
       desc: 'للشركات والمحطات الكبيرة',
-      price: '499',
+      price: '599',
       period: 'شهرياً',
       className: 'gold',
       features: [
         { yes: true,  text: 'عمال غير محدودين' },
+        { yes: true,  text: 'محطات غير محدودة' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: 'تقارير Excel متقدمة' },
+        { yes: true,  text: '📊 تقارير Excel متقدمة' },
         { yes: true,  text: '💬 إشعارات واتساب للعمال' },
         { yes: true,  text: '💵 تقرير صرف الرواتب' },
         { yes: true,  text: '📦 أرشيف وإغلاق الشهر' },
-        { yes: true,  text: 'دعم فني أولوية 24/7' },
+        { yes: true,  text: '🎯 دعم فني أولوية 24/7' },
       ],
       btnClass: 'btn-accent',
       btnLabel: '👑 اشترك الآن',
@@ -3990,12 +3991,13 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
       lifetime: true,
       features: [
         { yes: true, text: 'عمال غير محدودين' },
+        { yes: true, text: 'محطات غير محدودة' },
         { yes: true, text: 'إدارة الرواتب والخصومات' },
-        { yes: true, text: 'تقارير Excel متقدمة' },
+        { yes: true, text: '📊 تقارير Excel متقدمة' },
         { yes: true, text: '💬 إشعارات واتساب للعمال' },
         { yes: true, text: '💵 تقرير صرف الرواتب' },
         { yes: true, text: '📦 أرشيف وإغلاق الشهر' },
-        { yes: true, text: 'دعم فني أولوية 24/7' },
+        { yes: true, text: '🎯 دعم فني أولوية 24/7' },
         { yes: true, text: '🎁 كل التحديثات القادمة مجاناً' },
       ],
       btnClass: 'btn-lifetime',
@@ -4953,7 +4955,8 @@ ${latestAnn.body}
                   >
                     <option value="trial">🎯 تجريبية</option>
                     <option value="free">🆓 مجاني</option>
-                    <option value="starter">⭐ أساسية</option>
+                    <option value="starter">🚀 أساسية</option>
+                    <option value="pro">⭐ احترافية</option>
                     <option value="enterprise">👑 مميزة</option>
                     <option value="lifetime">♾️ مدى الحياة</option>
                   </select>
