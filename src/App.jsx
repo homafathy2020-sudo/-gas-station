@@ -490,21 +490,27 @@ const sendWhatsAppNotify = (worker, type, entry) => {
 };
 
 // ==================== MONTH ARCHIVE UTILS ====================
-const getMonthArchives = (ownerId) => {
-  try { return JSON.parse(localStorage.getItem('owner_' + ownerId + '_month_archives') || '[]'); } catch { return []; }
+const getMonthArchives = (ownerId, stationId) => {
+  const key = stationId ? `owner_${ownerId}_station_${stationId}_month_archives` : `owner_${ownerId}_month_archives`;
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
 };
-const saveMonthArchives = async (ownerId, list) => {
-  localStorage.setItem('owner_' + ownerId + '_month_archives', JSON.stringify(list));
-  try { await setDoc(doc(db, 'owners', ownerId, 'meta', 'monthArchives'), { list }); } catch {}
+const saveMonthArchives = async (ownerId, list, stationId) => {
+  const key = stationId ? `owner_${ownerId}_station_${stationId}_month_archives` : `owner_${ownerId}_month_archives`;
+  localStorage.setItem(key, JSON.stringify(list));
+  const docId = stationId ? `monthArchives_${stationId}` : 'monthArchives';
+  try { await setDoc(doc(db, 'owners', ownerId, 'meta', docId), { list, stationId: stationId || null }); } catch {}
 };
 
 // ==================== SALARY PAYMENT UTILS ====================
-const getPaymentRecords = (ownerId) => {
-  try { return JSON.parse(localStorage.getItem('owner_' + ownerId + '_payments') || '[]'); } catch { return []; }
+const getPaymentRecords = (ownerId, stationId) => {
+  const key = stationId ? `owner_${ownerId}_station_${stationId}_payments` : `owner_${ownerId}_payments`;
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
 };
-const savePaymentRecords = async (ownerId, list) => {
-  localStorage.setItem('owner_' + ownerId + '_payments', JSON.stringify(list));
-  try { await setDoc(doc(db, 'owners', ownerId, 'meta', 'payments'), { list }); } catch {}
+const savePaymentRecords = async (ownerId, list, stationId) => {
+  const key = stationId ? `owner_${ownerId}_station_${stationId}_payments` : `owner_${ownerId}_payments`;
+  localStorage.setItem(key, JSON.stringify(list));
+  const docId = stationId ? `payments_${stationId}` : 'payments';
+  try { await setDoc(doc(db, 'owners', ownerId, 'meta', docId), { list, stationId: stationId || null }); } catch {}
 };
 
 // التحقق من الأرقام المُدخلة: بين 0 و 1,000,000
@@ -2003,7 +2009,7 @@ const generateMonthlyReport = (workers, month, year, monthName) => {
 
 
 // ==================== MONTH RESET MODAL ====================
-const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
+const MonthResetModal = ({ workers, ownerId, onReset, onClose, stationId }) => {
   const [confirm, setConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
@@ -2042,8 +2048,8 @@ const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
         net: calcNet(w),
       })),
     };
-    const archives = getMonthArchives(ownerId);
-    await saveMonthArchives(ownerId, [...archives, archive]);
+    const archives = getMonthArchives(ownerId, stationId);
+    await saveMonthArchives(ownerId, [...archives, archive], stationId);
     // مسح كل البيانات الشهرية لكل العمال
     await onReset(workers.map(w => ({
       ...w,
@@ -2120,8 +2126,8 @@ const MonthResetModal = ({ workers, ownerId, onReset, onClose }) => {
 };
 
 // ==================== MONTH ARCHIVE PAGE ====================
-const MonthArchivePage = ({ ownerId }) => {
-  const [archives, setArchives] = useState(() => getMonthArchives(ownerId));
+const MonthArchivePage = ({ ownerId, stationId }) => {
+  const [archives, setArchives] = useState(() => getMonthArchives(ownerId, stationId));
   const [selected, setSelected] = useState(null);
   const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
@@ -2201,13 +2207,13 @@ const MonthArchivePage = ({ ownerId }) => {
 };
 
 // ==================== SALARY PAYMENT PAGE ====================
-const SalaryPaymentPage = ({ workers, ownerId }) => {
+const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
   const plan = usePlan();
   const toast = useToast();
   const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const [payments, setPayments] = useState(() => getPaymentRecords(ownerId));
+  const [payments, setPayments] = useState(() => getPaymentRecords(ownerId, stationId));
   const [confirmPay, setConfirmPay] = useState(null);
   const [confirmUnpay, setConfirmUnpay] = useState(null);
   const [payAllConfirm, setPayAllConfirm] = useState(false);
@@ -2227,7 +2233,7 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
     };
     const updated = [...payments.filter(p => p.key !== getPaidKey(worker.id)), newRec];
     setPayments(updated);
-    await savePaymentRecords(ownerId, updated);
+    await savePaymentRecords(ownerId, updated, stationId);
     toast(`تم تسجيل صرف راتب ${worker.name} ✓`, 'success');
     setConfirmPay(null);
   };
@@ -2235,7 +2241,7 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
   const unmarkPaid = async (worker) => {
     const updated = payments.filter(p => p.key !== getPaidKey(worker.id));
     setPayments(updated);
-    await savePaymentRecords(ownerId, updated);
+    await savePaymentRecords(ownerId, updated, stationId);
     toast(`تم إلغاء تسجيل الصرف لـ ${worker.name}`, 'info');
     setConfirmUnpay(null);
   };
@@ -2251,7 +2257,7 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
     }));
     const updated = [...payments, ...newRecs];
     setPayments(updated);
-    await savePaymentRecords(ownerId, updated);
+    await savePaymentRecords(ownerId, updated, stationId);
     toast('تم تسجيل صرف جميع الرواتب ✓', 'success');
     setPayAllConfirm(false);
   };
@@ -2401,7 +2407,7 @@ const SalaryPaymentPage = ({ workers, ownerId }) => {
 
 
 
-const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
+const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
   const plan = usePlan();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
@@ -2409,7 +2415,7 @@ const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
   const [showReset, setShowReset] = useState(false);
   const toast = useToast();
   const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-  const archives = getMonthArchives(ownerId);
+  const archives = getMonthArchives(ownerId, stationId);
   const isCurrentMonth = month === now.getMonth() && year === now.getFullYear();
   const archivedMonth = !isCurrentMonth ? archives.find(a => a.month === month && a.year === year) : null;
   const displayWorkers = archivedMonth ? (archivedMonth.workerSnapshots || []) : workers;
@@ -2427,7 +2433,7 @@ const ReportsPage = ({ workers, ownerId, onResetMonth }) => {
         <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️ طباعة</button>
         {onResetMonth && planHasMonthReset(plan) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>🔄 إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(plan) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط 👑','warning')}>🔄 إغلاق الشهر 🔒</button>}
       </div>
-      {showReset && <MonthResetModal workers={workers} ownerId={ownerId} onReset={onResetMonth} onClose={() => setShowReset(false)} />}
+      {showReset && <MonthResetModal workers={workers} ownerId={ownerId} stationId={stationId} onReset={onResetMonth} onClose={() => setShowReset(false)} />}
       {archivedMonth && (
         <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }} className="no-print">
           <span style={{ fontSize: 18 }}>📦</span>
@@ -3712,41 +3718,46 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
 
 
 // ==================== SHIFT LOG HELPERS ====================
-const getShiftKey = (date) => date; // YYYY-MM-DD
-const saveShiftLog = async (ownerId, date, entries) => {
-  await setDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date)), { date, entries, savedAt: new Date().toISOString() });
+const getShiftKey = (date, stationId) => stationId ? `${stationId}_${date}` : date;
+const saveShiftLog = async (ownerId, date, entries, stationId) => {
+  await setDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date, stationId)), { date, stationId: stationId || null, entries, savedAt: new Date().toISOString() });
 };
-const getShiftLog = async (ownerId, date) => {
+const getShiftLog = async (ownerId, date, stationId) => {
   try {
-    const snap = await getDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date)));
+    const snap = await getDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date, stationId)));
     return snap.exists() ? snap.data() : null;
   } catch { return null; }
 };
-const getShiftLogs = async (ownerId, limitDays = 30) => {
+const getShiftLogs = async (ownerId, limitDays = 30, stationId) => {
   try {
     const snap = await getDocs(collection(db, 'owners', ownerId, 'shifts'));
-    return snap.docs.map(d => d.data()).sort((a, b) => b.date.localeCompare(a.date)).slice(0, limitDays);
+    return snap.docs.map(d => d.data())
+      .filter(d => stationId ? d.stationId === stationId : true)
+      .sort((a, b) => b.date.localeCompare(a.date)).slice(0, limitDays);
   } catch { return []; }
 };
 
 // ==================== FUEL LOG HELPERS ====================
-const saveFuelLog = async (ownerId, log) => {
+const saveFuelLog = async (ownerId, log, stationId) => {
   const id = log.id || String(Date.now());
-  await setDoc(doc(db, 'owners', ownerId, 'fuelLogs', id), { ...log, id });
+  const col = stationId ? `fuelLogs_${stationId}` : 'fuelLogs';
+  await setDoc(doc(db, 'owners', ownerId, col, id), { ...log, id, stationId: stationId || null });
   return id;
 };
-const deleteFuelLog = async (ownerId, id) => {
-  await deleteDoc(doc(db, 'owners', ownerId, 'fuelLogs', id));
+const deleteFuelLog = async (ownerId, id, stationId) => {
+  const col = stationId ? `fuelLogs_${stationId}` : 'fuelLogs';
+  await deleteDoc(doc(db, 'owners', ownerId, col, id));
 };
-const getFuelLogs = async (ownerId) => {
+const getFuelLogs = async (ownerId, stationId) => {
   try {
-    const snap = await getDocs(collection(db, 'owners', ownerId, 'fuelLogs'));
+    const col = stationId ? `fuelLogs_${stationId}` : 'fuelLogs';
+    const snap = await getDocs(collection(db, 'owners', ownerId, col));
     return snap.docs.map(d => d.data()).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
   } catch { return []; }
 };
 
 // ==================== DAILY SHIFT PAGE ====================
-const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
+const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
   const plan = usePlan();
   const toast = useToast();
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -3762,7 +3773,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   useEffect(() => {
     if (!ownerId) return;
     setLoading(true);
-    getShiftLog(ownerId, date).then(data => {
+    getShiftLog(ownerId, date, activeStation).then(data => {
       if (data?.entries) {
         const map = {};
         data.entries.forEach(e => { map[e.workerId] = e; });
@@ -3774,11 +3785,11 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
       }
       setLoading(false);
     });
-  }, [date, ownerId]);
+    }, [date, ownerId, activeStation]);
 
   useEffect(() => {
-    if (tab === 'history' && ownerId) getShiftLogs(ownerId, 30).then(setHistory);
-  }, [tab, ownerId]);
+    if (tab === 'history' && ownerId) getShiftLogs(ownerId, 30, activeStation).then(setHistory);
+    }, [tab, ownerId, activeStation]);
 
   const setStatus = (workerId, status) => {
     setEntries(prev => ({ ...prev, [workerId]: { ...prev[workerId], workerId, status, deduction: '', minutes: '', reason: '' } }));
@@ -3806,7 +3817,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
         minutes: entries[w.id]?.minutes || '',
         reason: entries[w.id]?.reason || '',
       }));
-      await saveShiftLog(ownerId, date, allEntries);
+      await saveShiftLog(ownerId, date, allEntries, activeStation);
 
       for (const w of workers) {
         const e = entries[w.id];
@@ -3993,7 +4004,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
 };
 
 // ==================== FUEL LOG PAGE ====================
-const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
+const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
   const toast = useToast();
   const todayStr = new Date().toISOString().slice(0, 10);
   const [logs, setLogs] = useState([]);
@@ -4016,8 +4027,8 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   useEffect(() => {
     if (!ownerId) return;
     setLoading(true);
-    getFuelLogs(ownerId).then(data => { setLogs(data); setLoading(false); });
-  }, [ownerId]);
+    getFuelLogs(ownerId, activeStation).then(data => { setLogs(data); setLoading(false); });
+  }, [ownerId, activeStation]);
 
   // When date/shift changes, check if already saved
   useEffect(() => {
@@ -4108,7 +4119,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
     try {
       // delete old logs for this shift first
       const oldLogs = logs.filter(l => l.date === shiftDate && l.shift === shiftType);
-      for (const l of oldLogs) await deleteFuelLog(ownerId, l.id);
+      for (const l of oldLogs) await deleteFuelLog(ownerId, l.id, activeStation);
 
       const newLogs = [];
       for (const w of filled) {
@@ -4127,7 +4138,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
           result, deduction: +e.deduction || 0,
           notes: e.notes || '', createdAt: new Date().toISOString(),
         };
-        await saveFuelLog(ownerId, log);
+        await saveFuelLog(ownerId, log, activeStation);
         newLogs.push(log);
 
         // مزامنة مع بيانات العامل
@@ -4163,7 +4174,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
   };
 
   const handleDeleteLog = async (id) => {
-    await deleteFuelLog(ownerId, id);
+    await deleteFuelLog(ownerId, id, activeStation);
     setLogs(prev => prev.filter(l => l.id !== id));
     setDelConfirm(null);
     toast('تم الحذف', 'info');
@@ -4634,7 +4645,7 @@ const StationSwitcher = ({ stations, activeStation, onSwitch, onManage }) => {
 };
 
 // ===== STATIONS MANAGEMENT PAGE =====
-const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh }) => {
+const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh, workers }) => {
   const plan = usePlan();
   const toast = useToast();
   const limit = getStationLimit(plan);
@@ -4700,7 +4711,10 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
               <div className="station-card-name">{s.name}</div>
               {s.id === activeStation && <span style={{ background: 'rgba(26,86,219,0.2)', color: 'var(--primary-light)', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>✓ نشطة</span>}
             </div>
-            <div className="station-card-meta">{s.address && <span>📍 {s.address}</span>}</div>
+            <div className="station-card-meta">
+                {s.address && <span>📍 {s.address}</span>}
+                <span>👷 {(workers||[]).filter(w => w.stationId === s.id).length} عامل</span>
+              </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {s.id !== activeStation && <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}>⚡ تفعيل</button>}
@@ -6439,7 +6453,7 @@ const App = ({ onShowPricing }) => {
             </button>
             <div>
               <div className="topbar-title">{titles[page]}</div>
-              {user.role === 'owner' && activeStation && ['workers','reports','salary_payment'].includes(page) && (
+              {user.role === 'owner' && activeStation && ['workers','reports','salary_payment','shift_log','fuel_log','month_archive'].includes(page) && (
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>⛽ {stations.find(s => s.id === activeStation)?.name || ''}</div>
               )}
             </div>
@@ -6485,7 +6499,7 @@ const App = ({ onShowPricing }) => {
             </div>
           )}
           {page === 'dashboard' && user.role === 'owner' && (
-            <OwnerDashboard workers={workers} workPlaces={workPlaces}
+            <OwnerDashboard workers={activeStation ? workers.filter(w => w.stationId === activeStation) : workers} workPlaces={workPlaces}
               onAddPlace={async (p) => {
                 const oid = getOwnerId(user);
                 const id = String(Date.now());
@@ -6523,6 +6537,7 @@ const App = ({ onShowPricing }) => {
             <ShiftLogPage
               workers={workers.filter(w => w.stationId === activeStation)}
               ownerId={getOwnerId(user)}
+              activeStation={activeStation}
               onUpdateWorker={async (updated) => {
                 const oid = getOwnerId(user);
                 await setDoc(doc(db, 'owners', oid, 'workers', String(updated.id)), updated);
@@ -6534,6 +6549,7 @@ const App = ({ onShowPricing }) => {
             <FuelLogPage
               workers={workers.filter(w => w.stationId === activeStation)}
               ownerId={getOwnerId(user)}
+              activeStation={activeStation}
               onUpdateWorker={async (updated) => {
                 const oid = getOwnerId(user);
                 await setDoc(doc(db, 'owners', oid, 'workers', String(updated.id)), updated);
@@ -6541,7 +6557,7 @@ const App = ({ onShowPricing }) => {
               }}
             />
           )}
-          {page === 'reports' && <ReportsPage workers={workers.filter(w => w.stationId === activeStation)} ownerId={getOwnerId(user)} onResetMonth={(resetWorkers) => {
+          {page === 'reports' && <ReportsPage workers={workers.filter(w => w.stationId === activeStation)} ownerId={getOwnerId(user)} stationId={activeStation} onResetMonth={(resetWorkers) => {
               const oid = getOwnerId(user);
               resetWorkers.forEach(async w => {
                 await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
@@ -6549,7 +6565,7 @@ const App = ({ onShowPricing }) => {
             }} />}
           {page === 'salary_payment' && user.role === 'owner' && (
             planHasSalaryPay(plan)
-              ? <SalaryPaymentPage workers={workers.filter(w => w.stationId === activeStation)} ownerId={getOwnerId(user)} />
+              ? <SalaryPaymentPage workers={workers.filter(w => w.stationId === activeStation)} ownerId={getOwnerId(user)} stationId={activeStation} />
               : <div style={{ textAlign: 'center', padding: 60 }}>
                   <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تقرير صرف الرواتب</div>
@@ -6559,7 +6575,7 @@ const App = ({ onShowPricing }) => {
           )}
           {page === 'month_archive' && user.role === 'owner' && (
             planHasMonthReset(plan)
-              ? <MonthArchivePage ownerId={getOwnerId(user)} />
+              ? <MonthArchivePage ownerId={getOwnerId(user)} stationId={activeStation} />
               : <div style={{ textAlign: 'center', padding: 60 }}>
                   <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>أرشيف الشهور</div>
@@ -6601,6 +6617,7 @@ const App = ({ onShowPricing }) => {
               ownerId={getOwnerId(user)}
               stations={stations}
               activeStation={activeStation}
+              workers={workers}
               onSetActive={(id) => { setActiveStation(id); const oid = getOwnerId(user); if (oid) localStorage.setItem(ACTIVE_STATION_KEY(oid), id); }}
               onRefresh={async () => { const stList = await getStations(getOwnerId(user)); setStations(stList); }}
             />
