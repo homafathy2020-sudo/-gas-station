@@ -4176,9 +4176,11 @@ const getAllOwners = async () => {
   try {
     const snap = await getDocs(collection(db, 'users'));
     const owners = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.role === 'owner');
-    // جيب الباقة لكل مالك من settings/subscription
+    // جيب الباقة الحقيقية لكل مالك من owners/{id}/meta/trial
     const withPlans = await Promise.all(owners.map(async (o) => {
       try {
+        const trialRef = getOwnerTrialDoc(o.id);
+        const subSnap = await getDoc(trialRef);
         const plan = subSnap.exists() ? (subSnap.data().plan || 'trial') : 'trial';
         return { ...o, plan };
       } catch { return { ...o, plan: 'trial' }; }
@@ -4927,6 +4929,7 @@ ${latestAnn.body}
                     onChange={async (e) => {
                       const newPlan = e.target.value;
                       try {
+                        const ref = getOwnerTrialDoc(o.id);
                         const snap = await getDoc(ref);
                         if (snap.exists()) {
                           await updateDoc(ref, { plan: newPlan });
