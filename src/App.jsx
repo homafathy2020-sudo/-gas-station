@@ -233,6 +233,80 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .station-limit-bar { background: linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.03)); border: 1px solid rgba(245,158,11,0.25); border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
 
+
+/* ===== DAILY SHIFT LOG ===== */
+.shift-page { max-width: 820px; margin: 0 auto; animation: fadeIn .3s ease; }
+.shift-date-bar { background: linear-gradient(135deg, rgba(26,86,219,0.12), rgba(26,86,219,0.04)); border: 1px solid rgba(26,86,219,0.25); border-radius: 16px; padding: 16px 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.shift-worker-row { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.shift-worker-row:last-child { border-bottom: none; }
+.shift-worker-row:hover { background: rgba(255,255,255,0.02); }
+.shift-status-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.shift-status-btn { padding: 6px 13px; border-radius: 8px; border: 1.5px solid; font-family: 'Cairo',sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; background: none; }
+.shift-status-btn.present  { border-color: rgba(16,185,129,0.4); color: #10b981; }
+.shift-status-btn.present.sel  { background: rgba(16,185,129,0.2); border-color: #10b981; }
+.shift-status-btn.late     { border-color: rgba(245,158,11,0.4); color: #f59e0b; }
+.shift-status-btn.late.sel     { background: rgba(245,158,11,0.2); border-color: #f59e0b; }
+.shift-status-btn.absent   { border-color: rgba(239,68,68,0.4); color: #ef4444; }
+.shift-status-btn.absent.sel   { background: rgba(239,68,68,0.2); border-color: #ef4444; }
+.shift-status-btn.no-reason { border-color: rgba(168,85,247,0.4); color: #a855f7; }
+.shift-status-btn.no-reason.sel { background: rgba(168,85,247,0.2); border-color: #a855f7; }
+.shift-extra { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.shift-mini-input { width: 90px; padding: 5px 9px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Cairo',sans-serif; font-size: 13px; outline: none; text-align: center; }
+.shift-mini-input:focus { border-color: var(--primary-light); }
+.shift-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.shift-sum-card { flex: 1; min-width: 100px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: center; }
+.shift-sum-num { font-size: 26px; font-weight: 900; }
+.shift-sum-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.shift-history-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); flex-wrap: wrap; }
+.shift-history-row:last-child { border-bottom: none; }
+
+/* ===== FUEL LOG ===== */
+.fuel-page { max-width: 860px; margin: 0 auto; animation: fadeIn .3s ease; }
+.fuel-entry-row { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.fuel-entry-row:last-child { border-bottom: none; }
+.fuel-entry-row:hover { background: rgba(255,255,255,0.02); }
+.fuel-shortage { color: #ef4444; font-weight: 800; }
+.fuel-surplus  { color: #10b981; font-weight: 800; }
+.fuel-ok       { color: var(--text-muted); font-weight: 600; }
+.fuel-stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; text-align: center; flex: 1; min-width: 120px; }
+.fuel-stat-num { font-size: 28px; font-weight: 900; }
+.fuel-stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.fuel-worker-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; }
+.fuel-bar-wrap { height: 6px; background: var(--dark-3); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.fuel-bar-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+
+
+/* ===== DAILY SHIFT LOG ===== */
+.shift-page { max-width: 820px; margin: 0 auto; animation: fadeIn .3s ease; }
+.shift-date-bar { background: linear-gradient(135deg, rgba(26,86,219,0.12), rgba(26,86,219,0.04)); border: 1px solid rgba(26,86,219,0.25); border-radius: 16px; padding: 16px 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.shift-worker-row { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.shift-worker-row:last-child { border-bottom: none; }
+.shift-worker-row:hover { background: rgba(255,255,255,0.02); }
+.shift-status-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.shift-status-btn { padding: 6px 13px; border-radius: 8px; border: 1.5px solid; font-family: Cairo,sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; background: none; }
+.shift-status-btn.present  { border-color: rgba(16,185,129,0.4); color: #10b981; }
+.shift-status-btn.present.sel  { background: rgba(16,185,129,0.2); border-color: #10b981; }
+.shift-status-btn.late     { border-color: rgba(245,158,11,0.4); color: #f59e0b; }
+.shift-status-btn.late.sel     { background: rgba(245,158,11,0.2); border-color: #f59e0b; }
+.shift-status-btn.absent   { border-color: rgba(239,68,68,0.4); color: #ef4444; }
+.shift-status-btn.absent.sel   { background: rgba(239,68,68,0.2); border-color: #ef4444; }
+.shift-status-btn.no-reason { border-color: rgba(168,85,247,0.4); color: #a855f7; }
+.shift-status-btn.no-reason.sel { background: rgba(168,85,247,0.2); border-color: #a855f7; }
+.shift-extra { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; width: 100%; }
+.shift-mini-input { width: 90px; padding: 5px 9px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: Cairo,sans-serif; font-size: 13px; outline: none; text-align: center; }
+.shift-mini-input:focus { border-color: var(--primary-light); }
+.shift-sum-card { flex: 1; min-width: 90px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; text-align: center; }
+.shift-sum-num { font-size: 26px; font-weight: 900; }
+.shift-sum-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+/* ===== FUEL LOG ===== */
+.fuel-page { max-width: 860px; margin: 0 auto; animation: fadeIn .3s ease; }
+.fuel-shortage { color: #ef4444; font-weight: 800; }
+.fuel-surplus  { color: #10b981; font-weight: 800; }
+.fuel-ok       { color: var(--text-muted); font-weight: 600; }
+.fuel-stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; text-align: center; flex: 1; min-width: 110px; }
+.fuel-stat-num { font-size: 28px; font-weight: 900; }
+.fuel-stat-lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
 /* ===== NOTIFICATION BELL ===== */
 .notif-bell-wrap { position: relative; }
 .notif-bell-btn { position: relative; width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s; color: var(--text); }
@@ -3590,6 +3664,8 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
     owner: [
       { id: 'dashboard', icon: '📊', label: 'لوحة التحكم' },
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
+      { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
+      { id: 'fuel_log', icon: '⛽', label: 'عدادات الوقود' },
       { id: 'reports', icon: '📋', label: 'التقارير' },
       { id: 'salary_payment', icon: '💵', label: 'صرف الرواتب' },
       { id: 'month_archive', icon: '📦', label: 'أرشيف الشهور' },
@@ -3599,6 +3675,8 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
     ],
     manager: [
       { id: 'workers', icon: '👷', label: 'إدارة العمال' },
+      { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
+      { id: 'fuel_log', icon: '⛽', label: 'عدادات الوقود' },
       { id: 'reports', icon: '📋', label: 'التقارير' }
     ],
     worker: [
@@ -3623,6 +3701,517 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
         </div>
       </div>
     </>
+  );
+};
+
+
+// ==================== SHIFT LOG HELPERS ====================
+const getShiftKey = (date) => date; // YYYY-MM-DD
+const saveShiftLog = async (ownerId, date, entries) => {
+  await setDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date)), { date, entries, savedAt: new Date().toISOString() });
+};
+const getShiftLog = async (ownerId, date) => {
+  try {
+    const snap = await getDoc(doc(db, 'owners', ownerId, 'shifts', getShiftKey(date)));
+    return snap.exists() ? snap.data() : null;
+  } catch { return null; }
+};
+const getShiftLogs = async (ownerId, limitDays = 30) => {
+  try {
+    const snap = await getDocs(collection(db, 'owners', ownerId, 'shifts'));
+    return snap.docs.map(d => d.data()).sort((a, b) => b.date.localeCompare(a.date)).slice(0, limitDays);
+  } catch { return []; }
+};
+
+// ==================== FUEL LOG HELPERS ====================
+const saveFuelLog = async (ownerId, log) => {
+  const id = log.id || String(Date.now());
+  await setDoc(doc(db, 'owners', ownerId, 'fuelLogs', id), { ...log, id });
+  return id;
+};
+const deleteFuelLog = async (ownerId, id) => {
+  await deleteDoc(doc(db, 'owners', ownerId, 'fuelLogs', id));
+};
+const getFuelLogs = async (ownerId) => {
+  try {
+    const snap = await getDocs(collection(db, 'owners', ownerId, 'fuelLogs'));
+    return snap.docs.map(d => d.data()).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  } catch { return []; }
+};
+
+// ==================== DAILY SHIFT PAGE ====================
+const ShiftLogPage = ({ workers, ownerId, onUpdateWorker }) => {
+  const plan = usePlan();
+  const toast = useToast();
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(todayStr);
+  const [entries, setEntries] = useState({});   // { workerId: { status, minutes, reason } }
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [tab, setTab] = useState('today'); // today | history
+  const [alreadySaved, setAlreadySaved] = useState(false);
+
+  const deductPerDay  = (w) => Math.round(w.salary / (w.workDays || 26));
+  const deductPerMin  = (w) => Math.round(w.salary / (w.workDays || 26) / 8 / 60 * 10) / 10;
+
+  // Load existing shift for selected date
+  useEffect(() => {
+    if (!ownerId) return;
+    setLoading(true);
+    getShiftLog(ownerId, date).then(data => {
+      if (data?.entries) {
+        const map = {};
+        data.entries.forEach(e => { map[e.workerId] = e; });
+        setEntries(map);
+        setAlreadySaved(true);
+      } else {
+        setEntries({});
+        setAlreadySaved(false);
+      }
+      setLoading(false);
+    });
+  }, [date, ownerId]);
+
+  // Load history
+  useEffect(() => {
+    if (tab === 'history' && ownerId) {
+      getShiftLogs(ownerId, 30).then(setHistory);
+    }
+  }, [tab, ownerId]);
+
+  const setStatus = (workerId, status) => {
+    setEntries(prev => ({ ...prev, [workerId]: { ...prev[workerId], workerId, status, minutes: '', reason: '' } }));
+  };
+  const setExtra = (workerId, key, val) => {
+    setEntries(prev => ({ ...prev, [workerId]: { ...prev[workerId], [key]: val } }));
+  };
+
+  const handleSave = async () => {
+    const entryList = Object.values(entries).filter(e => e.status && e.status !== 'present');
+    if (Object.keys(entries).length === 0) { toast('سجّل حالة العمال أولاً', 'warning'); return; }
+    setSaving(true);
+    try {
+      const allEntries = workers.map(w => ({
+        workerId: w.id,
+        workerName: w.name,
+        status: entries[w.id]?.status || 'present',
+        minutes: entries[w.id]?.minutes || '',
+        reason: entries[w.id]?.reason || '',
+      }));
+      await saveShiftLog(ownerId, date, allEntries);
+
+      // Apply deductions to workers automatically
+      for (const w of workers) {
+        const e = entries[w.id];
+        if (!e || e.status === 'present') continue;
+        const updated = { ...w };
+        if (e.status === 'late') {
+          const mins = parseInt(e.minutes) || 30;
+          const ded = Math.round(deductPerMin(w) * mins);
+          updated.delays = [...(w.delays || []), { id: Date.now() + w.id, date, minutes: mins, deduction: ded, fromShift: true }];
+        } else if (e.status === 'absent') {
+          const ded = deductPerDay(w);
+          updated.absences = [...(w.absences || []), { id: Date.now() + w.id, date, reason: e.reason || 'غياب', deduction: ded, fromShift: true }];
+        } else if (e.status === 'no-reason') {
+          const ded = Math.round(deductPerDay(w) * 1.5);
+          updated.absences_no_reason = [...(w.absences_no_reason || []), { id: Date.now() + w.id, date, deduction: ded, fromShift: true }];
+        }
+        await onUpdateWorker(updated);
+      }
+
+      setAlreadySaved(true);
+      toast('✅ تم حفظ الوردية وتطبيق الخصومات تلقائياً', 'success');
+    } catch (e) { toast('خطأ في الحفظ', 'error'); }
+    setSaving(false);
+  };
+
+  const statusLabel = { present: '✅ حاضر', late: '⏰ متأخر', absent: '❌ غايب', 'no-reason': '🚫 عجز' };
+  const statusColor = { present: '#10b981', late: '#f59e0b', absent: '#ef4444', 'no-reason': '#a855f7' };
+
+  const presentCount  = workers.filter(w => (entries[w.id]?.status || 'present') === 'present').length;
+  const lateCount     = workers.filter(w => entries[w.id]?.status === 'late').length;
+  const absentCount   = workers.filter(w => entries[w.id]?.status === 'absent').length;
+  const noReasonCount = workers.filter(w => entries[w.id]?.status === 'no-reason').length;
+
+  return (
+    <div className="shift-page">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>📅 سجل الوردية اليومية</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>سجّل حضور وغياب كل العمال دفعة واحدة</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {['today','history'].map(t => (
+            <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
+              {t === 'today' ? '📝 تسجيل الوردية' : '📋 السجل السابق'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === 'today' && (
+        <>
+          <div className="shift-date-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 20 }}>📅</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>تاريخ الوردية</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {alreadySaved && <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', padding: '3px 10px', borderRadius: 20, fontWeight: 700 }}>✅ محفوظة</span>}
+              <input type="date" value={date} max={todayStr} onChange={e => setDate(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 12px', color: 'var(--text)', fontFamily: 'Cairo,sans-serif', fontSize: 13 }} />
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+            {[
+              { n: presentCount,  l: 'حاضر',  c: '#10b981', e: '✅' },
+              { n: lateCount,     l: 'متأخر', c: '#f59e0b', e: '⏰' },
+              { n: absentCount,   l: 'غايب',  c: '#ef4444', e: '❌' },
+              { n: noReasonCount, l: 'عجز',   c: '#a855f7', e: '🚫' },
+            ].map(s => (
+              <div key={s.l} className="shift-sum-card">
+                <div className="shift-sum-num" style={{ color: s.c }}>{s.e} {s.n}</div>
+                <div className="shift-sum-lbl">{s.l}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Workers list */}
+          {loading ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></div> : (
+            <div className="table-container" style={{ marginBottom: 20 }}>
+              {workers.length === 0 ? (
+                <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
+              ) : workers.map(w => {
+                const e = entries[w.id] || {};
+                const status = e.status || 'present';
+                return (
+                  <div key={w.id} className="shift-worker-row">
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{w.name[0]}</div>
+                    <div style={{ flex: 1, minWidth: 100 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{w.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{w.pump}</div>
+                    </div>
+                    <div style={{ flex: 2, minWidth: 240 }}>
+                      <div className="shift-status-btns">
+                        {[
+                          { id: 'present',   label: '✅ حاضر' },
+                          { id: 'late',      label: '⏰ متأخر' },
+                          { id: 'absent',    label: '❌ غايب' },
+                          { id: 'no-reason', label: '🚫 عجز' },
+                        ].map(s => (
+                          <button key={s.id} className={`shift-status-btn ${s.id} ${status === s.id ? 'sel' : ''}`}
+                            onClick={() => setStatus(w.id, s.id)}>{s.label}</button>
+                        ))}
+                      </div>
+                      {status === 'late' && (
+                        <div className="shift-extra">
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>مدة التأخير:</span>
+                          <input className="shift-mini-input" type="number" min="1" max="480" placeholder="دقيقة" value={e.minutes || ''} onChange={ev => setExtra(w.id, 'minutes', ev.target.value)} />
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            خصم تقريبي: {e.minutes ? Math.round(deductPerMin(w) * parseInt(e.minutes)) : 0} ج.م
+                          </span>
+                        </div>
+                      )}
+                      {status === 'absent' && (
+                        <div className="shift-extra">
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>السبب:</span>
+                          <input className="shift-mini-input" style={{ width: 150 }} type="text" placeholder="مرض / إجازة..." value={e.reason || ''} onChange={ev => setExtra(w.id, 'reason', ev.target.value)} />
+                          <span style={{ fontSize: 11, color: '#ef4444' }}>خصم: {deductPerDay(w)} ج.م</span>
+                        </div>
+                      )}
+                      {status === 'no-reason' && (
+                        <div className="shift-extra">
+                          <span style={{ fontSize: 11, color: '#a855f7' }}>خصم عجز: {Math.round(deductPerDay(w) * 1.5)} ج.م</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button className="btn btn-primary" style={{ minWidth: 180 }} onClick={handleSave} disabled={saving || loading}>
+              {saving ? '⏳ جاري الحفظ...' : alreadySaved ? '🔄 تحديث الوردية' : '💾 حفظ الوردية وتطبيق الخصومات'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {tab === 'history' && (
+        <div className="table-container">
+          <div className="table-hdr">
+            <div style={{ fontSize: 15, fontWeight: 700 }}>📋 سجل الورديات السابقة</div>
+          </div>
+          {history.length === 0 ? (
+            <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">📭</div><div className="empty-title">لا يوجد سجل بعد</div></div>
+          ) : history.map(h => {
+            const present  = h.entries.filter(e => e.status === 'present').length;
+            const absent   = h.entries.filter(e => e.status === 'absent').length;
+            const late     = h.entries.filter(e => e.status === 'late').length;
+            const noReason = h.entries.filter(e => e.status === 'no-reason').length;
+            return (
+              <div key={h.date} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 20 }}>📅</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{new Date(h.date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{h.entries.length} عامل مسجّل</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {present  > 0 && <span style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#10b981', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>✅ {present} حاضر</span>}
+                  {late     > 0 && <span style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', color:'#f59e0b', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>⏰ {late} متأخر</span>}
+                  {absent   > 0 && <span style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)', color:'#ef4444', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>❌ {absent} غايب</span>}
+                  {noReason > 0 && <span style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)', color:'#a855f7', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>🚫 {noReason} عجز</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== FUEL LOG PAGE ====================
+const FuelLogPage = ({ workers, ownerId }) => {
+  const plan = usePlan();
+  const toast = useToast();
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('add'); // add | report
+  const [form, setForm] = useState({ workerId: '', date: todayStr, shift: 'صباحي', startMeter: '', endMeter: '', fuelType: 'بنزين', notes: '' });
+  const [saving, setSaving] = useState(false);
+  const [delConfirm, setDelConfirm] = useState(null);
+
+  const fuelTypes = ['بنزين 80', 'بنزين 92', 'بنزين 95', 'سولار', 'غاز طبيعي'];
+  const shifts    = ['صباحي', 'مسائي', 'ليلي'];
+
+  useEffect(() => {
+    if (!ownerId) return;
+    setLoading(true);
+    getFuelLogs(ownerId).then(data => { setLogs(data); setLoading(false); });
+  }, [ownerId]);
+
+  const f = (k) => ({ value: form[k], onChange: e => setForm(p => ({ ...p, [k]: e.target.value })) });
+
+  const handleAdd = async () => {
+    if (!form.workerId) { toast('اختر العامل', 'error'); return; }
+    if (!form.startMeter || !form.endMeter) { toast('أدخل أرقام العداد', 'error'); return; }
+    const start = parseFloat(form.startMeter);
+    const end   = parseFloat(form.endMeter);
+    if (end < start) { toast('رقم العداد النهائي أقل من البداية!', 'error'); return; }
+    const sold = end - start;
+    // نحسب العجز لو في نظام سعر — حالياً نعرض بالليتر بس
+    const log = { ...form, id: String(Date.now()), startMeter: start, endMeter: end, sold, createdAt: new Date().toISOString() };
+    setSaving(true);
+    try {
+      await saveFuelLog(ownerId, log);
+      setLogs(prev => [log, ...prev]);
+      setForm({ workerId: '', date: todayStr, shift: 'صباحي', startMeter: '', endMeter: '', fuelType: 'بنزين 92', notes: '' });
+      toast('✅ تم تسجيل قراءة العداد', 'success');
+    } catch { toast('خطأ في الحفظ', 'error'); }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    await deleteFuelLog(ownerId, id);
+    setLogs(prev => prev.filter(l => l.id !== id));
+    setDelConfirm(null);
+    toast('تم الحذف', 'info');
+  };
+
+  // Monthly report: aggregate by worker
+  const now = new Date();
+  const [reportMonth, setReportMonth] = useState(now.getMonth());
+  const [reportYear,  setReportYear]  = useState(now.getFullYear());
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+  const monthLogs = logs.filter(l => {
+    const d = new Date(l.date);
+    return d.getMonth() === reportMonth && d.getFullYear() === reportYear;
+  });
+
+  const workerReport = workers.map(w => {
+    const wLogs = monthLogs.filter(l => l.workerId === w.id);
+    const totalSold = wLogs.reduce((s, l) => s + (l.sold || 0), 0);
+    const sessions  = wLogs.length;
+    return { ...w, totalSold, sessions, logs: wLogs };
+  }).filter(w => w.sessions > 0).sort((a, b) => b.totalSold - a.totalSold);
+
+  const totalSoldMonth = monthLogs.reduce((s, l) => s + (l.sold || 0), 0);
+
+  const getWorkerName = (id) => workers.find(w => w.id == id)?.name || 'غير معروف';
+
+  return (
+    <div className="fuel-page">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>⛽ سجل عدادات الوقود</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>تتبع قراءات العداد لكل وردية واكتشف أي عجز</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {['add','report'].map(t => (
+            <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>
+              {t === 'add' ? '➕ تسجيل قراءة' : '📊 تقرير شهري'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === 'add' && (
+        <>
+          {/* Add form */}
+          <div className="card" style={{ marginBottom: 22 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 18 }}>➕ تسجيل قراءة عداد جديدة</div>
+            <div className="form-grid-2" style={{ gap: 14 }}>
+              <div className="form-group">
+                <label className="form-label">العامل</label>
+                <select {...f('workerId')}>
+                  <option value="">اختر العامل...</option>
+                  {workers.map(w => <option key={w.id} value={w.id}>{w.name} — {w.pump}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">نوع الوقود</label>
+                <select {...f('fuelType')}>
+                  {fuelTypes.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">التاريخ</label>
+                <input className="form-input" type="date" max={todayStr} {...f('date')} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">الوردية</label>
+                <select {...f('shift')}>
+                  {shifts.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">قراءة العداد — البداية (لتر)</label>
+                <input className="form-input" type="number" min="0" placeholder="مثال: 125000" {...f('startMeter')} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">قراءة العداد — النهاية (لتر)</label>
+                <input className="form-input" type="number" min="0" placeholder="مثال: 126500" {...f('endMeter')} />
+              </div>
+            </div>
+            {form.startMeter && form.endMeter && parseFloat(form.endMeter) >= parseFloat(form.startMeter) && (
+              <div style={{ background: 'rgba(26,86,219,0.08)', border: '1px solid rgba(26,86,219,0.2)', borderRadius: 12, padding: '12px 18px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>⛽</span>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>إجمالي المباع: </span>
+                <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--primary-light)' }}>{(parseFloat(form.endMeter) - parseFloat(form.startMeter)).toLocaleString('ar-EG')} لتر</span>
+              </div>
+            )}
+            <div className="form-group">
+              <label className="form-label">ملاحظات (اختياري)</label>
+              <input className="form-input" type="text" placeholder="أي ملاحظات..." {...f('notes')} />
+            </div>
+            <button className="btn btn-primary" onClick={handleAdd} disabled={saving}>
+              {saving ? '⏳ جاري الحفظ...' : '💾 تسجيل القراءة'}
+            </button>
+          </div>
+
+          {/* Logs list */}
+          <div className="table-container">
+            <div className="table-hdr">
+              <div style={{ fontSize: 15, fontWeight: 700 }}>📋 آخر القراءات</div>
+            </div>
+            {loading ? <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
+            : logs.length === 0 ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">⛽</div><div className="empty-title">لا توجد قراءات مسجّلة بعد</div></div>
+            : logs.slice(0, 30).map(l => (
+              <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>⛽</div>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{getWorkerName(l.workerId)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.date} — {l.shift} — {l.fuelType}</div>
+                </div>
+                <div style={{ textAlign: 'center', minWidth: 90 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>من {l.startMeter?.toLocaleString('ar-EG')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>إلى {l.endMeter?.toLocaleString('ar-EG')}</div>
+                </div>
+                <div style={{ textAlign: 'center', minWidth: 80 }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--primary-light)' }}>{l.sold?.toLocaleString('ar-EG')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>لتر</div>
+                </div>
+                {l.notes && <div style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 150 }}>{l.notes}</div>}
+                {delConfirm === l.id
+                  ? <div style={{ display:'flex', gap:6 }}>
+                      <button className="btn btn-xs btn-danger" onClick={() => handleDelete(l.id)}>تأكيد الحذف</button>
+                      <button className="btn btn-xs btn-ghost" onClick={() => setDelConfirm(null)}>إلغاء</button>
+                    </div>
+                  : <button className="btn btn-xs btn-danger" onClick={() => setDelConfirm(l.id)}>🗑️</button>
+                }
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab === 'report' && (
+        <>
+          {/* Month selector */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+            <select className="form-input" style={{ width: 'auto' }} value={reportMonth} onChange={e => setReportMonth(+e.target.value)}>
+              {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
+            </select>
+            <select className="form-input" style={{ width: 'auto' }} value={reportYear} onChange={e => setReportYear(+e.target.value)}>
+              {[2024,2025,2026].map(y => <option key={y}>{y}</option>)}
+            </select>
+          </div>
+
+          {/* Stats */}
+          <div style={{ display: 'flex', gap: 14, marginBottom: 22, flexWrap: 'wrap' }}>
+            <div className="fuel-stat-card">
+              <div className="fuel-stat-num" style={{ color: 'var(--primary-light)' }}>{totalSoldMonth.toLocaleString('ar-EG')}</div>
+              <div className="fuel-stat-lbl">إجمالي اللترات المباعة</div>
+            </div>
+            <div className="fuel-stat-card">
+              <div className="fuel-stat-num" style={{ color: '#f59e0b' }}>{monthLogs.length}</div>
+              <div className="fuel-stat-lbl">عدد الورديات المسجّلة</div>
+            </div>
+            <div className="fuel-stat-card">
+              <div className="fuel-stat-num" style={{ color: '#10b981' }}>{workerReport.length}</div>
+              <div className="fuel-stat-lbl">عمال عندهم قراءات</div>
+            </div>
+          </div>
+
+          {/* Worker breakdown */}
+          {workerReport.length === 0
+            ? <div className="empty-state"><div className="empty-icon">📭</div><div className="empty-title">لا توجد قراءات لهذا الشهر</div></div>
+            : workerReport.map((w, i) => {
+              const pct = totalSoldMonth > 0 ? (w.totalSold / totalSoldMonth) * 100 : 0;
+              return (
+                <div key={w.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 20px', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{w.name[0]}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>#{i+1} {w.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{w.pump} — {w.sessions} وردية</div>
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--primary-light)' }}>{w.totalSold.toLocaleString('ar-EG')} لتر</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pct.toFixed(1)}% من الإجمالي</div>
+                    </div>
+                  </div>
+                  <div style={{ height: 6, background: 'var(--dark-3)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,var(--primary),var(--accent))', borderRadius: 3, transition: 'width .4s ease' }} />
+                  </div>
+                </div>
+              );
+            })
+          }
+        </>
+      )}
+    </div>
   );
 };
 
@@ -5660,6 +6249,23 @@ const App = ({ onShowPricing }) => {
                 await setDoc(doc(db, 'owners', oid, 'workers', String(w.id)), w);
               }
             }} />
+          )}
+          {page === 'shift_log' && (user.role === 'owner' || user.role === 'manager') && (
+            <ShiftLogPage
+              workers={workers.filter(w => !w.stationId || w.stationId === activeStation)}
+              ownerId={getOwnerId(user)}
+              onUpdateWorker={async (updated) => {
+                const oid = getOwnerId(user);
+                await setDoc(doc(db, 'owners', oid, 'workers', String(updated.id)), updated);
+                setWorkers(prev => prev.map(w => w.id === updated.id ? updated : w));
+              }}
+            />
+          )}
+          {page === 'fuel_log' && (user.role === 'owner' || user.role === 'manager') && (
+            <FuelLogPage
+              workers={workers.filter(w => !w.stationId || w.stationId === activeStation)}
+              ownerId={getOwnerId(user)}
+            />
           )}
           {page === 'reports' && <ReportsPage workers={workers.filter(w => !w.stationId || w.stationId === activeStation)} ownerId={getOwnerId(user)} onResetMonth={(resetWorkers) => {
               const oid = getOwnerId(user);
