@@ -3677,10 +3677,11 @@ const setPlanInDB = async (ownerId, plan) => {
 
 // legacy fallback (غير مستخدم للمستخدمين المسجلين)
 const getTrialInfo = () => {
-  let startDate = localStorage.getItem('app_trial_start');
+  const startDate = localStorage.getItem('app_trial_start');
+  // لو مفيش تاريخ → رجّع قيم افتراضية بدون ما نكتب تاريخ جديد
+  // التاريخ الحقيقي بييجي من Firebase عن طريق getTrialInfoFromDB
   if (!startDate) {
-    startDate = new Date().toISOString();
-    localStorage.setItem('app_trial_start', startDate);
+    return { remaining: TRIAL_DAYS, expired: false, elapsedDays: 0, startDate: null };
   }
   const start = new Date(startDate);
   const now = new Date();
@@ -5309,6 +5310,7 @@ const App = ({ onShowPricing }) => {
               if (info?.plan && info.plan !== 'trial') {
                 localStorage.setItem('app_plan', info.plan);
               }
+              if (info?.startDate) { localStorage.setItem('app_trial_start', info.startDate); }
             } catch {}
           }
         }
@@ -5733,9 +5735,12 @@ export default function Root() {
             await initTrialIfNeeded(ownerId);
             const info = await getTrialInfoFromDB(ownerId);
             setTrialInfo(info);
-            // مزامنة الباقة من Firestore مع localStorage عشان getPlan() يشتغل صح
+            // مزامنة الباقة وتاريخ بداية الـ trial من Firestore مع localStorage
             if (info?.plan) {
               localStorage.setItem('app_plan', info.plan);
+            }
+            if (info?.startDate) {
+              localStorage.setItem('app_trial_start', info.startDate);
             }
           }
         }
