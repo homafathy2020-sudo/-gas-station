@@ -4005,6 +4005,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
 
   const fuelTypes = ['بنزين 80', 'بنزين 92', 'بنزين 95', 'سولار', 'غاز طبيعي'];
   const shifts    = ['صباحي', 'مسائي', 'ليلي'];
+  const [globalFuelPrice, setGlobalFuelPrice] = useState('');
 
   useEffect(() => {
     if (!ownerId) return;
@@ -4044,7 +4045,38 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
           e.sold = 0; e.result = 'ok';
         }
       }
+      // auto-calc settlement diff when price or received changes
+      const price    = parseFloat(key === 'price'    ? val : e.price)    || 0;
+      const received = parseFloat(key === 'received' ? val : e.received) || 0;
+      const sold     = e.sold ?? 0;
+      if (price > 0 && received > 0 && sold > 0) {
+        e.required = sold * price;
+        e.diff     = received - e.required;
+      } else {
+        e.required = 0; e.diff = null;
+      }
       return { ...prev, [workerId]: e };
+    });
+  };
+
+  // Apply global price to all workers
+  const applyGlobalPrice = () => {
+    if (!globalFuelPrice || parseFloat(globalFuelPrice) <= 0) return;
+    setEntries(prev => {
+      const next = { ...prev };
+      workers.forEach(w => {
+        const e = { ...next[w.id] };
+        e.price = globalFuelPrice;
+        const price    = parseFloat(globalFuelPrice) || 0;
+        const received = parseFloat(e.received) || 0;
+        const sold     = e.sold ?? 0;
+        if (price > 0 && received > 0 && sold > 0) {
+          e.required = sold * price;
+          e.diff     = received - e.required;
+        }
+        next[w.id] = e;
+      });
+      return next;
     });
   };
 
@@ -4083,6 +4115,8 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
           id: String(Date.now() + w.id), workerId: w.id, workerName: w.name,
           date: shiftDate, shift: shiftType, fuelType,
           startMeter: start, endMeter: end, sold,
+          price: +e.price || 0, received: +e.received || 0,
+          required: +e.required || 0, diff: e.diff ?? null,
           result, deduction: +e.deduction || 0, reward: +e.reward || 0,
           notes: e.notes || '', createdAt: new Date().toISOString(),
         };
@@ -4179,6 +4213,20 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
           {alreadySaved && <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', padding: '4px 12px', borderRadius: 20, fontWeight: 700 }}>✅ محفوظة</span>}
         </div>
 
+        {/* Global fuel price */}
+        <div style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.02))', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 14, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 16 }}>💰</div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>سعر اللتر (ج.م) — يُطبّق على جميع العمال</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
+                value={globalFuelPrice} onChange={ev => setGlobalFuelPrice(ev.target.value)} />
+              <button className="btn btn-accent btn-sm" onClick={applyGlobalPrice}>تطبيق على الكل ⚡</button>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>أو أدخل السعر لكل عامل على حدة</span>
+            </div>
+          </div>
+        </div>
+
         {/* Worker cards */}
         {workers.length === 0
           ? <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
@@ -4220,6 +4268,16 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
                         <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="مثال: 126500"
                           value={e.endMeter || ''} onChange={ev => setField(w.id, 'endMeter', ev.target.value)} />
                       </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>سعر اللتر (ج.م)</div>
+                        <input className="shift-mini-input" style={{ width: 110 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
+                          value={e.price || ''} onChange={ev => setField(w.id, 'price', ev.target.value)} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>الواصل فعلياً (ج.م)</div>
+                        <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" placeholder="المبلغ المستلم"
+                          value={e.received || ''} onChange={ev => setField(w.id, 'received', ev.target.value)} />
+                      </div>
                       {/* Show deduction field if shortage */}
                       {isShortage && (
                         <div>
@@ -4235,6 +4293,30 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
                           value={e.notes || ''} onChange={ev => setField(w.id, 'notes', ev.target.value)} />
                       </div>
                     </div>
+
+                    {/* Settlement result */}
+                    {e.diff !== null && e.diff !== undefined && e.required > 0 && (
+                      <div style={{ marginTop: 14, borderRadius: 12, overflow: 'hidden', border: `2px solid ${e.diff > 0 ? 'rgba(16,185,129,0.35)' : e.diff < 0 ? 'rgba(239,68,68,0.35)' : 'rgba(148,163,184,0.3)'}`, animation: 'fadeIn 0.3s ease' }}>
+                        <div style={{ padding: '12px 16px', background: e.diff > 0 ? 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.04))' : e.diff < 0 ? 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.04))' : 'linear-gradient(135deg,rgba(148,163,184,0.08),rgba(148,163,184,0.02))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                          <div style={{ fontWeight: 800, fontSize: 14 }}>{e.diff > 0 ? '✅ زيادة في التصفية' : e.diff < 0 ? '❌ عجز في التصفية' : '✔️ تمام بالظبط'}</div>
+                          <div style={{ fontSize: 24, fontWeight: 900, color: e.diff > 0 ? '#10b981' : e.diff < 0 ? '#ef4444' : '#94a3b8' }}>
+                            {e.diff > 0 ? '+' : ''}{e.diff.toFixed(2)} ج
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', background: 'rgba(0,0,0,0.12)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          {[
+                            { label: 'الكمية المباعة', value: `${Math.abs(sold ?? 0).toLocaleString('ar-EG')} لتر`, icon: '⚡', color: 'var(--text)' },
+                            { label: 'المبلغ المطلوب', value: `${(e.required||0).toFixed(2)} ج`, icon: '🎯', color: '#f59e0b' },
+                            { label: e.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(e.diff).toFixed(2)} ج`, icon: e.diff >= 0 ? '📈' : '📉', color: e.diff >= 0 ? '#10b981' : '#ef4444' },
+                          ].map(({ label, value, icon, color }, i) => (
+                            <div key={i} style={{ padding: '10px 14px', borderLeft: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{icon} {label}</div>
+                              <div style={{ fontSize: 14, fontWeight: 800, color }}>{value}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Shortage warning */}
                     {isShortage && (
@@ -4284,6 +4366,12 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker }) => {
                   <span style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
                     خصم {l.deduction.toLocaleString('ar-EG')} ج.م
                   </span>
+                )}
+                {l.diff !== null && l.diff !== undefined && (
+                  <div style={{ textAlign: 'center', minWidth: 90, background: l.diff > 0 ? 'rgba(16,185,129,0.1)' : l.diff < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(148,163,184,0.08)', border: `1px solid ${l.diff > 0 ? '#10b98144' : l.diff < 0 ? '#ef444444' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: '6px 10px' }}>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: l.diff > 0 ? '#10b981' : l.diff < 0 ? '#ef4444' : '#94a3b8' }}>{l.diff > 0 ? '+' : ''}{l.diff.toFixed(2)} ج</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{l.diff > 0 ? 'زيادة' : l.diff < 0 ? 'عجز مالي' : 'تمام'}</div>
+                  </div>
                 )}
                 {l.notes && <div style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 130 }}>{l.notes}</div>}
                 {delConfirm === l.id
