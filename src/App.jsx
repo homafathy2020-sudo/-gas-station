@@ -5779,7 +5779,7 @@ export default function Root() {
 
   const trial = trialInfo || getTrialInfo();
   const userName = currentUser?.name || currentUser?.email?.split('@')[0] || '';
-  const currentPlan = trialInfo?.plan || plan;
+  const currentPlan = trialInfo?.plan || getPlan();
 
   // لو الـ trial خلص وما اختارش خطة → حوّله تلقائياً للمجانية
   useEffect(() => {
