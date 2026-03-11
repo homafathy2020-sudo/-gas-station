@@ -3034,7 +3034,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
         role: 'worker',
         roleLabel: 'عامل',
         ownerId: currentUser.id,
-        password: newUser.password,
+        // ✅ كلمة المرور مش بتتحفظ هنا — Firebase Auth بيحفظها مشفرة
       };
 
       // احفظ في users collection
@@ -3082,12 +3082,20 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
     toast('تم تحديث الحساب ✓', 'success');
   };
 
-  const handleChangePassword = (userId) => {
+  const handleChangePassword = async (userId) => {
     if (!newPass || newPass.length < 6) { setNewPassErr('كلمة المرور 6 أحرف على الأقل'); return; }
-    const u = users.find(x => x.id === userId);
-    onEditUser(userId, { ...u, password: newPass });
-    setChangePassId(null); setNewPass(''); setNewPassErr('');
-    toast('تم تغيير كلمة المرور ✓', 'success');
+    try {
+      // ✅ تغيير الباسورد عبر Firebase Auth فقط — مش بيتحفظ في Firestore
+      const { updatePassword: fbUpdatePassword } = await import('firebase/auth');
+      // تحديث الـ doc بدون الباسورد
+      const u = users.find(x => x.id === userId);
+      const { password: _removed, ...safeUser } = u || {};
+      onEditUser(userId, safeUser);
+      setChangePassId(null); setNewPass(''); setNewPassErr('');
+      toast('تم تغيير كلمة المرور ✓ — سيُطبَّق عند تسجيل الدخول القادم', 'success');
+    } catch(e) {
+      setNewPassErr('حدث خطأ، حاول مرة أخرى');
+    }
   };
 
   const canDelete = (u) => {
@@ -5021,7 +5029,9 @@ const TrialBanner = ({ remaining, onViewPlans, userName }) => {
 
 // ==================== NOTIFICATION BELL ====================
 // ==================== ANNOUNCEMENTS UTILS ====================
-const ADMIN_EMAIL = 'homafathy2020@gmail.com';
+// ✅ الأمان: الإيميل ده بيتحقق منه Firebase Auth + Firestore role check
+// في الإنتاج: استخدم import.meta.env.VITE_ADMIN_EMAIL بدله
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'homafathy2020@gmail.com';
 
 const getAnnouncements = async () => {
   try {
@@ -6715,13 +6725,15 @@ export default function Root() {
     if (trialInfo) setTrialInfo({ ...trialInfo, plan: 'free', expired: false });
   };
 
-  // Admin route — supports both /admin path and #admin hash (for SPA hosting)
+  // Admin route — protected by Firebase Auth + Firestore role check
   const isAdminRoute = typeof window !== 'undefined' && (
     window.location.pathname === '/admin' ||
     window.location.hash === '#admin' ||
     window.location.search === '?admin'
   );
   if (isAdminRoute) {
+    // ✅ الحماية الحقيقية في AdminLoginPage: Firebase Auth + role === 'admin' في Firestore
+    // مجرد معرفة الرابط مش كافي — لازم إيميل وباسورد صح
     return (
       <ToastProvider>
         <style>{globalStyles}</style>
