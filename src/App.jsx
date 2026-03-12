@@ -469,19 +469,19 @@ const sendWhatsAppNotify = (worker, type, entry) => {
 
   let msg = '⛽ WaqoudPro\n';
   msg += '─────────────────\n';
-  msg += 'مرحباً يا ' + worker.name + ' 👋\n\n';
+  msg += 'مرحباً يا ' + worker.name + ' \n\n';
   if (isPositive) {
-    msg += '🎉 تم تسجيل حافز بتاريخ ' + entry.date + '\n';
-    msg += '💰 قيمة الحافز: +' + amount + ' ج.م\n';
-    if (entry.reason) msg += '📝 السبب: ' + entry.reason + '\n';
+    msg += 'تم تسجيل حافز بتاريخ ' + entry.date + '\n';
+    msg += 'قيمة الحافز: +' + amount + ' ج.م\n';
+    if (entry.reason) msg += 'السبب: ' + entry.reason + '\n';
   } else {
     msg += '⚠️ تم تسجيل ' + label + ' بتاريخ ' + entry.date + '\n';
     if (type === 'delay') msg += '⏰ المدة: ' + entry.minutes + ' دقيقة\n';
-    if (type === 'absence') msg += '📝 السبب: ' + entry.reason + '\n';
+    if (type === 'absence') msg += 'السبب: ' + entry.reason + '\n';
     msg += '💸 الخصم: -' + amount + ' ج.م\n';
   }
   msg += '─────────────────\n';
-  msg += '💵 صافي راتبك المتبقي: ' + fmt(net) + '\n';
+  msg += 'صافي راتبك المتبقي: ' + fmt(net) + '\n';
   msg += '─────────────────\n';
   msg += 'للاستفسار تواصل مع المالك مباشرة.';
 
@@ -663,7 +663,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
     setCreating(true);
     try {
       await createBackup(ownerId, workers, workPlaces, ownerUsers, 'يدوي');
-      toast('✅ تم إنشاء النسخة الاحتياطية بنجاح', 'success');
+      toast('تم إنشاء النسخة الاحتياطية بنجاح', 'success');
       await loadBackups();
     } catch { toast('❌ فشل إنشاء النسخة الاحتياطية', 'error'); }
     setCreating(false);
@@ -676,7 +676,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
       await createBackup(ownerId, workers, workPlaces, ownerUsers, `قبل استعادة ${fmtBackupDate(backup.createdAt)}`);
       // ثانياً: استعد البيانات
       await restoreBackup(ownerId, backup);
-      toast('✅ تمت الاستعادة — سيتم تحديث البيانات تلقائياً', 'success');
+      toast('تمت الاستعادة — سيتم تحديث البيانات تلقائياً', 'success');
       await loadBackups();
     } catch { toast('❌ فشلت الاستعادة، حاول مرة أخرى', 'error'); }
     setRestoring(null);
@@ -722,7 +722,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
           </div>
         </div>
         <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={creating}>
-          {creating ? '⏳ جاري الحفظ...' : '➕ نسخة الآن'}
+          {creating ? '⏳ جاري الحفظ...' : 'نسخة الآن'}
         </button>
       </div>
 
@@ -787,10 +787,10 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
                   <button className="btn btn-danger btn-sm"
                     onClick={() => handleDelete(b.id)}
                     disabled={!!restoring}>
-                    🗑️ حذف
+                    حذف
                   </button>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', alignSelf: 'center', marginRight: 'auto' }}>
-                    📦 {b.workersCount} عامل • {(b.data?.workPlaces || []).length} مكان عمل
+                    {b.workersCount} عامل • {(b.data?.workPlaces || []).length} مكان عمل
                   </div>
                 </div>
               )}
@@ -915,15 +915,15 @@ const WorkPlacesManager = ({ workPlaces, onAdd, onEdit, onDelete, onClose }) => 
                 ) : (
                   <>
                     <span style={{ flex: 1, fontWeight: 500 }}>{place}</span>
-                    <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(idx); setEditValue(place); }}>✏️</button>
-                    <button className="btn btn-danger btn-xs" onClick={() => onDelete(idx)}>🗑️</button>
+                    <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(idx); setEditValue(place); }}></button>
+                    <button className="btn btn-danger btn-xs" onClick={() => onDelete(idx)}></button>
                   </>
                 )}
               </div>
             ))}
           </div>
         </div>
-        <div className="modal-footer"><button className="btn btn-primary" onClick={onClose}>💾 حفظ وإغلاق</button></div>
+        <div className="modal-footer"><button className="btn btn-primary" onClick={onClose}>حفظ وإغلاق</button></div>
       </div>
     </div>
   );
@@ -954,7 +954,7 @@ const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ animation: 'fadeIn .2s ease' }}>
-        <div className="modal-header"><div className="modal-title">{worker ? '✏️ تعديل العامل' : '➕ إضافة عامل جديد'}</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="modal-header"><div className="modal-title">{worker ? 'تعديل العامل' : 'إضافة عامل جديد'}</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
             <div className="form-grid-2">
@@ -963,9 +963,9 @@ const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
               <div className="form-group"><label className="form-label">أيام العمل</label><input type="number" min="0" max="1000000" placeholder="28" {...f('workDays')} />{errors.workDays && <div className="form-error">{errors.workDays}</div>}</div>
               <div className="form-group"><label className="form-label">الراتب (ج.م)</label><input type="number" min="0" max="1000000" placeholder="3500" {...f('salary')} />{errors.salary && <div className="form-error">{errors.salary}</div>}</div>
             </div>
-            <div className="form-group"><label className="form-label">📱 رقم التليفون</label><input type="tel" placeholder="مثال: 01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} {...f('phone')} /></div>
+            <div className="form-group"><label className="form-label">رقم التليفون</label><input type="tel" placeholder="مثال: 01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} {...f('phone')} /></div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-primary">💾 حفظ</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary">حفظ</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -1004,7 +1004,7 @@ const EntryModal = ({ type, onSave, onClose }) => {
               : <div className="form-group"><label className="form-label">سبب الغياب</label><input placeholder="مرض / ظروف شخصية..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>}
             <div className="form-group"><label className="form-label">قيمة الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary">إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -1030,13 +1030,13 @@ const AbsenceNoReasonModal = ({ onSave, onClose }) => {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
-        <div className="modal-header"><div className="modal-title">📦 إضافة عجز</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="modal-header"><div className="modal-title">إضافة عجز</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
             <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             <div className="form-group"><label className="form-label">قيمة العجز / الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary">إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -1065,16 +1065,16 @@ const IncentiveModal = ({ onSave, onClose, prefillReason = '', prefillAmount = '
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
         <div className="modal-header">
-          <div className="modal-title">🎁 إضافة حافز</div>
+          <div className="modal-title">إضافة حافز</div>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         <form onSubmit={submit}>
           <div className="modal-body">
-            <div className="form-group"><label className="form-label">📅 التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
-            <div className="form-group"><label className="form-label">📝 السبب</label><input placeholder="مثال: زيادة وردية — أداء مميز..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>
-            <div className="form-group"><label className="form-label">💰 قيمة الحافز (ج.م)</label><input type="number" min="1" max="1000000" placeholder="100" {...f('amount')} />{errors.amount && <div className="form-error">{errors.amount}</div>}</div>
+            <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
+            <div className="form-group"><label className="form-label">السبب</label><input placeholder="مثال: زيادة وردية — أداء مميز..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>
+            <div className="form-group"><label className="form-label">قيمة الحافز (ج.م)</label><input type="number" min="1" max="1000000" placeholder="100" {...f('amount')} />{errors.amount && <div className="form-error">{errors.amount}</div>}</div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-success">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-success">إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -1102,7 +1102,7 @@ const CashWithdrawalModal = ({ onSave, onClose }) => {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
         <div className="modal-header">
-          <div className="modal-title">💵 تسجيل سحب نقدي</div>
+          <div className="modal-title">تسجيل سحب نقدي</div>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         <form onSubmit={submit}>
@@ -1123,7 +1123,7 @@ const CashWithdrawalModal = ({ onSave, onClose }) => {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="submit" className="btn btn-primary">💾 تسجيل</button>
+            <button type="submit" className="btn btn-primary">تسجيل</button>
             <button type="button" className="btn btn-ghost" onClick={onClose}>إلغاء</button>
           </div>
         </form>
@@ -1225,11 +1225,11 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {canEdit && (editMode ? (
-            <><button className="btn btn-success btn-sm" onClick={saveEdit}>💾 حفظ</button><button className="btn btn-ghost btn-sm" onClick={() => { setEditMode(false); setEditForm({ name: w.name, pump: w.pump, workDays: w.workDays, salary: w.salary }); }}>إلغاء</button></>
+            <><button className="btn btn-success btn-sm" onClick={saveEdit}>حفظ</button><button className="btn btn-ghost btn-sm" onClick={() => { setEditMode(false); setEditForm({ name: w.name, pump: w.pump, workDays: w.workDays, salary: w.salary }); }}>إلغاء</button></>
           ) : (
-            <button className="btn btn-accent btn-sm" onClick={() => setEditMode(true)}>✏️ تعديل</button>
+            <button className="btn btn-accent btn-sm" onClick={() => setEditMode(true)}>تعديل</button>
           ))}
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري التحميل', 'info'); }}>📄{!planHasExcelAdv(plan) && '🔒'}</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط ', 'warning'); return; } generateReport(w); toast('جاري التحميل', 'info'); }}>📄{!planHasExcelAdv(plan) && ''}</button>
           <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
         </div>
       </div>
@@ -1258,7 +1258,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
               <span style={{ fontWeight: 700, fontSize: 16, color: ded > 0 ? '#ef4444' : 'var(--text-muted)' }}>{ded > 0 ? `-${fmt(ded)}` : 'لا يوجد'}</span>
             </div>
             <div>
-              <div className="form-label">📱 رقم التليفون</div>
+              <div className="form-label">رقم التليفون</div>
               {editMode
                 ? <input type="tel" {...ef('phone')} placeholder="01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} />
                 : <span style={{ fontWeight: 600, fontSize: 15, color: w.phone ? 'var(--text)' : 'var(--text-muted)' }}>{w.phone || '—'}</span>}
@@ -1271,7 +1271,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
           <div className="detail-section-title">⏰ التأخيرات <span className="badge badge-warning">{w.delays.length} مرة</span></div>
-          <button className="btn btn-warning btn-sm no-print" onClick={() => setEntryModal('delay')}>➕ إضافة تأخير</button>
+          <button className="btn btn-warning btn-sm no-print" onClick={() => setEntryModal('delay')}>إضافة تأخير</button>
         </div>
         {w.delays.length === 0
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد تأخيرات مسجلة</div>
@@ -1285,7 +1285,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ fontWeight: 600 }}>{d.date}</td>
                     <td><span className="badge badge-warning">{d.minutes} دقيقة</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(d.deduction)}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'delay', id: d.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w, delays:[...w.delays]}, 'delay', d)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'delay', id: d.id })}></button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w, delays:[...w.delays]}, 'delay', d)}></button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط '></button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
@@ -1302,7 +1302,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
           <div className="detail-section-title">❌ الغيابات <span className="badge badge-danger">{w.absences.length} يوم</span></div>
-          <button className="btn btn-danger btn-sm no-print" onClick={() => setEntryModal('absence')}>➕ إضافة غياب</button>
+          <button className="btn btn-danger btn-sm no-print" onClick={() => setEntryModal('absence')}>إضافة غياب</button>
         </div>
         {w.absences.length === 0
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد غيابات مسجلة</div>
@@ -1316,7 +1316,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ fontWeight: 600 }}>{a.date}</td>
                     <td><span className="badge badge-danger">{a.reason}</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence', a)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence', id: a.id })}></button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence', a)}></button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط '></button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
@@ -1332,8 +1332,8 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {/* العجز - FIX: now shows deduction not reward */}
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
-          <div className="detail-section-title">📦 العجز <span className="badge badge-danger">{(w.absences_no_reason || []).length} مرة</span></div>
-          <button className="btn btn-blue btn-sm no-print" onClick={() => setAbsenceNoReasonModal(true)}>➕ إضافة عجز</button>
+          <div className="detail-section-title">العجز <span className="badge badge-danger">{(w.absences_no_reason || []).length} مرة</span></div>
+          <button className="btn btn-blue btn-sm no-print" onClick={() => setAbsenceNoReasonModal(true)}>إضافة عجز</button>
         </div>
         {(!w.absences_no_reason || w.absences_no_reason.length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد عجز مسجل</div>
@@ -1346,7 +1346,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ color: 'var(--text-muted)', width: 36 }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{a.date}</td>
                     <td style={{ color: '#ef4444', fontWeight: 700 }}>-{fmt(a.deduction)}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence_no_reason', id: a.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence_no_reason', a)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'absence_no_reason', id: a.id })}></button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'absence_no_reason', a)}></button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط '></button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(239,68,68,0.05)' }}>
@@ -1362,8 +1362,8 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {/* الحوافز */}
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
-          <div className="detail-section-title">🎁 الحوافز <span className="badge badge-success">{(w.incentives || w.discipline || []).length} مرة</span></div>
-          <button className="btn btn-success btn-sm no-print" onClick={() => setIncentiveModal(true)}>➕ إضافة حافز</button>
+          <div className="detail-section-title">الحوافز <span className="badge badge-success">{(w.incentives || w.discipline || []).length} مرة</span></div>
+          <button className="btn btn-success btn-sm no-print" onClick={() => setIncentiveModal(true)}>إضافة حافز</button>
         </div>
         {(!(w.incentives || w.discipline) || (w.incentives || w.discipline || []).length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>لا توجد حوافز مسجلة</div>
@@ -1378,9 +1378,9 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{d.reason || d.note || (d.stars ? `${d.stars} ⭐` : '—')}</td>
                     <td style={{ color: '#10b981', fontWeight: 700 }}>+{fmt(d.amount || d.reward || 0)}</td>
                     <td className="no-print"><div style={{ display: 'flex', gap: 5 }}>
-                      <button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'incentive', id: d.id })}>🗑️</button>
-                      {w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'incentive', d)}>💬</button>}
-                      {w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}
+                      <button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'incentive', id: d.id })}></button>
+                      {w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'incentive', d)}></button>}
+                      {w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط '></button>}
                     </div></td>
                   </tr>
                 ))}
@@ -1397,8 +1397,8 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {/* السحب النقدي */}
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
-          <div className="detail-section-title">💵 السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
-          <button className="btn btn-primary btn-sm no-print" onClick={() => setCashModal(true)}>➕ تسجيل سحب</button>
+          <div className="detail-section-title">السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
+          <button className="btn btn-primary btn-sm no-print" onClick={() => setCashModal(true)}>تسجيل سحب</button>
         </div>
         {(!w.cash_withdrawals || w.cash_withdrawals.length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سحب نقدي مسجل</div>
@@ -1412,7 +1412,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
                     <td style={{ fontWeight: 600 }}>{c.date}</td>
                     <td style={{ color: '#3b82f6', fontWeight: 700 }}>−{fmt(c.amount)}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{c.note || '—'}</td>
-                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'cash', id: c.id })}>🗑️</button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'cash', c)}>💬</button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط 👑'>💬🔒</button>}</div></td>
+                    <td className="no-print"><div style={{display:'flex',gap:5}}><button className="btn btn-xs btn-danger" onClick={() => setDelEntry({ type: 'cash', id: c.id })}></button>{w.phone && planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" onClick={() => sendWhatsAppNotify({...w}, 'cash', c)}></button>}{w.phone && !planHasWhatsApp(plan) && <button className="wa-btn wa-btn-sm" style={{opacity:.5,cursor:'default'}} title='متاح في المميزة فقط '></button>}</div></td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(59,130,246,0.05)' }}>
@@ -1428,7 +1428,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {/* السحب النقدي - عرض للعامل */}
       {isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
-          <div className="detail-section-title">💵 السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
+          <div className="detail-section-title">السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
         </div>
         {(!w.cash_withdrawals || w.cash_withdrawals.length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سحب نقدي مسجل</div>
@@ -1457,7 +1457,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {/* Net */}
       <div className="net-card">
         <div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>💰 صافي المدفوعات</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>صافي المدفوعات</div>
           <div className="net-amount">{fmt(net)}</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 2 }}>
             <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{fmt(w.salary)} ← الراتب الأساسي</div>
@@ -1472,7 +1472,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 48 }}>💵</div>
+          <div style={{ fontSize: 48 }}></div>
           <span className={`badge ${net >= w.salary * 0.9 ? 'badge-success' : net >= w.salary * 0.75 ? 'badge-warning' : 'badge-danger'}`} style={{ marginTop: 8, fontSize: 12 }}>
             {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : '❗ خصومات عالية'}
           </span>
@@ -1499,7 +1499,7 @@ const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
     const isNewWorker = !workers.find(w => w.id === data.id);
     const _limit = getWorkerLimit(plan);
     if (isNewWorker && workers.length >= _limit && _limit !== Infinity) {
-      toast(`باقتك الحالية تسمح بـ ${_limit} عمال فقط — قم بالترقية لإضافة المزيد 🔒`, 'warning');
+      toast(`باقتك الحالية تسمح بـ ${_limit} عمال فقط — قم بالترقية لإضافة المزيد `, 'warning');
       setWorkerModal(null);
       return;
     }
@@ -1526,7 +1526,7 @@ const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
 
       <div className="worker-selector">
         <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}>
-          👷 اختر عاملاً لعرض بياناته التفصيلية
+          اختر عاملاً لعرض بياناته التفصيلية
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div className="worker-dropdown" style={{ flex: 1, minWidth: 240 }}>
@@ -1559,10 +1559,10 @@ const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={() => setWorkerModal('add')}>➕ عامل جديد</button>
+            <button className="btn btn-primary" onClick={() => setWorkerModal('add')}>عامل جديد</button>
             {selected && <>
-              <button className="btn btn-ghost" onClick={() => setWorkerModal(selected)}>✏️ تعديل</button>
-              <button className="btn btn-danger" onClick={() => setDeleteW(selected)}>🗑️ حذف</button>
+              <button className="btn btn-ghost" onClick={() => setWorkerModal(selected)}>تعديل</button>
+              <button className="btn btn-danger" onClick={() => setDeleteW(selected)}>حذف</button>
             </>}
           </div>
         </div>
@@ -1605,12 +1605,12 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
       {showPlacesManager && <WorkPlacesManager workPlaces={workPlaces} onAdd={onAddPlace} onEdit={onEditPlace} onDelete={onDeletePlace} onClose={() => setShowPlacesManager(false)} />}
       <div className="stats-grid">
         {[
-          { icon: '👷', label: 'إجمالي العمال', value: workers.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-          { icon: '💵', label: 'إجمالي الرواتب', value: fmt(totalSal), color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+          { icon: '', label: 'إجمالي العمال', value: workers.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+          { icon: '', label: 'إجمالي الرواتب', value: fmt(totalSal), color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
           { icon: '✅', label: 'صافي المدفوعات', value: fmt(totalNet), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
           { icon: '➖', label: 'إجمالي الخصومات', value: fmt(allDed), color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-          { icon: '💵', label: 'إجمالي السحوبات', value: fmt(allCash), color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-          { icon: '📦', label: 'حالات العجز', value: `${totalAbsNoReason}`, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+          { icon: '', label: 'إجمالي السحوبات', value: fmt(allCash), color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+          { icon: '', label: 'حالات العجز', value: `${totalAbsNoReason}`, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
           { icon: '🎁', label: 'عدد الحوافز', value: `${totalIncentivesCount}`, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
           { icon: '💚', label: 'إجمالي الحوافز', value: fmt(totalRewardsVal), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
         ].map((s, i) => (
@@ -1644,7 +1644,7 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
         </div>
         <div className="card">
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>👷 العمال بمكان العمل</span>
+            <span>العمال بمكان العمل</span>
             <button className="btn btn-primary btn-sm no-print" onClick={() => setShowPlacesManager(true)}>🏢 إدارة</button>
           </div>
           {workPlaces.map(p => { const c = workers.filter(w => w.pump === p).length; return (
@@ -1668,7 +1668,7 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
         </div>
       </div>
       <div className="table-container">
-        <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>👷 ملخص جميع العمال</div></div>
+        <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>ملخص جميع العمال</div></div>
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead><tr><th>العامل</th><th>مكان العمل</th><th>أيام العمل</th><th>تأخيرات</th><th>غيابات</th><th>عجز</th><th>حوافز</th><th>خصومات</th><th>سحب نقدي</th><th>صافي المدفوعات</th></tr></thead>
@@ -1684,7 +1684,7 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
                   <td>{w.delays.length > 0 ? <span className="badge badge-warning">{w.delays.length} مرة</span> : <span className="badge badge-success">لا يوجد</span>}</td>
                   <td>{w.absences.length > 0 ? <span className="badge badge-danger">{w.absences.length} يوم</span> : <span className="badge badge-success">لا يوجد</span>}</td>
                   <td>{(w.absences_no_reason || []).length > 0 ? <span className="badge badge-danger">{(w.absences_no_reason || []).length}</span> : <span className="badge badge-success">—</span>}</td>
-                  <td>{incCount > 0 ? <span className="badge badge-success">🎁 {incCount} ({fmt(incTotal)})</span> : <span className="badge" style={{opacity:.5}}>—</span>}</td>
+                  <td>{incCount > 0 ? <span className="badge badge-success">{incCount} ({fmt(incTotal)})</span> : <span className="badge" style={{opacity:.5}}>—</span>}</td>
                   <td style={{ color: totalDed(w) > 0 ? '#ef4444' : 'var(--text-muted)', fontWeight: 700 }}>{totalDed(w) > 0 ? `-${fmt(totalDed(w))}` : '—'}</td>
                   <td style={{ color: totalCash(w) > 0 ? '#3b82f6' : 'var(--text-muted)', fontWeight: 700 }}>{totalCash(w) > 0 ? `-${fmt(totalCash(w))}` : '—'}</td>
                   <td style={{ fontWeight: 700, color: '#10b981', fontSize: 14 }}>{fmt(calcNet(w))}</td>
@@ -2068,13 +2068,13 @@ const MonthResetModal = ({ workers, ownerId, onReset, onClose, stationId }) => {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 540, animation: 'fadeIn .2s ease' }}>
         <div className="modal-header">
-          <div className="modal-title">🔄 إغلاق الشهر وبدء شهر جديد</div>
+          <div className="modal-title">إغلاق الشهر وبدء شهر جديد</div>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
           {loading && <Loader />}
           <div style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.1),rgba(59,130,246,0.03))', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 14, padding: '16px 20px', marginBottom: 18 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12, color: '#3b82f6' }}>📊 ملخص شهر {monthLabel}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12, color: '#3b82f6' }}>ملخص شهر {monthLabel}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[
                 { label: 'إجمالي الرواتب', val: workers.reduce((s,w)=>s+w.salary,0), color: '#f59e0b' },
@@ -2089,7 +2089,7 @@ const MonthResetModal = ({ workers, ownerId, onReset, onClose, stationId }) => {
               ))}
             </div>
             <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(16,185,129,0.1)', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, fontWeight: 700 }}>💵 إجمالي صافي المدفوعات</span>
+              <span style={{ fontSize: 13, fontWeight: 700 }}>إجمالي صافي المدفوعات</span>
               <span style={{ fontSize: 18, fontWeight: 900, color: '#10b981' }}>{fmt(totalNetAll)}</span>
             </div>
           </div>
@@ -2097,13 +2097,13 @@ const MonthResetModal = ({ workers, ownerId, onReset, onClose, stationId }) => {
             <div className="month-reset-card">
               <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>⚠️ ماذا سيحدث؟</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 2.2 }}>
-                <div>📦 <b>حفظ الأرشيف:</b> كل بيانات الشهر هتتحفظ في الأرشيف</div>
-                <div>🗑️ <b>مسح الشهري:</b> التأخيرات، الغيابات، العجز، الحوافز، والسحوبات</div>
+                <div><b>حفظ الأرشيف:</b> كل بيانات الشهر هتتحفظ في الأرشيف</div>
+                <div> <b>مسح الشهري:</b> التأخيرات، الغيابات، العجز، الحوافز، والسحوبات</div>
                 <div>✅ <b>البيانات الثابتة:</b> الراتب، أيام العمل، ومكان العمل — هتفضل</div>
-                <div>🔄 <b>شهر جديد:</b> يبدأ بصفحة بيضاء نظيفة</div>
+                <div><b>شهر جديد:</b> يبدأ بصفحة بيضاء نظيفة</div>
               </div>
               <button className="btn btn-danger" style={{ marginTop: 16, width: '100%', justifyContent: 'center' }} onClick={() => setConfirm(true)}>
-                🔄 متابعة إغلاق الشهر
+                متابعة إغلاق الشهر
               </button>
             </div>
           ) : (
@@ -2135,7 +2135,7 @@ const MonthArchivePage = ({ ownerId, stationId }) => {
     <div style={{ animation: 'fadeIn .3s ease' }}>
       {archives.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📦</div>
+          <div className="empty-icon"></div>
           <div className="empty-title">لا يوجد أرشيف بعد</div>
           <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>بعد إغلاق الشهر الأول هيظهر هنا</div>
         </div>
@@ -2145,7 +2145,7 @@ const MonthArchivePage = ({ ownerId, stationId }) => {
             {[...archives].reverse().map(arch => (
               <div key={arch.id} className="month-archive-item" onClick={() => setSelected(selected?.id === arch.id ? null : arch)} style={{ cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📅</div>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}></div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{arch.label}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>أُغلق {new Date(arch.archivedAt).toLocaleDateString('ar-EG')} · {arch.summary.workers} عامل</div>
@@ -2173,12 +2173,12 @@ const MonthArchivePage = ({ ownerId, stationId }) => {
           {selected && (
             <div className="table-container" style={{ animation: 'fadeIn .2s ease' }}>
               <div className="table-hdr">
-                <div style={{ fontSize: 15, fontWeight: 700 }}>📋 تفاصيل {selected.label}</div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>تفاصيل {selected.label}</div>
                 <button className="btn btn-accent btn-sm" onClick={() => {
                   const workers = selected.workerSnapshots || [];
                   const months2 = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
                   generateMonthlyReport(workers, selected.month, selected.year, months2[selected.month]);
-                }}>📊 تحميل Excel</button>
+                }}>تحميل Excel</button>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table>
@@ -2315,7 +2315,7 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
             </button>
           )}
           {paidCount === workers.length && workers.length > 0 && (
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>🎉 تم صرف جميع الرواتب!</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>تم صرف جميع الرواتب!</div>
           )}
         </div>
       </div>
@@ -2323,12 +2323,12 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
       {/* Workers list */}
       <div className="table-container">
         <div className="table-hdr">
-          <div style={{ fontSize: 15, fontWeight: 700 }}>💵 سجل صرف الرواتب</div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>سجل صرف الرواتب</div>
           <span className="badge badge-blue">{workers.length} عامل</span>
         </div>
         {workers.length === 0 ? (
           <div className="empty-state" style={{ padding: 40 }}>
-            <div className="empty-icon">👷</div>
+            <div className="empty-icon"></div>
             <div className="empty-title">لا يوجد عمال بعد</div>
           </div>
         ) : (
@@ -2350,29 +2350,29 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
                       const net = calcNet(w);
                       const phone = w.phone.startsWith('0') ? '2' + w.phone : w.phone;
                       const msg = encodeURIComponent(
-                        'مرحباً يا ' + w.name + ' 👋\n' +
+                        'مرحباً يا ' + w.name + ' \n' +
                         'أرسلت إليك WaqoudPro تفاصيل راتبك ⛽\n' +
                         '─────────────────\n' +
-                        '📅 راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '\n' +
+                        'راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '\n' +
                         '📍 مكان العمل: ' + (w.pump || '—') + '\n' +
                         '─────────────────\n' +
-                        '💰 الراتب الأساسي: ' + fmt(w.salary) + '\n' +
+                        'الراتب الأساسي: ' + fmt(w.salary) + '\n' +
                         (w.delays.length > 0 ? '\n⏰ التأخيرات:\n' + w.delays.map(d => '   • ' + (d.date || '—') + ' ← -' + fmt(d.deduction||0)).join('\n') + '\n' : '') +
                         (w.absences.length > 0 ? '\n🚫 الغيابات:\n' + w.absences.map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
                         ((w.absences_no_reason||[]).length > 0 ? '\n⚠️ العجز:\n' + (w.absences_no_reason||[]).map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
-                        ((w.incentives || w.discipline||[]).filter(d=>(d.amount||d.reward||0)>0).length > 0 ? '\n🎁 الحوافز:\n' + (w.incentives||w.discipline||[]).filter(d=>(d.amount||d.reward||0)>0).map(d => '   • ' + (d.date || '—') + (d.reason ? ' (' + d.reason + ')' : '') + ' ← +' + fmt(d.amount||d.reward||0)).join('\n') + '\n' : '') +
-                        ((w.cash_withdrawals||[]).length > 0 ? '\n💵 السحوبات النقدية:\n' + (w.cash_withdrawals||[]).map(c => '   • ' + (c.date || '—') + ' ← -' + fmt(c.amount||0)).join('\n') + '\n' : '') +
+                        ((w.incentives || w.discipline||[]).filter(d=>(d.amount||d.reward||0)>0).length > 0 ? '\nالحوافز:\n' + (w.incentives||w.discipline||[]).filter(d=>(d.amount||d.reward||0)>0).map(d => '   • ' + (d.date || '—') + (d.reason ? ' (' + d.reason + ')' : '') + ' ← +' + fmt(d.amount||d.reward||0)).join('\n') + '\n' : '') +
+                        ((w.cash_withdrawals||[]).length > 0 ? '\nالسحوبات النقدية:\n' + (w.cash_withdrawals||[]).map(c => '   • ' + (c.date || '—') + ' ← -' + fmt(c.amount||0)).join('\n') + '\n' : '') +
                         '\n─────────────────\n' +
                         '✅ صافي المدفوع: ' + fmt(net) + '\n' +
                         '─────────────────\n' +
-                        '🕐 تاريخ الصرف: ' + new Date().toLocaleDateString('ar-EG') + '\n\n' +
+                        ' تاريخ الصرف: ' + new Date().toLocaleDateString('ar-EG') + '\n\n' +
                         'شكراً على مجهودك وتفانيك في العمل 💪\n' +
                         '_تم الإرسال عبر WaqoudPro_'
                       );
                       window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
-                    }}>💬 أبلغه</button>
+                    }}>أبلغه</button>
                   )}
-                  <button className="pay-btn" onClick={() => setConfirmPay(w)}>✅ تم الصرف</button>
+                  <button className="pay-btn" onClick={() => setConfirmPay(w)}>تم الصرف</button>
                 </div>
               </div>
             ))}
@@ -2392,7 +2392,7 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
                   </div>
                   <div className="payment-net" style={{ color: 'var(--text-muted)' }}>{fmt(calcNet(w))}</div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span className="paid-stamp">✅ تم الصرف</span>
+                    <span className="paid-stamp">تم الصرف</span>
                     <button className="btn btn-ghost btn-xs" onClick={() => setConfirmUnpay(w)}>↩️</button>
                   </div>
                 </div>
@@ -2429,21 +2429,21 @@ const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }} className="no-print">
         <select className="form-input" style={{ width: 'auto' }} value={month} onChange={e => setMonth(+e.target.value)}>{months.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>
         <select className="form-input" style={{ width: 'auto' }} value={year} onChange={e => setYear(+e.target.value)}>{[2023, 2024, 2025, 2026].map(y => <option key={y}>{y}</option>)}</select>
-        <button className="btn btn-accent" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateMonthlyReport(displayWorkers, month, year, months[month]); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تحميل Excel {!planHasExcelAdv(plan) && '🔒'}</button>
-        <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️ طباعة</button>
-        {onResetMonth && planHasMonthReset(plan) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>🔄 إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(plan) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط 👑','warning')}>🔄 إغلاق الشهر 🔒</button>}
+        <button className="btn btn-accent" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط ', 'warning'); return; } generateMonthlyReport(displayWorkers, month, year, months[month]); toast('جاري تحميل ملف Excel', 'info'); }}>تحميل Excel {!planHasExcelAdv(plan) && ''}</button>
+        <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>طباعة</button>
+        {onResetMonth && planHasMonthReset(plan) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(plan) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط ','warning')}>إغلاق الشهر </button>}
       </div>
       {showReset && <MonthResetModal workers={workers} ownerId={ownerId} stationId={stationId} onReset={onResetMonth} onClose={() => setShowReset(false)} />}
       {archivedMonth && (
         <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }} className="no-print">
-          <span style={{ fontSize: 18 }}>📦</span>
+          <span style={{ fontSize: 18 }}></span>
           <span style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b' }}>بيانات مؤرشفة — {months[month]} {year}</span>
           <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 8 }}>أُغلق {new Date(archivedMonth.archivedAt).toLocaleDateString('ar-EG')}</span>
         </div>
       )}
       {!isCurrentMonth && !archivedMonth && (
         <div style={{ background: 'rgba(148,163,184,0.08)', border: '1px solid rgba(148,163,184,0.2)', borderRadius: 12, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }} className="no-print">
-          <span style={{ fontSize: 18 }}>📭</span>
+          <span style={{ fontSize: 18 }}></span>
           <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>لا يوجد أرشيف محفوظ لـ {months[month]} {year}</span>
         </div>
       )}
@@ -2453,11 +2453,11 @@ const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
       </div>
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', marginBottom: 22 }}>
         {[
-          { label: 'العمال', value: workers.length, icon: '👷', color: '#3b82f6' },
-          { label: 'إجمالي الرواتب', value: fmt(totalSal), icon: '💵', color: '#f59e0b' },
+          { label: 'العمال', value: workers.length, icon: '', color: '#3b82f6' },
+          { label: 'إجمالي الرواتب', value: fmt(totalSal), icon: '', color: '#f59e0b' },
           { label: 'الخصومات', value: fmt(allDed), icon: '➖', color: '#ef4444' },
           { label: 'الحوافز', value: fmt(allRewards), icon: '🎁', color: '#10b981' },
-          { label: 'السحب النقدي', value: fmt(allCash), icon: '💵', color: '#3b82f6' },
+          { label: 'السحب النقدي', value: fmt(allCash), icon: '', color: '#3b82f6' },
           { label: 'صافي المدفوع', value: fmt(totalNet), icon: '✅', color: '#10b981' }
         ].map((s, i) => (
           <div key={i} className="stat-card" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8 }}>
@@ -2590,7 +2590,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 10 }}>
-          {[['calc', '🧮 الحساب'], ['history', `📋 السجل${history.length > 0 ? ` (${history.length})` : ''}`]].map(([key, label]) => (
+          {[['calc', '🧮 الحساب'], ['history', `السجل${history.length > 0 ? ` (${history.length})` : ''}`]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} style={{ padding: '6px 14px', borderRadius: 7, border: 'none', cursor: 'pointer', fontFamily: "'Cairo', sans-serif", fontSize: 12, fontWeight: 700, background: tab === key ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'transparent', color: tab === key ? '#0f172a' : 'var(--text-muted)', transition: 'all 0.2s' }}>{label}</button>
           ))}
         </div>
@@ -2602,11 +2602,11 @@ const ShiftSettlement = ({ worker, ownerId }) => {
           {/* التاريخ + نوع الوردية */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 تاريخ الوردية</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>تاريخ الوردية</div>
               <input type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} max={new Date().toISOString().split('T')[0]} style={inp()} />
             </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🕐 نوع الوردية</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}> نوع الوردية</div>
               <select value={shiftType} onChange={e => setShiftType(e.target.value)} style={inp()}>
                 <option value="morning">🌅 صباحية</option>
                 <option value="evening">🌆 مسائية</option>
@@ -2617,7 +2617,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
 
           {/* قراءات العداد */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>⚡ قراءات العداد (لتر)</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>قراءات العداد (لتر)</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>قراءة البداية</div>
@@ -2632,7 +2632,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
             </div>
             {morning && evening && parseFloat(evening) > parseFloat(morning) && (
               <div style={{ marginTop: 8, padding: '7px 12px', borderRadius: 8, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
-                ⚡ الكمية: {(parseFloat(evening) - parseFloat(morning)).toFixed(2)} لتر
+                الكمية: {(parseFloat(evening) - parseFloat(morning)).toFixed(2)} لتر
               </div>
             )}
           </div>
@@ -2646,7 +2646,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
               </select>
             </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>💰 سعر اللتر (ج.م)</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>سعر اللتر (ج.م)</div>
               <input type="number" step="0.01" placeholder="مثال: 8.75" value={price} onChange={e => { setPrice(e.target.value); setErrors(p => ({ ...p, price: '' })); }} style={inp('price')} />
               {errors.price && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>⚠ {errors.price}</div>}
             </div>
@@ -2654,14 +2654,14 @@ const ShiftSettlement = ({ worker, ownerId }) => {
 
           {/* الواصل من العامل */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>💵 المبلغ الواصل من العامل (ج.م)</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>المبلغ الواصل من العامل (ج.م)</div>
             <input type="number" placeholder="المبلغ الفعلي اللي سلّمه العامل" value={received} onChange={e => { setReceived(e.target.value); setErrors(p => ({ ...p, received: '' })); }} style={{ ...inp('received'), fontSize: 15, padding: '12px 15px' }} />
             {errors.received && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>⚠ {errors.received}</div>}
           </div>
 
           {/* ملاحظة */}
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>📝 ملاحظة (اختياري)</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>ملاحظة (اختياري)</div>
             <input type="text" placeholder="مثال: مشكلة في الطلمبة..." value={note} onChange={e => setNote(e.target.value)} style={inp()} />
           </div>
 
@@ -2685,9 +2685,9 @@ const ShiftSettlement = ({ worker, ownerId }) => {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', background: 'rgba(0,0,0,0.15)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 {[
-                  { label: 'الكمية المباعة', value: `${result.qty.toFixed(2)} لتر`, icon: '⚡' },
+                  { label: 'الكمية المباعة', value: `${result.qty.toFixed(2)} لتر`, icon: '' },
                   { label: 'المبلغ المطلوب', value: `${result.required.toFixed(2)} ج`, icon: '🎯', color: '#f59e0b' },
-                  { label: 'الواصل فعلياً', value: `${result.recv.toFixed(2)} ج`, icon: '💵', color: '#3b82f6' },
+                  { label: 'الواصل فعلياً', value: `${result.recv.toFixed(2)} ج`, icon: '', color: '#3b82f6' },
                   { label: result.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(result.diff).toFixed(2)} ج`, icon: result.diff >= 0 ? '📈' : '📉', color: result.diff >= 0 ? '#10b981' : '#ef4444' },
                 ].map(({ label, value, icon, color }, i) => (
                   <div key={i} style={{ padding: '14px 18px', borderLeft: i % 2 === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
@@ -2696,14 +2696,14 @@ const ShiftSettlement = ({ worker, ownerId }) => {
                   </div>
                 ))}
               </div>
-              {result.note && <div style={{ padding: '10px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: 12, color: 'var(--text-muted)', background: 'rgba(0,0,0,0.1)' }}>📝 {result.note}</div>}
+              {result.note && <div style={{ padding: '10px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: 12, color: 'var(--text-muted)', background: 'rgba(0,0,0,0.1)' }}>{result.note}</div>}
               <div style={{ padding: '12px 18px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 8 }}>
                 {!saved ? (
-                  <button onClick={saveToHistory} style={{ padding: '8px 18px', borderRadius: 9, cursor: 'pointer', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', fontFamily: "'Cairo', sans-serif", fontSize: 13, fontWeight: 700 }}>💾 حفظ في السجل</button>
+                  <button onClick={saveToHistory} style={{ padding: '8px 18px', borderRadius: 9, cursor: 'pointer', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', fontFamily: "'Cairo', sans-serif", fontSize: 13, fontWeight: 700 }}>حفظ في السجل</button>
                 ) : (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 9, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', fontSize: 13, fontWeight: 700 }}>✅ تم الحفظ في السجل</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 9, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', fontSize: 13, fontWeight: 700 }}>تم الحفظ في السجل</span>
                 )}
-                <button onClick={() => window.print()} style={{ padding: '8px 14px', borderRadius: 9, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', fontFamily: "'Cairo', sans-serif", fontSize: 13 }}>🖨️ طباعة</button>
+                <button onClick={() => window.print()} style={{ padding: '8px 14px', borderRadius: 9, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', fontFamily: "'Cairo', sans-serif", fontSize: 13 }}>طباعة</button>
               </div>
             </div>
           )}
@@ -2742,13 +2742,13 @@ const ShiftSettlement = ({ worker, ownerId }) => {
                     <div style={{ flex: 1, minWidth: 160 }}>
                       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{shiftLabels[h.shiftType] || '⛽ وردية'} · {h.date}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{h.fuelType} · {h.qty?.toFixed(1)} لتر · المطلوب: {h.required?.toFixed(0)} ج · الواصل: {h.recv?.toFixed(0)} ج</div>
-                      {h.note && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>📝 {h.note}</div>}
+                      {h.note && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{h.note}</div>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ fontSize: 17, fontWeight: 900, minWidth: 90, textAlign: 'left', color: h.diff > 0 ? '#10b981' : h.diff < 0 ? '#ef4444' : '#94a3b8' }}>
                         {h.diff > 0 ? '+' : ''}{h.diff.toFixed(2)} ج
                       </div>
-                      <button onClick={() => deleteEntry(h.id)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 7, cursor: 'pointer', padding: '5px 9px', fontSize: 13 }}>🗑️</button>
+                      <button onClick={() => deleteEntry(h.id)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 7, cursor: 'pointer', padding: '5px 9px', fontSize: 13 }}></button>
                     </div>
                   </div>
                 ))}
@@ -2784,7 +2784,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط 👑', 'warning'); return; } generateReport(w); toast('جاري تحميل ملف Excel', 'info'); }}>📊 تقريري Excel {!planHasExcelAdv(plan) && '🔒'}</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط ', 'warning'); return; } generateReport(w); toast('جاري تحميل ملف Excel', 'info'); }}>تقريري Excel {!planHasExcelAdv(plan) && ''}</button>
           <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
         </div>
       </div>
@@ -2798,7 +2798,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
             <div><div className="form-label">أيام العمل</div><span style={{ fontWeight: 700, fontSize: 16 }}>{w.workDays} يوم</span></div>
             <div><div className="form-label">الراتب الأساسي</div><span style={{ fontWeight: 700, fontSize: 16, color: 'var(--accent)' }}>{fmt(w.salary)}</span></div>
             <div><div className="form-label">إجمالي الخصومات</div><span style={{ fontWeight: 700, fontSize: 16, color: ded > 0 ? '#ef4444' : 'var(--text-muted)' }}>{ded > 0 ? `-${fmt(ded)}` : 'لا يوجد'}</span></div>
-            <div><div className="form-label">📱 رقم التليفون</div><span style={{ fontWeight: 600, fontSize: 15, color: w.phone ? 'var(--text)' : 'var(--text-muted)' }}>{w.phone || '—'}</span></div>
+            <div><div className="form-label">رقم التليفون</div><span style={{ fontWeight: 600, fontSize: 15, color: w.phone ? 'var(--text)' : 'var(--text-muted)' }}>{w.phone || '—'}</span></div>
           </div>
         </div>
       </div>
@@ -2862,7 +2862,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
       {/* العجز */}
       <div className="detail-section" style={{ marginBottom: 18 }}>
         <div className="detail-section-hdr">
-          <div className="detail-section-title">📦 العجز <span className="badge badge-danger">{(w.absences_no_reason || []).length} مرة</span></div>
+          <div className="detail-section-title">العجز <span className="badge badge-danger">{(w.absences_no_reason || []).length} مرة</span></div>
         </div>
         {(!w.absences_no_reason || w.absences_no_reason.length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد عجز مسجل</div>
@@ -2889,7 +2889,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
       {/* الحوافز - عرض للعامل */}
       <div className="detail-section" style={{ marginBottom: 18 }}>
         <div className="detail-section-hdr">
-          <div className="detail-section-title">🎁 الحوافز <span className="badge badge-success">{(w.incentives || w.discipline || []).length} مرة</span></div>
+          <div className="detail-section-title">الحوافز <span className="badge badge-success">{(w.incentives || w.discipline || []).length} مرة</span></div>
         </div>
         {(!(w.incentives || w.discipline) || (w.incentives || w.discipline || []).length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>لا توجد حوافز مسجلة</div>
@@ -2917,7 +2917,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
       {/* السحب النقدي */}
       <div className="detail-section" style={{ marginBottom: 18 }}>
         <div className="detail-section-hdr">
-          <div className="detail-section-title">💵 السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
+          <div className="detail-section-title">السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
         </div>
         {(!w.cash_withdrawals || w.cash_withdrawals.length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سحب نقدي مسجل</div>
@@ -2946,7 +2946,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
       {/* صافي المدفوعات */}
       <div className="net-card">
         <div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>💰 صافي المدفوعات</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>صافي المدفوعات</div>
           <div className="net-amount">{fmt(net)}</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 2 }}>
             <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{fmt(w.salary)} ← الراتب الأساسي</div>
@@ -2961,7 +2961,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 48 }}>💵</div>
+          <div style={{ fontSize: 48 }}></div>
           <span className={`badge ${net >= w.salary * 0.9 ? 'badge-success' : net >= w.salary * 0.75 ? 'badge-warning' : 'badge-danger'}`} style={{ marginTop: 8, fontSize: 12 }}>
             {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : '❗ خصومات عالية'}
           </span>
@@ -3114,7 +3114,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
 
     // فتح واتساب برسالة جاهزة باسم العامل والكود
     const msg = encodeURIComponent(
-      `أهلاً يا ${workerName} 👋
+      `أهلاً يا ${workerName} 
 
 تم تسجيلك في WaqoudPro لإدارة المحطة ⛽
 
@@ -3147,7 +3147,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setConfirmDelete(null)}>
           <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
             <div className="modal-header">
-              <div className="modal-title" style={{ color: '#ef4444' }}>🗑️ تأكيد حذف الحساب</div>
+              <div className="modal-title" style={{ color: '#ef4444' }}> تأكيد حذف الحساب</div>
               <button className="close-btn" onClick={() => setConfirmDelete(null)}>×</button>
             </div>
             <div className="modal-body">
@@ -3167,7 +3167,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
                 await onDeleteUser(confirmDelete.id);
                 toast(`تم حذف حساب ${confirmDelete.name} وجميع بياناته`, 'success');
                 setConfirmDelete(null);
-              }}>🗑️ نعم، احذف نهائياً</button>
+              }}> نعم، احذف نهائياً</button>
               <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>إلغاء</button>
             </div>
           </div>
@@ -3178,7 +3178,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setChangePassId(null)}>
           <div className="modal" style={{ maxWidth: 420, animation: 'fadeIn .2s ease' }}>
             <div className="modal-header">
-              <div className="modal-title">🔑 تغيير كلمة المرور</div>
+              <div className="modal-title">تغيير كلمة المرور</div>
               <button className="close-btn" onClick={() => setChangePassId(null)}>×</button>
             </div>
             <div className="modal-body">
@@ -3189,7 +3189,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-primary" onClick={() => handleChangePassword(changePassId)}>💾 حفظ</button>
+              <button className="btn btn-primary" onClick={() => handleChangePassword(changePassId)}>حفظ</button>
               <button className="btn btn-ghost" onClick={() => setChangePassId(null)}>إلغاء</button>
             </div>
           </div>
@@ -3197,7 +3197,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
       )}
 
       <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>➕ إضافة عامل جديد</div>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>إضافة عامل جديد</div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>العامل هيقدر يسجل دخول فوراً بعد الإضافة باسم المستخدم وكلمة المرور دول</div>
         <div className="form-grid-2">
           <div className="form-group">
@@ -3218,12 +3218,12 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
           </div>
         </div>
         <button className="btn btn-primary" onClick={handleAdd} style={{ marginTop: 4 }} disabled={addingUser}>
-          {addingUser ? '⏳ جاري الإضافة...' : '➕ إضافة العامل'}
+          {addingUser ? '⏳ جاري الإضافة...' : 'إضافة العامل'}
         </button>
       </div>
 
       <div className="table-container">
-        <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>👤 الحسابات الموجودة</div></div>
+        <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>الحسابات الموجودة</div></div>
         <div style={{ overflowX: 'auto' }}>
           <table>
             <thead><tr><th>اسم المستخدم</th><th>الاسم الكامل</th><th>الصلاحية</th><th>الإجراءات</th></tr></thead>
@@ -3256,10 +3256,10 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(u.id); setEditForm({...u}); }}>✏️ تعديل</button>
-                        <button className="btn btn-blue btn-xs" onClick={() => { setChangePassId(u.id); setNewPass(''); setNewPassErr(''); }}>🔑 كلمة المرور</button>
+                        <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(u.id); setEditForm({...u}); }}>تعديل</button>
+                        <button className="btn btn-blue btn-xs" onClick={() => { setChangePassId(u.id); setNewPass(''); setNewPassErr(''); }}>كلمة المرور</button>
                         {canDelete(u) && (
-                          <button className="btn btn-danger btn-xs" onClick={() => setConfirmDelete({ id: u.id, name: u.name })}>🗑️ حذف</button>
+                          <button className="btn btn-danger btn-xs" onClick={() => setConfirmDelete({ id: u.id, name: u.name })}>حذف</button>
                         )}
                       </div>
                     </td>
@@ -3285,7 +3285,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>العمال بيحتاجوا الكود ده عشان يسجلوا تحت اسمك</div>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => { navigator.clipboard.writeText(ownerCode); toast('تم نسخ الكود ✓', 'success'); }}>
-            📋 نسخ الكود
+            نسخ الكود
           </button>
         </div>
 
@@ -3302,7 +3302,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
             onKeyPress={e => e.key === 'Enter' && handleAddInvite()}
           />
           <button className="btn btn-primary" onClick={handleAddInvite} style={{ whiteSpace: 'nowrap' }}>
-            💬 دعوة واتساب
+            دعوة واتساب
           </button>
         </div>
 
@@ -3315,13 +3315,13 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
             {invites.map((workerName) => (
               <div key={workerName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 16 }}>👷</span>
+                  <span style={{ fontSize: 16 }}></span>
                   <span style={{ fontWeight: 600, fontSize: 14 }}>{workerName}</span>
                   <span className="badge badge-blue" style={{ fontSize: 10 }}>في الانتظار</span>
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button className="btn btn-success btn-xs" onClick={() => {
-                    const msg = encodeURIComponent(`أهلاً يا ${workerName} 👋
+                    const msg = encodeURIComponent(`أهلاً يا ${workerName} 
 
 تذكير بخطوات التسجيل في WaqoudPro ⛽
 
@@ -3333,8 +3333,8 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
 
 متنساش تحفظ الكود! 🔑`);
                     window.open(`https://wa.me/?text=${msg}`, '_blank');
-                  }}>💬 إعادة إرسال</button>
-                  <button className="btn btn-danger btn-xs" onClick={() => handleRemoveInvite(workerName)}>🗑️</button>
+                  }}>إعادة إرسال</button>
+                  <button className="btn btn-danger btn-xs" onClick={() => handleRemoveInvite(workerName)}></button>
                 </div>
               </div>
             ))}
@@ -3556,7 +3556,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 18, background: 'rgba(255,255,255,0.04)', padding: 6, borderRadius: 14, border: '1px solid var(--border)' }}>
-          <button style={tabStyle('login')}    onClick={() => { setTab('login');    setErrors({}); }}>🔐 تسجيل الدخول</button>
+          <button style={tabStyle('login')}    onClick={() => { setTab('login');    setErrors({}); }}>تسجيل الدخول</button>
           <button style={tabStyle('register')} onClick={() => { setTab('register'); setErrors({}); }}>✨ إنشاء حساب</button>
         </div>
 
@@ -3568,7 +3568,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 
               {/* اختيار نوع الحساب عند الدخول */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 18, background: 'rgba(255,255,255,0.03)', padding: 5, borderRadius: 12, border: '1px solid var(--border)' }}>
-                {[{ r: 'owner', label: '👑 مالك' }, { r: 'worker', label: '👷 عامل' }].map(opt => (
+                {[{ r: 'owner', label: 'مالك' }, { r: 'worker', label: 'عامل' }].map(opt => (
                   <button key={opt.r} type="button"
                     onClick={() => setLoginForm({ ...loginForm, loginRole: opt.r, emailOrUsername: '' })}
                     style={{ flex: 1, padding: '8px', border: 'none', borderRadius: 9, cursor: 'pointer', fontFamily: 'Cairo,sans-serif', fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
@@ -3580,7 +3580,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">{loginForm.loginRole === 'owner' ? '📧 البريد الإلكتروني' : '👤 اسم المستخدم'}</label>
+                <label className="form-label">{loginForm.loginRole === 'owner' ? '📧 البريد الإلكتروني' : 'اسم المستخدم'}</label>
                 <input
                   type={loginForm.loginRole === 'owner' ? 'email' : 'text'}
                   placeholder={loginForm.loginRole === 'owner' ? 'example@email.com' : 'اكتب اسم المستخدم'}
@@ -3593,7 +3593,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
                 <input type="password" placeholder="أدخل كلمة المرور" {...lf('password')} />
                 {errors.password && <div className="form-error">{errors.password}</div>}
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>🔐 دخول</button>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>دخول</button>
             </form>
           )}
 
@@ -3606,8 +3606,8 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
                 <div className="form-label" style={{ marginBottom: 10 }}>نوع الحساب</div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   {[
-                    { role: 'owner',  icon: '👑', label: 'مالك',  desc: 'صلاحيات كاملة',   color: '#10b981', bg: 'rgba(16,185,129,' },
-                    { role: 'worker', icon: '👷', label: 'عامل',  desc: 'أدخل كود المالك', color: '#3b82f6', bg: 'rgba(59,130,246,' },
+                    { role: 'owner',  icon: '', label: 'مالك',  desc: 'صلاحيات كاملة',   color: '#10b981', bg: 'rgba(16,185,129,' },
+                    { role: 'worker', icon: '', label: 'عامل',  desc: 'أدخل كود المالك', color: '#3b82f6', bg: 'rgba(59,130,246,' },
                   ].map(opt => (
                     <button key={opt.role} type="button"
                       onClick={() => { setRegForm({ ...regForm, role: opt.role, ownerCode: '' }); setErrors({}); }}
@@ -3630,7 +3630,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
               {/* كود المالك — بس لو عامل */}
               {regForm.role === 'worker' && (
                 <div className="form-group" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
-                  <label className="form-label" style={{ color: '#3b82f6' }}>🔑 كود المالك</label>
+                  <label className="form-label" style={{ color: '#3b82f6' }}>كود المالك</label>
                   <input placeholder="اكتب كود المالك بتاعك" {...rf('ownerCode')} />
                   {errors.reg_ownerCode && <div className="form-error">{errors.reg_ownerCode}</div>}
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>اطلب الكود من المالك</div>
@@ -3653,7 +3653,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
                 </div>
               ) : (
                 <div className="form-group">
-                  <label className="form-label">👤 اسم المستخدم</label>
+                  <label className="form-label">اسم المستخدم</label>
                   <input placeholder="مثال: ahmed_worker" {...rf('username')} />
                   {errors.reg_username && <div className="form-error">{errors.reg_username}</div>}
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>حروف وأرقام بس — هيستخدمه للدخول</div>
@@ -3683,19 +3683,19 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
   const navs = {
     owner: [
       { id: 'dashboard', icon: '📊', label: 'لوحة التحكم' },
-      { id: 'workers', icon: '👷', label: 'إدارة العمال' },
-      { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
+      { id: 'workers', icon: '', label: 'إدارة العمال' },
+      { id: 'shift_log', icon: '', label: 'سجل الوردية' },
       { id: 'fuel_log', icon: '⛽', label: 'تصفية الوردية' },
       { id: 'reports', icon: '📋', label: 'التقارير' },
-      { id: 'salary_payment', icon: '💵', label: 'صرف الرواتب' },
-      { id: 'month_archive', icon: '📦', label: 'أرشيف الشهور' },
+      { id: 'salary_payment', icon: '', label: 'صرف الرواتب' },
+      { id: 'month_archive', icon: '', label: 'أرشيف الشهور' },
       { id: 'stations', icon: '⛽', label: 'محطاتي' },
       { id: 'accounts', icon: '🔐', label: 'إدارة الحسابات' },
       { id: 'owner_profile', icon: '👤', label: 'ملفي الشخصي' }
     ],
     manager: [
-      { id: 'workers', icon: '👷', label: 'إدارة العمال' },
-      { id: 'shift_log', icon: '📅', label: 'سجل الوردية' },
+      { id: 'workers', icon: '', label: 'إدارة العمال' },
+      { id: 'shift_log', icon: '', label: 'سجل الوردية' },
       { id: 'fuel_log', icon: '⛽', label: 'تصفية الوردية' },
       { id: 'reports', icon: '📋', label: 'التقارير' }
     ],
@@ -3842,7 +3842,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
         await onUpdateWorker(updated);
       }
       setAlreadySaved(true);
-      toast('✅ تم حفظ الوردية وتطبيق الخصومات', 'success');
+      toast('تم حفظ الوردية وتطبيق الخصومات', 'success');
     } catch { toast('خطأ في الحفظ', 'error'); }
     setSaving(false);
   };
@@ -3861,11 +3861,11 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>📅 سجل الوردية اليومية</div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>سجل الوردية اليومية</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>سجّل حضور وغياب كل العمال دفعة واحدة</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {[['today','📝 تسجيل الوردية'],['history','📋 السجل السابق']].map(([t,l]) => (
+          {[['today','تسجيل الوردية'],['history','السجل السابق']].map(([t,l]) => (
             <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>{l}</button>
           ))}
         </div>
@@ -3875,7 +3875,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
         {/* Date bar */}
         <div className="shift-date-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 20 }}>📅</span>
+            <span style={{ fontSize: 20 }}></span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700 }}>تاريخ الوردية</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
@@ -3902,7 +3902,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
         {loading
           ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></div>
           : workers.length === 0
-            ? <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
+            ? <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
             : <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
                 {workers.map(w => {
                   const e = entries[w.id] || {};
@@ -3972,16 +3972,16 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button className="btn btn-primary" style={{ minWidth: 200 }} onClick={handleSave} disabled={saving || loading}>
-            {saving ? '⏳ جاري الحفظ...' : alreadySaved ? '🔄 تحديث الوردية' : '💾 حفظ الوردية وتطبيق الخصومات'}
+            {saving ? '⏳ جاري الحفظ...' : alreadySaved ? 'تحديث الوردية' : 'حفظ الوردية وتطبيق الخصومات'}
           </button>
         </div>
       </>)}
 
       {tab === 'history' && (
         <div className="table-container">
-          <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>📋 سجل الورديات السابقة</div></div>
+          <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>سجل الورديات السابقة</div></div>
           {history.length === 0
-            ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">📭</div><div className="empty-title">لا يوجد سجل بعد</div></div>
+            ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon"></div><div className="empty-title">لا يوجد سجل بعد</div></div>
             : history.map(h => {
               const present  = h.entries.filter(e => e.status === 'present').length;
               const absent   = h.entries.filter(e => e.status === 'absent').length;
@@ -3990,7 +3990,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
               const totalDed = h.entries.reduce((s, e) => s + (+e.deduction || 0), 0);
               return (
                 <div key={h.date} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 18px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 20 }}>📅</div>
+                  <div style={{ fontSize: 20 }}></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{new Date(h.date).toLocaleDateString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{h.entries.length} عامل{totalDed > 0 ? ` — إجمالي خصومات: ${totalDed.toLocaleString('ar-EG')} ج.م` : ''}</div>
@@ -4176,7 +4176,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
       }
       setLogs(prev => [...prev.filter(l => !(l.date === shiftDate && l.shift === shiftType)), ...newLogs]);
       setAlreadySaved(true);
-      toast('✅ تم حفظ الوردية وتحديث بيانات العمال', 'success');
+      toast('تم حفظ الوردية وتحديث بيانات العمال', 'success');
     } catch { toast('خطأ في الحفظ', 'error'); }
     setSaving(false);
   };
@@ -4214,7 +4214,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>سجّل قراءات العداد لكل وردية — العجز والزيادة تتسجل تلقائياً على العامل</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[['shift','⛽ تسجيل الوردية'],['history','📋 السجل'],['report','📊 تقرير شهري']].map(([t,l]) => (
+          {[['shift','⛽ تسجيل الوردية'],['history','السجل'],['report','تقرير شهري']].map(([t,l]) => (
             <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>{l}</button>
           ))}
         </div>
@@ -4256,7 +4256,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
                 value={globalFuelPrice} onChange={ev => setGlobalFuelPrice(ev.target.value)} />
-              <button className="btn btn-accent btn-sm" onClick={applyGlobalPrice}>تطبيق على الكل ⚡</button>
+              <button className="btn btn-accent btn-sm" onClick={applyGlobalPrice}>تطبيق على الكل </button>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>أو أدخل السعر لكل عامل على حدة</span>
             </div>
           </div>
@@ -4264,7 +4264,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
 
         {/* Worker cards */}
         {workers.length === 0
-          ? <div className="empty-state"><div className="empty-icon">👷</div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
+          ? <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
               {workers.map(w => {
                 const e = entries[w.id] || {};
@@ -4349,7 +4349,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', background: 'rgba(0,0,0,0.12)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                           {[
-                            { label: 'الكمية المباعة', value: `${Math.abs(sold ?? 0).toLocaleString('ar-EG')} لتر`, icon: '⚡', color: 'var(--text)' },
+                            { label: 'الكمية المباعة', value: `${Math.abs(sold ?? 0).toLocaleString('ar-EG')} لتر`, icon: '', color: 'var(--text)' },
                             { label: 'المبلغ المطلوب', value: `${(e.required||0).toFixed(2)} ج`, icon: '🎯', color: '#f59e0b' },
                             { label: e.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(e.diff).toFixed(2)} ج`, icon: e.diff >= 0 ? '📈' : '📉', color: e.diff >= 0 ? '#10b981' : '#ef4444' },
                           ].map(({ label, value, icon, color }, i) => (
@@ -4376,7 +4376,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button className="btn btn-primary" style={{ minWidth: 200 }} onClick={handleSaveShift} disabled={saving}>
-            {saving ? '⏳ جاري الحفظ...' : alreadySaved ? '🔄 تحديث الوردية' : '💾 حفظ وتطبيق على العمال'}
+            {saving ? '⏳ جاري الحفظ...' : alreadySaved ? 'تحديث الوردية' : 'حفظ وتطبيق على العمال'}
           </button>
         </div>
       </>)}
@@ -4384,7 +4384,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
       {/* ===== HISTORY TAB ===== */}
       {tab === 'history' && (
         <div className="table-container">
-          <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>📋 آخر القراءات</div></div>
+          <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>آخر القراءات</div></div>
           {loading ? <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
           : logs.length === 0 ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">⛽</div><div className="empty-title">لا توجد قراءات مسجّلة بعد</div></div>
           : logs.slice(0, 50).map(l => {
@@ -4420,7 +4420,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
                 {l.notes && <div style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 130 }}>{l.notes}</div>}
                 {delConfirm === l.id
                   ? <div style={{ display:'flex', gap:6 }}><button className="btn btn-xs btn-danger" onClick={() => handleDeleteLog(l.id)}>تأكيد</button><button className="btn btn-xs btn-ghost" onClick={() => setDelConfirm(null)}>إلغاء</button></div>
-                  : <button className="btn btn-xs btn-danger" onClick={() => setDelConfirm(l.id)}>🗑️</button>
+                  : <button className="btn btn-xs btn-danger" onClick={() => setDelConfirm(l.id)}></button>
                 }
               </div>
             );
@@ -4453,7 +4453,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
           </div>
         </div>
         {workerReport.length === 0
-          ? <div className="empty-state"><div className="empty-icon">📭</div><div className="empty-title">لا توجد قراءات لهذا الشهر</div></div>
+          ? <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">لا توجد قراءات لهذا الشهر</div></div>
           : workerReport.map((w, i) => {
             const pct = totalSoldMonth > 0 ? (w.totalSold / totalSoldMonth) * 100 : 0;
             return (
@@ -4673,7 +4673,7 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
   const [deleting, setDeleting] = useState(null);
 
   const openAdd = () => {
-    if (stations.length >= limit && limit !== Infinity) { toast(`باقتك تسمح بـ ${limit} محطة فقط — قم بالترقية لإضافة المزيد 🔒`, 'warning'); return; }
+    if (stations.length >= limit && limit !== Infinity) { toast(`باقتك تسمح بـ ${limit} محطة فقط — قم بالترقية لإضافة المزيد `, 'warning'); return; }
     setEditStation(null); setForm({ name: '', address: '' }); setShowModal(true);
   };
   const openEdit = (s) => { setEditStation(s); setForm({ name: s.name, address: s.address || '' }); setShowModal(true); };
@@ -4705,7 +4705,7 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
     } catch { toast('حدث خطأ في الحذف', 'error'); }
     setDeleting(null);
   };
-  const planLabels = { free: '🆓 مجانية', starter: '🚀 أساسية', pro: '⭐ احترافية', enterprise: '👑 مميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية' };
+  const planLabels = { free: 'مجانية', starter: 'أساسية', pro: 'احترافية', enterprise: 'مميزة', lifetime: 'مدى الحياة', trial: 'تجريبية' };
   return (
     <div className="stations-page">
       <div className="station-limit-bar">
@@ -4716,7 +4716,7 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{stations.length} من {limit === Infinity ? 'غير محدود' : limit} محطات — باقة {planLabels[plan] || plan}</div>
           </div>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={openAdd}>+ إضافة محطة {stations.length >= limit && limit !== Infinity ? '🔒' : ''}</button>
+        <button className="btn btn-primary btn-sm" onClick={openAdd}>+ إضافة محطة {stations.length >= limit && limit !== Infinity ? '' : ''}</button>
       </div>
       {stations.length === 0 ? (
         <div className="empty-state"><div className="empty-icon">⛽</div><div className="empty-title">لا توجد محطات بعد</div><button className="btn btn-primary" style={{marginTop:16}} onClick={openAdd}>+ إضافة أول محطة</button></div>
@@ -4730,26 +4730,26 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
             </div>
             <div className="station-card-meta">
                 {s.address && <span>📍 {s.address}</span>}
-                <span>👷 {(workers||[]).filter(w => w.stationId === s.id).length} عامل</span>
+                <span>{(workers||[]).filter(w => w.stationId === s.id).length} عامل</span>
               </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {s.id !== activeStation && <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}>⚡ تفعيل</button>}
-            <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}>✏️</button>
-            {stations.length > 1 && <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s)} disabled={deleting === s.id}>{deleting === s.id ? '...' : '🗑️'}</button>}
+            {s.id !== activeStation && <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}>تفعيل</button>}
+            <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}></button>
+            {stations.length > 1 && <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s)} disabled={deleting === s.id}>{deleting === s.id ? '...' : ''}</button>}
           </div>
         </div>
       ))}
       {showModal && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="modal">
-            <div className="modal-header"><div className="modal-title">{editStation ? '✏️ تعديل المحطة' : '⛽ إضافة محطة'}</div><button className="close-btn" onClick={() => setShowModal(false)}>✕</button></div>
+            <div className="modal-header"><div className="modal-title">{editStation ? 'تعديل المحطة' : '⛽ إضافة محطة'}</div><button className="close-btn" onClick={() => setShowModal(false)}>✕</button></div>
             <div className="modal-body">
               <div className="form-group"><label className="form-label">اسم المحطة *</label><input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: محطة المنصورة" /></div>
               <div className="form-group"><label className="form-label">العنوان (اختياري)</label><input className="form-input" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="مثال: شارع النيل" /></div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? '⏳...' : editStation ? '💾 حفظ' : '✅ إضافة'}</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? '⏳...' : editStation ? 'حفظ' : '✅ إضافة'}</button>
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
             </div>
           </div>
@@ -4796,8 +4796,8 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         { yes: true,  text: 'حتى 15 عاملاً' },
         { yes: true,  text: 'محطة واحدة' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: '📊 تقارير Excel' },
-        { yes: true,  text: '💬 إشعارات واتساب للعمال' },
+        { yes: true,  text: 'تقارير Excel' },
+        { yes: true,  text: 'إشعارات واتساب للعمال' },
         { yes: false, text: 'تقرير صرف الرواتب' },
         { yes: false, text: 'أرشيف وإغلاق الشهر' },
       ],
@@ -4817,17 +4817,17 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         { yes: true,  text: 'حتى 30 عاملاً' },
         { yes: true,  text: 'حتى 3 محطات' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: '📊 تقارير Excel متقدمة' },
-        { yes: true,  text: '💬 إشعارات واتساب للعمال' },
-        { yes: true,  text: '💵 تقرير صرف الرواتب' },
-        { yes: true,  text: '📦 أرشيف وإغلاق الشهر' },
+        { yes: true,  text: 'تقارير Excel متقدمة' },
+        { yes: true,  text: 'إشعارات واتساب للعمال' },
+        { yes: true,  text: 'تقرير صرف الرواتب' },
+        { yes: true,  text: 'أرشيف وإغلاق الشهر' },
       ],
       btnClass: 'btn-primary',
       btnLabel: '🔥 اشترك الآن',
     },
     {
       id: 'enterprise',
-      emoji: '👑',
+      emoji: '',
       name: 'المميزة',
       desc: 'للشركات والمحطات الكبيرة',
       price: '599',
@@ -4837,14 +4837,14 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         { yes: true,  text: 'عمال غير محدودين' },
         { yes: true,  text: 'محطات غير محدودة' },
         { yes: true,  text: 'إدارة الرواتب والخصومات' },
-        { yes: true,  text: '📊 تقارير Excel متقدمة' },
-        { yes: true,  text: '💬 إشعارات واتساب للعمال' },
-        { yes: true,  text: '💵 تقرير صرف الرواتب' },
-        { yes: true,  text: '📦 أرشيف وإغلاق الشهر' },
-        { yes: true,  text: '🎯 دعم فني أولوية 24/7' },
+        { yes: true,  text: 'تقارير Excel متقدمة' },
+        { yes: true,  text: 'إشعارات واتساب للعمال' },
+        { yes: true,  text: 'تقرير صرف الرواتب' },
+        { yes: true,  text: 'أرشيف وإغلاق الشهر' },
+        { yes: true,  text: 'دعم فني أولوية 24/7' },
       ],
       btnClass: 'btn-accent',
-      btnLabel: '👑 اشترك الآن',
+      btnLabel: 'اشترك الآن',
     },
     {
       id: 'lifetime',
@@ -4859,15 +4859,15 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         { yes: true, text: 'عمال غير محدودين' },
         { yes: true, text: 'محطات غير محدودة' },
         { yes: true, text: 'إدارة الرواتب والخصومات' },
-        { yes: true, text: '📊 تقارير Excel متقدمة' },
-        { yes: true, text: '💬 إشعارات واتساب للعمال' },
-        { yes: true, text: '💵 تقرير صرف الرواتب' },
-        { yes: true, text: '📦 أرشيف وإغلاق الشهر' },
-        { yes: true, text: '🎯 دعم فني أولوية 24/7' },
-        { yes: true, text: '🎁 كل التحديثات القادمة مجاناً' },
+        { yes: true, text: 'تقارير Excel متقدمة' },
+        { yes: true, text: 'إشعارات واتساب للعمال' },
+        { yes: true, text: 'تقرير صرف الرواتب' },
+        { yes: true, text: 'أرشيف وإغلاق الشهر' },
+        { yes: true, text: 'دعم فني أولوية 24/7' },
+        { yes: true, text: 'كل التحديثات القادمة مجاناً' },
       ],
       btnClass: 'btn-lifetime',
-      btnLabel: '♾️ اشتري مرة واحدة',
+      btnLabel: 'اشتري مرة واحدة',
     },
   ];
 
@@ -4898,8 +4898,8 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         <div className="plans-grid">
           {plans.map(plan => (
             <div key={plan.id} className={`plan-card ${plan.className}`}>
-              {plan.popular && <div className="popular-badge">⚡ الأكثر مبيعاً</div>}
-              {plan.lifetime && <div className="lifetime-badge">♾️ مدى الحياة</div>}
+              {plan.popular && <div className="popular-badge">الأكثر مبيعاً</div>}
+              {plan.lifetime && <div className="lifetime-badge">مدى الحياة</div>}
               {plan.free && <div className="free-badge">✅ مجاناً للأبد</div>}
               <div className="plan-emoji">{plan.emoji}</div>
               <div className="plan-name">{plan.name}</div>
@@ -4936,7 +4936,7 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         <div className="contact-strip">
           <p>مش متأكد إيه الخطة المناسبة؟ تواصل معنا على واتساب وهنساعدك تختار الأنسب لمحطتك</p>
           <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`} target="_blank" rel="noreferrer" className="whatsapp-btn">
-            <span style={{ fontSize: 20 }}>💬</span>
+            <span style={{ fontSize: 20 }}></span>
             تواصل معنا على واتساب
           </a>
         </div>
@@ -5069,14 +5069,14 @@ const getAllOwners = async () => {
 
 // ==================== OWNER PROFILE PAGE ====================
 const AVATAR_OPTIONS = [
-  { emoji: '👑', label: 'ملك' },
+  { emoji: '', label: 'ملك' },
   { emoji: '🧑‍💼', label: 'مدير' },
-  { emoji: '👷', label: 'مهندس' },
+  { emoji: '', label: 'مهندس' },
   { emoji: '🦁', label: 'أسد' },
   { emoji: '🐯', label: 'نمر' },
   { emoji: '🦅', label: 'نسر' },
   { emoji: '🔥', label: 'نار' },
-  { emoji: '⚡', label: 'برق' },
+  { emoji: '', label: 'برق' },
   { emoji: '💎', label: 'ماس' },
   { emoji: '🚀', label: 'صاروخ' },
   { emoji: '⛽', label: 'محطة' },
@@ -5113,7 +5113,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
   const [selectedBg, setSelectedBg] = useState(user.avatarBg || AVATAR_BG_OPTIONS[0].value);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
-  const planLabels = { free: '🆓 المجانية', starter: '⭐ الأساسية', enterprise: '👑 المميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية', basic: '🚀 الأساسية', pro: '⭐ الاحترافية' };
+  const planLabels = { free: 'المجانية', starter: 'الأساسية', enterprise: 'المميزة', lifetime: 'مدى الحياة', trial: 'تجريبية', basic: 'الأساسية', pro: 'الاحترافية' };
   const currentPlan = plan;
   const planLabel = planLabels[currentPlan] || currentPlan;
   const isPremium = currentPlan === 'enterprise' || currentPlan === 'lifetime';
@@ -5198,19 +5198,19 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
               transition: 'all 0.2s',
             }}
             title="تغيير الأفاتار"
-          >✏️</button>
+          ></button>
         </div>
 
         {/* البيانات */}
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 4 }}>{user.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>👑 مالك المحطة</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>مالك المحطة</div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 10, padding: '6px 14px', fontSize: 12 }}>
-              👷 {totalWorkersCount} عامل
+              {totalWorkersCount} عامل
             </div>
             <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 10, padding: '6px 14px', fontSize: 12, color: '#10b981', fontWeight: 700 }}>
-              💰 {fmt(totalSalaries)} / شهر
+              {fmt(totalSalaries)} / شهر
             </div>
             <div style={{
               background: isPremium ? 'rgba(245,158,11,0.12)' : 'rgba(100,116,139,0.1)',
@@ -5309,7 +5309,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowAvatarPicker(false)}>✅ تم</button>
+              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowAvatarPicker(false)}>تم</button>
               <button className="btn btn-ghost" onClick={() => setShowAvatarPicker(false)}>إغلاق</button>
             </div>
           </div>
@@ -5333,12 +5333,12 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
 
         <div className="form-grid-2">
           <div className="form-group">
-            <label className="form-label">👤 الاسم الكامل</label>
+            <label className="form-label">الاسم الكامل</label>
             <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك الكامل" />
           </div>
           <div className="form-group">
             <label className="form-label">
-              📱 رقم التليفون
+              رقم التليفون
               {!user.phone && <span style={{ marginRight: 6, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 6px', borderRadius: 6, fontSize: 10 }}>⚠️ غير مكتمل</span>}
             </label>
             <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" type="tel" dir="ltr" />
@@ -5347,14 +5347,14 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, marginTop: -8 }}>📌 رقمك بيُستخدم لإرسال الإشعارات عبر واتساب</div>
 
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save} disabled={saving}>
-          {saving ? '⏳ جاري الحفظ...' : '💾 حفظ البيانات'}
+          {saving ? '⏳ جاري الحفظ...' : 'حفظ البيانات'}
         </button>
       </div>
 
       {/* ── الباقة الحالية ── */}
       <div className="card" style={{ padding: 22 }}>
         <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18 }}>📦</span> باقتك الحالية
+          <span style={{ fontSize: 18 }}></span> باقتك الحالية
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -5370,7 +5370,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
           </div>
           {!isPremium && (
             <button className="btn btn-accent btn-sm" onClick={() => onShowPricing && onShowPricing()}>
-              👑 ترقية الباقة
+              ترقية الباقة
             </button>
           )}
         </div>
@@ -5412,7 +5412,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
             }}>
               {user.ownerCode}
             </div>
-            <button className="btn btn-ghost" onClick={() => { navigator.clipboard?.writeText(user.ownerCode); toast('تم نسخ الكود ✓', 'success'); }}>📋 نسخ</button>
+            <button className="btn btn-ghost" onClick={() => { navigator.clipboard?.writeText(user.ownerCode); toast('تم نسخ الكود ✓', 'success'); }}>نسخ</button>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>يستخدمه العمال عند التسجيل للانضمام لحسابك</div>
         </div>
@@ -5425,7 +5425,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
             <span style={{ fontSize: 18 }}>🔐</span> تغيير كلمة المرور
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowPassSection(v => !v)}>
-            {showPassSection ? '✕ إغلاق' : '✏️ تغيير'}
+            {showPassSection ? '✕ إغلاق' : ' تغيير'}
           </button>
         </div>
         {showPassSection && (
@@ -5445,7 +5445,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
               </div>
             </div>
             <button className="btn btn-primary" style={{ justifyContent: 'center' }} onClick={changePassword} disabled={savingPass}>
-              {savingPass ? '⏳ جاري التغيير...' : '🔐 تأكيد تغيير كلمة المرور'}
+              {savingPass ? '⏳ جاري التغيير...' : 'تأكيد تغيير كلمة المرور'}
             </button>
           </div>
         )}
@@ -5516,7 +5516,7 @@ const AdminLoginPage = ({ onAuth }) => {
             {err && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 6 }}>{err}</div>}
           </div>
           <button className="btn btn-danger" style={{ width: '100%', justifyContent: 'center' }} onClick={submit} disabled={loading}>
-            {loading ? '⏳ جاري الدخول...' : '🔓 دخول'}
+            {loading ? '⏳ جاري الدخول...' : 'دخول'}
           </button>
         </div>
       </div>
@@ -5613,8 +5613,8 @@ const AdminPanel = () => {
         <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap' }}>
           {[
             { id: 'send', label: '📢 إرسال إشعار جديد' },
-            { id: 'history', label: `📋 الإشعارات السابقة (${announcements.length})` },
-            { id: 'owners', label: `👤 الملاك (${owners.length})` },
+            { id: 'history', label: `الإشعارات السابقة (${announcements.length})` },
+            { id: 'owners', label: `الملاك (${owners.length})` },
           ].map(t => (
             <button key={t.id} className={`admin-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
               {t.label}
@@ -5688,14 +5688,14 @@ const AdminPanel = () => {
         {tab === 'history' && (
           <div className="table-container">
             <div className="table-hdr">
-              <div style={{ fontSize: 15, fontWeight: 700 }}>📋 الإشعارات السابقة</div>
-              <button className="btn btn-ghost btn-sm" onClick={loadData}>🔄 تحديث</button>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>الإشعارات السابقة</div>
+              <button className="btn btn-ghost btn-sm" onClick={loadData}>تحديث</button>
             </div>
             {loadingAnns ? (
               <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
             ) : announcements.length === 0 ? (
               <div className="empty-state" style={{ padding: 40 }}>
-                <div className="empty-icon">📭</div>
+                <div className="empty-icon"></div>
                 <div className="empty-title">لا توجد إشعارات مرسلة بعد</div>
               </div>
             ) : (
@@ -5707,10 +5707,10 @@ const AdminPanel = () => {
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{ann.title}</div>
                       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.6 }}>{ann.body}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-                        🕐 {ann.createdAt ? new Date(ann.createdAt).toLocaleString('ar-EG') : '—'}
+                         {ann.createdAt ? new Date(ann.createdAt).toLocaleString('ar-EG') : '—'}
                       </div>
                     </div>
-                    <button className="btn btn-xs btn-danger" onClick={() => handleDelete(ann.id)}>🗑️</button>
+                    <button className="btn btn-xs btn-danger" onClick={() => handleDelete(ann.id)}></button>
                   </div>
                 ))}
               </div>
@@ -5725,7 +5725,7 @@ const AdminPanel = () => {
             {ownersWithPhone.length > 0 && (
               <div style={{ background: 'linear-gradient(135deg,rgba(37,211,102,0.1),rgba(37,211,102,0.03))', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 16, padding: '18px 22px', marginBottom: 20 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12, color: '#25d366' }}>
-                  💬 إرسال واتساب لـ {ownersWithPhone.length} مالك عندهم رقم
+                  إرسال واتساب لـ {ownersWithPhone.length} مالك عندهم رقم
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
                   ⚠️ واتساب مش بيسمح بـ bulk — هيفتح لكل مالك نافذة منفصلة. اضغط على اسمه أو استخدم زرار "واتساب الكل"
@@ -5736,7 +5736,7 @@ const AdminPanel = () => {
                     const latestAnn = announcements[0];
                     const msg = latestAnn
                       ? encodeURIComponent(`⛽ WaqoudPro
-مرحباً يا ${o.name} 👋
+مرحباً يا ${o.name} 
 
 ${typeIcons[latestAnn.type] || 'ℹ️'} ${latestAnn.title}
 ─────────────────
@@ -5744,11 +5744,11 @@ ${latestAnn.body}
 ─────────────────
 فريق WaqoudPro 🚀`)
                       : encodeURIComponent(`⛽ WaqoudPro
-مرحباً يا ${o.name} 👋
+مرحباً يا ${o.name} 
 لديك إشعار جديد في التطبيق — افتح التطبيق للاطلاع عليه.`);
                     return (
                       <a key={o.id} href={`https://wa.me/${phone}?text=${msg}`} target="_blank" rel="noreferrer">
-                        <button className="wa-btn wa-btn-sm">💬 {o.name}</button>
+                        <button className="wa-btn wa-btn-sm">{o.name}</button>
                       </a>
                     );
                   })}
@@ -5775,8 +5775,8 @@ ${latestAnn.body}
             {/* Full owners table */}
             <div className="table-container">
               <div className="table-hdr">
-                <div style={{ fontSize: 15, fontWeight: 700 }}>👤 كل الملاك ({owners.length})</div>
-                <button className="btn btn-ghost btn-sm" onClick={loadData}>🔄 تحديث</button>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>كل الملاك ({owners.length})</div>
+                <button className="btn btn-ghost btn-sm" onClick={loadData}>تحديث</button>
               </div>
               {loadingOwners ? (
                 <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
@@ -5793,13 +5793,13 @@ ${latestAnn.body}
                   <div style={{ flex: 1, minWidth: 140 }}>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{o.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{o.email}</div>
-                    {o.phone && <div style={{ fontSize: 11, color: '#10b981' }}>📱 {o.phone}</div>}
+                    {o.phone && <div style={{ fontSize: 11, color: '#10b981' }}>{o.phone}</div>}
                   </div>
                   {/* الباقة الحالية */}
                   <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 8, fontWeight: 700,
                     background: o.plan === 'lifetime' ? 'rgba(168,85,247,0.15)' : o.plan === 'enterprise' ? 'rgba(245,158,11,0.15)' : o.plan === 'trial' ? 'rgba(59,130,246,0.15)' : 'rgba(100,116,139,0.1)',
                     color: o.plan === 'lifetime' ? '#a855f7' : o.plan === 'enterprise' ? '#f59e0b' : o.plan === 'trial' ? '#3b82f6' : 'var(--text-muted)' }}>
-                    { o.plan === 'lifetime' ? '♾️ مدى الحياة' : o.plan === 'enterprise' ? '👑 مميزة' : o.plan === 'starter' ? '⭐ أساسية' : o.plan === 'trial' ? '🎯 تجريبية' : '🆓 مجاني' }
+                    { o.plan === 'lifetime' ? 'مدى الحياة' : o.plan === 'enterprise' ? 'مميزة' : o.plan === 'starter' ? 'أساسية' : o.plan === 'trial' ? 'تجريبية' : 'مجاني' }
                   </span>
                   {/* تغيير الباقة */}
                   <select
@@ -5817,16 +5817,16 @@ ${latestAnn.body}
                         }
                         // حدّث الـ state فوراً بدون انتظار loadData
                         setOwners(prev => prev.map(x => x.id === o.id ? { ...x, plan: newPlan } : x));
-                        toast('✅ تم تغيير باقة ' + o.name + ' إلى ' + newPlan, 'success');
+                        toast('تم تغيير باقة ' + o.name + ' إلى ' + newPlan, 'success');
                       } catch (err) { toast('خطأ: ' + err.message, 'error'); }
                     }}
                   >
-                    <option value="trial">🎯 تجريبية</option>
-                    <option value="free">🆓 مجاني</option>
-                    <option value="starter">🚀 أساسية</option>
-                    <option value="pro">⭐ احترافية</option>
-                    <option value="enterprise">👑 مميزة</option>
-                    <option value="lifetime">♾️ مدى الحياة</option>
+                    <option value="trial">تجريبية</option>
+                    <option value="free">مجاني</option>
+                    <option value="starter">أساسية</option>
+                    <option value="pro">احترافية</option>
+                    <option value="enterprise">مميزة</option>
+                    <option value="lifetime">مدى الحياة</option>
                   </select>
                   {/* حذف المالك */}
                   <button
@@ -5836,11 +5836,11 @@ ${latestAnn.body}
                       if (!window.confirm('هل أنت متأكد من حذف ' + o.name + '؟ هيتحذف نهائياً!')) return;
                       try {
                         await deleteDoc(doc(db, 'users', o.id));
-                        toast('🗑️ تم حذف ' + o.name, 'info');
+                        toast(' تم حذف ' + o.name, 'info');
                         loadData();
                       } catch (err) { toast('خطأ في الحذف: ' + err.message, 'error'); }
                     }}
-                  >🗑️ حذف</button>
+                  >حذف</button>
                 </div>
               ))}
             </div>
@@ -5916,7 +5916,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
       workers.filter(w => w.salary === 0 || w.pump === 'غير محدد').forEach(w => {
         notifs.push({
           id: `incomplete_${w.id}`,
-          type: 'warning', icon: '👷',
+          type: 'warning', icon: '',
           title: `بيانات ${w.name} غير مكتملة`,
           sub: 'الراتب أو مكان العمل غير محدد',
           time: '', ts: now - 8000,
@@ -5931,7 +5931,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
           notifs.push({ id: `worker_delays`, type: 'warning', icon: '⏰', title: `${workerRecord.delays.length} تأخير مسجل هذا الشهر`, sub: `إجمالي الخصم: ${fmt(workerRecord.delays.reduce((s,d)=>s+(d.deduction||0),0))}`, time: '', ts: now - 2000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
         if (workerRecord.absences?.length > 0) {
-          notifs.push({ id: `worker_absences`, type: 'danger', icon: '📅', title: `${workerRecord.absences.length} غياب مسجل`, sub: `إجمالي الخصم: ${fmt(workerRecord.absences.reduce((s,a)=>s+(a.deduction||0),0))}`, time: '', ts: now - 3000, page: 'profile', hint: '← عرض ملفك الشخصي' });
+          notifs.push({ id: `worker_absences`, type: 'danger', icon: '', title: `${workerRecord.absences.length} غياب مسجل`, sub: `إجمالي الخصم: ${fmt(workerRecord.absences.reduce((s,a)=>s+(a.deduction||0),0))}`, time: '', ts: now - 3000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
         const rewards = (workerRecord.incentives || workerRecord.discipline||[]).filter(d=>(d.amount||d.reward||0)>0);
         if (rewards.length > 0) {
@@ -6031,7 +6031,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
               </div>
               {expandedNotif.time && (
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  🕐 {expandedNotif.time}
+                   {expandedNotif.time}
                 </div>
               )}
             </div>
@@ -6048,7 +6048,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
                 style={{ justifyContent: 'center' }}
                 onClick={(e) => { deleteNotif(e, expandedNotif.id); setExpandedNotif(null); }}
               >
-                🗑️ حذف
+                حذف
               </button>
               <button className="btn btn-ghost" onClick={() => setExpandedNotif(null)}>إغلاق</button>
             </div>
@@ -6061,7 +6061,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
           {/* header */}
           <div className="notif-hdr">
             <div className="notif-hdr-title">
-              🔔 الإشعارات
+              الإشعارات
               {unreadCount > 0 && <span style={{ fontSize: 11, color: 'var(--primary-light)', fontWeight: 600, marginRight: 6 }}>({unreadCount} جديد)</span>}
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -6081,7 +6081,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
                   onMouseEnter={e => e.currentTarget.style.background='rgba(239,68,68,0.18)'}
                   onMouseLeave={e => e.currentTarget.style.background='rgba(239,68,68,0.08)'}
                 >
-                  🗑️ حذف الكل
+                  حذف الكل
                 </button>
               )}
             </div>
@@ -6122,7 +6122,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
                         قراءة المزيد ↗
                       </button>
                     )}
-                    {n.time && <div className="notif-time">🕐 {n.time}</div>}
+                    {n.time && <div className="notif-time"> {n.time}</div>}
                     {n.page && <div className="notif-nav-hint">{n.hint} ↗</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -6139,7 +6139,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
                       onMouseEnter={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.color='#ef4444'; e.currentTarget.style.background='rgba(239,68,68,0.1)'; }}
                       onMouseLeave={e => { e.currentTarget.style.opacity='0.5'; e.currentTarget.style.color='var(--text-muted)'; e.currentTarget.style.background='none'; }}
                     >
-                      🗑️
+                      
                     </button>
                   </div>
                 </div>
@@ -6411,7 +6411,7 @@ const App = ({ onShowPricing }) => {
     }
   };
 
-  const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي', stations: '⛽ إدارة المحطات' };
+  const titles = { dashboard: 'لوحة التحكم', workers: 'إدارة العمال', reports: 'التقارير الشهرية', profile: 'ملفي الشخصي', accounts: 'إدارة الحسابات', salary_payment: 'صرف الرواتب', month_archive: 'أرشيف الشهور', owner_profile: 'ملفي الشخصي', stations: 'إدارة المحطات' };
   const workerRecord = user?.role === 'worker' ? workers.find(w => w.id === user.id) : null;
 
   const updateWorker = async (updated) => {
@@ -6510,10 +6510,10 @@ const App = ({ onShowPricing }) => {
           {user.role === 'owner' && !user.phone && (
             <div className="owner-phone-banner no-print">
               <div className="owner-phone-banner-text">
-                📱 <span>أكمل بياناتك — أضف رقم تليفونك عشان نقدر نوصلك بالتحديثات والإشعارات المهمة</span>
+                <span>أكمل بياناتك — أضف رقم تليفونك عشان نقدر نوصلك بالتحديثات والإشعارات المهمة</span>
               </div>
               <button className="btn btn-warning btn-sm" onClick={() => setPage('owner_profile')}>
-                ➕ أضف رقمك الآن
+                أضف رقمك الآن
               </button>
             </div>
           )}
@@ -6586,20 +6586,20 @@ const App = ({ onShowPricing }) => {
             planHasSalaryPay(plan)
               ? <SalaryPaymentPage workers={workers.filter(w => w.stationId === activeStation)} ownerId={getOwnerId(user)} stationId={activeStation} />
               : <div style={{ textAlign: 'center', padding: 60 }}>
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}></div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تقرير صرف الرواتب</div>
                   <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
-                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>👑 ترقية للمميزة</button>
+                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>ترقية للمميزة</button>
                 </div>
           )}
           {page === 'month_archive' && user.role === 'owner' && (
             planHasMonthReset(plan)
               ? <MonthArchivePage ownerId={getOwnerId(user)} stationId={activeStation} />
               : <div style={{ textAlign: 'center', padding: 60 }}>
-                  <div style={{ fontSize: 52, marginBottom: 16 }}>👑</div>
+                  <div style={{ fontSize: 52, marginBottom: 16 }}></div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>أرشيف الشهور</div>
                   <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
-                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>👑 ترقية للمميزة</button>
+                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>ترقية للمميزة</button>
                 </div>
           )}
           {page === 'profile' && workerRecord && <WorkerProfile worker={workerRecord} onUpdate={updateWorker} />}
@@ -6765,10 +6765,10 @@ export default function Root() {
             gap: 12, padding: '8px 28px', flexWrap: 'wrap',
           }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8' }}>
-              🆓 أنت على الباقة المجانية — حتى 5 عمال
+              أنت على الباقة المجانية — حتى 5 عمال
             </span>
             <button className="btn btn-primary btn-sm" onClick={() => setShowPricing(true)}>
-              ⚡ ترقية الباقة
+              ترقية الباقة
             </button>
           </div>
         )}
