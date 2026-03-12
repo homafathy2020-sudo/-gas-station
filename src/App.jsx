@@ -446,7 +446,7 @@ const sendWorkerNotification = (workerName, type, amount, net) => {
     cash:              'سحب نقدي',
   };
   const label = typeLabels[type] || type;
-  const title = `💸 تنبيه مالي — ${workerName}`;
+  const title = `تنبيه مالي — ${workerName}`;
   const body  = `تم خصم ${fmt(amount)} بسبب ${label}\nصافي الراتب المتبقي: ${fmt(net)}`;
   new Notification(title, { body, icon: '/favicon.ico' });
 };
@@ -467,7 +467,7 @@ const sendWhatsAppNotify = (worker, type, entry) => {
   const net = calcNet(worker);
   const isPositive = type === 'incentive' || type === 'discipline';
 
-  let msg = '⛽ WaqoudPro\n';
+  let msg = 'WaqoudPro\n';
   msg += '─────────────────\n';
   msg += 'مرحباً يا ' + worker.name + ' \n\n';
   if (isPositive) {
@@ -478,7 +478,7 @@ const sendWhatsAppNotify = (worker, type, entry) => {
     msg += '⚠️ تم تسجيل ' + label + ' بتاريخ ' + entry.date + '\n';
     if (type === 'delay') msg += '⏰ المدة: ' + entry.minutes + ' دقيقة\n';
     if (type === 'absence') msg += 'السبب: ' + entry.reason + '\n';
-    msg += '💸 الخصم: -' + amount + ' ج.م\n';
+    msg += 'الخصم: -' + amount + ' ج.م\n';
   }
   msg += '─────────────────\n';
   msg += 'صافي راتبك المتبقي: ' + fmt(net) + '\n';
@@ -665,7 +665,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
       await createBackup(ownerId, workers, workPlaces, ownerUsers, 'يدوي');
       toast('تم إنشاء النسخة الاحتياطية بنجاح', 'success');
       await loadBackups();
-    } catch { toast('❌ فشل إنشاء النسخة الاحتياطية', 'error'); }
+    } catch { toast('فشل إنشاء النسخة الاحتياطية', 'error'); }
     setCreating(false);
   };
 
@@ -678,7 +678,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
       await restoreBackup(ownerId, backup);
       toast('تمت الاستعادة — سيتم تحديث البيانات تلقائياً', 'success');
       await loadBackups();
-    } catch { toast('❌ فشلت الاستعادة، حاول مرة أخرى', 'error'); }
+    } catch { toast('فشلت الاستعادة، حاول مرة أخرى', 'error'); }
     setRestoring(null);
     setConfirmRestore(null);
   };
@@ -715,7 +715,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-            🛡️ النسخ الاحتياطية
+            النسخ الاحتياطية
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
             نسخة تلقائية كل 24 ساعة • آخر {MAX_BACKUPS} نسخة محفوظة
@@ -747,7 +747,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
         <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>⏳ جاري التحميل...</div>
       ) : backups.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>🗂️</div>
+          <div style={{ marginBottom: 10, color: "var(--text-muted)" }}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="21,8 21,21 3,21 3,8"/><rect x="1" y="3" width="22" height="5"/></svg></div>
           <div style={{ fontWeight: 600 }}>لا توجد نسخ احتياطية بعد</div>
           <div style={{ fontSize: 12, marginTop: 6 }}>اضغط "نسخة الآن" لإنشاء أول نسخة</div>
         </div>
@@ -762,7 +762,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
               {/* Row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', cursor: 'pointer' }}
                 onClick={() => setExpandedId(expandedId === b.id ? null : b.id)}>
-                <div style={{ fontSize: 20 }}>{b.label === 'يدوي' ? '✋' : b.label?.startsWith('قبل') ? '🔄' : '🤖'}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>{b.label === 'يدوي' ? 'يدوي' : b.label?.startsWith('قبل') ? 'تلقائي' : 'نظام'}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtBackupDate(b.createdAt)}</span>
@@ -782,7 +782,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
                   <button className="btn btn-success btn-sm"
                     onClick={() => setConfirmRestore(b)}
                     disabled={!!restoring}>
-                    {restoring === b.id ? '⏳ جاري الاستعادة...' : '♻️ استعادة هذه النسخة'}
+                    {restoring === b.id ? 'جاري الاستعادة...' : 'استعادة هذه النسخة'}
                   </button>
                   <button className="btn btn-danger btn-sm"
                     onClick={() => handleDelete(b.id)}
@@ -804,12 +804,12 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
         <div className="modal-overlay" onClick={() => !restoring && setConfirmRestore(null)}>
           <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">♻️ تأكيد الاستعادة</div>
+              <div className="modal-title">تأكيد الاستعادة</div>
               <button className="close-btn" onClick={() => !restoring && setConfirmRestore(null)}>✕</button>
             </div>
             <div className="modal-body">
               <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, color: '#f59e0b', marginBottom: 6 }}>⚠️ تحذير مهم</div>
+                <div style={{ fontWeight: 700, color: '#f59e0b', marginBottom: 6 }}>تحذير مهم</div>
                 <div style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)' }}>
                   سيتم <b style={{ color: 'var(--text)' }}>استبدال كل البيانات الحالية</b> ببيانات هذه النسخة.
                   سيتم حفظ نسخة من الحالة الحالية تلقائياً قبل الاستعادة.
@@ -824,7 +824,7 @@ const BackupCard = ({ ownerId, workers, workPlaces, ownerUsers }) => {
             </div>
             <div className="modal-footer">
               <button className="btn btn-success" onClick={() => handleRestore(confirmRestore)} disabled={!!restoring} style={{ flex: 1, justifyContent: 'center' }}>
-                {restoring ? '⏳ جاري الاستعادة...' : '✅ نعم، استعد البيانات'}
+                {restoring ? 'جاري الاستعادة...' : 'نعم، استعد البيانات'}
               </button>
               <button className="btn btn-ghost" onClick={() => setConfirmRestore(null)} disabled={!!restoring}>✕ إلغاء</button>
             </div>
@@ -867,7 +867,7 @@ const Loader = () => <div className="loader-overlay"><div className="spinner" />
 const ConfirmModal = ({ message, onConfirm, onClose }) => (
   <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
     <div className="modal" style={{ maxWidth: 400, animation: 'fadeIn .2s ease' }}>
-      <div className="modal-header"><div className="modal-title">⚠️ تأكيد</div><button className="close-btn" onClick={onClose}>×</button></div>
+      <div className="modal-header"><div className="modal-title">تأكيد</div><button className="close-btn" onClick={onClose}>×</button></div>
       <div className="modal-body"><p style={{ color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.8 }}>{message}</p></div>
       <div className="modal-footer">
         <button className="btn btn-danger" onClick={onConfirm}>✓ تأكيد</button>
@@ -894,13 +894,13 @@ const WorkPlacesManager = ({ workPlaces, onAdd, onEdit, onDelete, onClose }) => 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 500, animation: 'fadeIn .2s ease' }}>
-        <div className="modal-header"><div className="modal-title">🏢 إدارة أماكن العمل</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="modal-header"><div className="modal-title">إدارة أماكن العمل</div><button className="close-btn" onClick={onClose}>×</button></div>
         <div className="modal-body">
           <div className="form-group" style={{ marginBottom: 20 }}>
             <label className="form-label">إضافة مكان عمل جديد</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input type="text" className="form-input" placeholder="أدخل مكان العمل" value={newPlace} onChange={e => setNewPlace(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAdd()} />
-              <button className="btn btn-primary btn-sm" onClick={handleAdd}>➕</button>
+              <button className="btn btn-primary btn-sm" onClick={handleAdd}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg></button>
             </div>
           </div>
           <div style={{ maxHeight: 300, overflowY: 'auto' }}>
@@ -923,7 +923,7 @@ const WorkPlacesManager = ({ workPlaces, onAdd, onEdit, onDelete, onClose }) => 
             ))}
           </div>
         </div>
-        <div className="modal-footer"><button className="btn btn-primary" onClick={onClose}>💾 حفظ وإغلاق</button></div>
+        <div className="modal-footer"><button className="btn btn-primary" onClick={onClose}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/><polyline points='17,21 17,13 7,13 7,21'/><polyline points='7,3 7,8 15,8'/></svg> حفظ وإغلاق</button></div>
       </div>
     </div>
   );
@@ -965,7 +965,7 @@ const WorkerModal = ({ worker, onSave, onClose, activeStationId }) => {
             </div>
             <div className="form-group"><label className="form-label">رقم التليفون</label><input type="tel" placeholder="مثال: 01012345678" maxLength={11} onInput={e => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11); }} {...f('phone')} /></div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-primary">💾 حفظ</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/><polyline points='17,21 17,13 7,13 7,21'/><polyline points='7,3 7,8 15,8'/></svg> حفظ</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -995,7 +995,7 @@ const EntryModal = ({ type, onSave, onClose }) => {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
-        <div className="modal-header"><div className="modal-title">{isDelay ? '⏰ إضافة تأخير' : '❌ إضافة غياب'}</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="modal-header"><div className="modal-title">{isDelay ? 'إضافة تأخير' : 'إضافة غياب'}</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
             <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
@@ -1004,7 +1004,7 @@ const EntryModal = ({ type, onSave, onClose }) => {
               : <div className="form-group"><label className="form-label">سبب الغياب</label><input placeholder="مرض / ظروف شخصية..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>}
             <div className="form-group"><label className="form-label">قيمة الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg> إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -1030,13 +1030,13 @@ const AbsenceNoReasonModal = ({ onSave, onClose }) => {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
-        <div className="modal-header"><div className="modal-title">⚠️ إضافة عجز</div><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="modal-header"><div className="modal-title"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><line x1='12' y1='9' x2='12' y2='13'/></svg> إضافة عجز</div><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={submit}>
           <div className="modal-body">
             <div className="form-group"><label className="form-label">التاريخ</label><input type="date" max={TODAY} {...f('date')} />{errors.date && <div className="form-error">{errors.date}</div>}</div>
             <div className="form-group"><label className="form-label">قيمة العجز / الخصم (ج.م)</label><input type="number" min="0" max="1000000" placeholder="50" {...f('deduction')} />{errors.deduction && <div className="form-error">{errors.deduction}</div>}</div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-primary">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-primary"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg> إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -1065,7 +1065,7 @@ const IncentiveModal = ({ onSave, onClose, prefillReason = '', prefillAmount = '
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn .2s ease' }}>
         <div className="modal-header">
-          <div className="modal-title">🎁 إضافة حافز</div>
+          <div className="modal-title"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='20,12 20,22 4,22 4,12'/><rect x='2' y='7' width='20' height='5'/><line x1='12' y1='22' x2='12' y2='7'/><path d='M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z'/><path d='M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z'/></svg> إضافة حافز</div>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         <form onSubmit={submit}>
@@ -1074,7 +1074,7 @@ const IncentiveModal = ({ onSave, onClose, prefillReason = '', prefillAmount = '
             <div className="form-group"><label className="form-label">السبب</label><input placeholder="مثال: زيادة وردية — أداء مميز..." {...f('reason')} />{errors.reason && <div className="form-error">{errors.reason}</div>}</div>
             <div className="form-group"><label className="form-label">قيمة الحافز (ج.م)</label><input type="number" min="1" max="1000000" placeholder="100" {...f('amount')} />{errors.amount && <div className="form-error">{errors.amount}</div>}</div>
           </div>
-          <div className="modal-footer"><button type="submit" className="btn btn-success">➕ إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
+          <div className="modal-footer"><button type="submit" className="btn btn-success"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg> إضافة</button><button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button></div>
         </form>
       </div>
     </div>
@@ -1123,7 +1123,7 @@ const CashWithdrawalModal = ({ onSave, onClose }) => {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="submit" className="btn btn-primary">📝 تسجيل</button>
+            <button type="submit" className="btn btn-primary"><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/></svg> تسجيل</button>
             <button type="button" className="btn btn-ghost" onClick={onClose}>✕ إلغاء</button>
           </div>
         </form>
@@ -1220,23 +1220,23 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
             {editMode
               ? <input className="form-input" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ fontSize: 17, fontWeight: 700, marginBottom: 6, padding: '7px 12px' }} />
               : <div style={{ fontSize: 21, fontWeight: 800 }}>{w.name}</div>}
-            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>⛽ {w.pump || 'غير محدد'}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{w.pump || 'غير محدد'}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {canEdit && (editMode ? (
-            <><button className="btn btn-success btn-sm" onClick={saveEdit}>💾 حفظ</button><button className="btn btn-ghost btn-sm" onClick={() => { setEditMode(false); setEditForm({ name: w.name, pump: w.pump, workDays: w.workDays, salary: w.salary }); }}>✕ إلغاء</button></>
+            <><button className="btn btn-success btn-sm" onClick={saveEdit}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/><polyline points='17,21 17,13 7,13 7,21'/><polyline points='7,3 7,8 15,8'/></svg> حفظ</button><button className="btn btn-ghost btn-sm" onClick={() => { setEditMode(false); setEditForm({ name: w.name, pump: w.pump, workDays: w.workDays, salary: w.salary }); }}>✕ إلغاء</button></>
           ) : (
-            <button className="btn btn-accent btn-sm" onClick={() => setEditMode(true)}>✏️ تعديل</button>
+            <button className="btn btn-accent btn-sm" onClick={() => setEditMode(true)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/></svg> تعديل</button>
           ))}
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط ', 'warning'); return; } generateReport(w); toast('جاري التحميل', 'info'); }}>📄{!planHasExcelAdv(plan) && ''}</button>
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط ', 'warning'); return; } generateReport(w); toast('جاري التحميل', 'info'); }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><polyline points='14,2 14,8 20,8'/></svg></button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='6,9 6,2 18,2 18,9'/><path d='M6,18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg></button>
         </div>
       </div>
 
       {/* Basic Info */}
       {!isWorkerView && <div className="detail-section">
-        <div className="detail-section-hdr"><div className="detail-section-title">⚙️ البيانات الأساسية</div></div>
+        <div className="detail-section-hdr"><div className="detail-section-title">البيانات الأساسية</div></div>
         <div className="detail-body">
           <div className="form-grid-2" style={{ gap: 16 }}>
             <div>
@@ -1301,8 +1301,8 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {/* Absences */}
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
-          <div className="detail-section-title">❌ الغيابات <span className="badge badge-danger">{w.absences.length} يوم</span></div>
-          <button className="btn btn-danger btn-sm no-print" onClick={() => setEntryModal('absence')}>📅 إضافة غياب</button>
+          <div className="detail-section-title">الغيابات <span className="badge badge-danger">{w.absences.length} يوم</span></div>
+          <button className="btn btn-danger btn-sm no-print" onClick={() => setEntryModal('absence')}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg> إضافة غياب</button>
         </div>
         {w.absences.length === 0
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد غيابات مسجلة</div>
@@ -1333,7 +1333,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
           <div className="detail-section-title">العجز <span className="badge badge-danger">{(w.absences_no_reason || []).length} مرة</span></div>
-          <button className="btn btn-blue btn-sm no-print" onClick={() => setAbsenceNoReasonModal(true)}>⚠️ إضافة عجز</button>
+          <button className="btn btn-blue btn-sm no-print" onClick={() => setAbsenceNoReasonModal(true)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><line x1='12' y1='9' x2='12' y2='13'/></svg> إضافة عجز</button>
         </div>
         {(!w.absences_no_reason || w.absences_no_reason.length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد عجز مسجل</div>
@@ -1363,7 +1363,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
           <div className="detail-section-title">الحوافز <span className="badge badge-success">{(w.incentives || w.discipline || []).length} مرة</span></div>
-          <button className="btn btn-success btn-sm no-print" onClick={() => setIncentiveModal(true)}>🎁 إضافة حافز</button>
+          <button className="btn btn-success btn-sm no-print" onClick={() => setIncentiveModal(true)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='20,12 20,22 4,22 4,12'/><rect x='2' y='7' width='20' height='5'/><line x1='12' y1='22' x2='12' y2='7'/><path d='M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z'/><path d='M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z'/></svg> إضافة حافز</button>
         </div>
         {(!(w.incentives || w.discipline) || (w.incentives || w.discipline || []).length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>لا توجد حوافز مسجلة</div>
@@ -1398,7 +1398,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
       {!isWorkerView && <div className="detail-section">
         <div className="detail-section-hdr">
           <div className="detail-section-title">السحب النقدي <span className="badge badge-blue">{(w.cash_withdrawals || []).length} مرة</span></div>
-          <button className="btn btn-primary btn-sm no-print" onClick={() => setCashModal(true)}>💸 تسجيل سحب</button>
+          <button className="btn btn-primary btn-sm no-print" onClick={() => setCashModal(true)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'/></svg> تسجيل سحب</button>
         </div>
         {(!w.cash_withdrawals || w.cash_withdrawals.length === 0)
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا يوجد سحب نقدي مسجل</div>
@@ -1474,7 +1474,7 @@ const WorkerDetail = ({ worker, onUpdate, isWorkerView = false, canEdit = true, 
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 48 }}></div>
           <span className={`badge ${net >= w.salary * 0.9 ? 'badge-success' : net >= w.salary * 0.75 ? 'badge-warning' : 'badge-danger'}`} style={{ marginTop: 8, fontSize: 12 }}>
-            {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : '❗ خصومات عالية'}
+            {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : 'خصومات عالية'}
           </span>
         </div>
       </div>
@@ -1559,10 +1559,10 @@ const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-primary" onClick={() => setWorkerModal('add')}>➕ عامل جديد</button>
+            <button className="btn btn-primary" onClick={() => setWorkerModal('add')}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg> عامل جديد</button>
             {selected && <>
-              <button className="btn btn-ghost" onClick={() => setWorkerModal(selected)}>✏️ تعديل</button>
-              <button className="btn btn-danger" onClick={() => setDeleteW(selected)}>🗑️ حذف</button>
+              <button className="btn btn-ghost" onClick={() => setWorkerModal(selected)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/></svg> تعديل</button>
+              <button className="btn btn-danger" onClick={() => setDeleteW(selected)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='3,6 5,6 21,6'/><path d='M19,6l-1,14H6L5,6'/><path d='M10,11v6'/><path d='M14,11v6'/><path d='M9,6V4h6v2'/></svg> حذف</button>
             </>}
           </div>
         </div>
@@ -1579,7 +1579,7 @@ const WorkersPage = ({ workers, setWorkers, ownerId, activeStationId }) => {
       {selected
         ? <WorkerDetail key={selected.id} worker={selected} onUpdate={updateWorker} ownerId={ownerId} />
         : <div className="empty-state">
-          <div className="empty-icon">👆</div>
+          <div className="empty-icon"></div>
           <div className="empty-title">اختر عاملاً من القائمة أعلاه</div>
           <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>سيتم عرض بياناته الكاملة</div>
         </div>}
@@ -1645,7 +1645,7 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
         <div className="card">
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>العمال بمكان العمل</span>
-            <button className="btn btn-primary btn-sm no-print" onClick={() => setShowPlacesManager(true)}>🏢 إدارة</button>
+            <button className="btn btn-primary btn-sm no-print" onClick={() => setShowPlacesManager(true)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><rect x='2' y='7' width='20' height='15'/><path d='M17 22V7l-5-5-5 5v15'/></svg> إدارة</button>
           </div>
           {workPlaces.map(p => { const c = workers.filter(w => w.pump === p).length; return (
             <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -2095,11 +2095,11 @@ const MonthResetModal = ({ workers, ownerId, onReset, onClose, stationId }) => {
           </div>
           {!confirm ? (
             <div className="month-reset-card">
-              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>⚠️ ماذا سيحدث؟</div>
+              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>ماذا سيحدث؟</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 2.2 }}>
                 <div><b>حفظ الأرشيف:</b> كل بيانات الشهر هتتحفظ في الأرشيف</div>
                 <div> <b>مسح الشهري:</b> التأخيرات، الغيابات، العجز، الحوافز، والسحوبات</div>
-                <div>✅ <b>البيانات الثابتة:</b> الراتب، أيام العمل، ومكان العمل — هتفضل</div>
+                <div><b>البيانات الثابتة:</b> الراتب، أيام العمل، ومكان العمل — هتفضل</div>
                 <div><b>شهر جديد:</b> يبدأ بصفحة بيضاء نظيفة</div>
               </div>
               <button className="btn btn-danger" style={{ marginTop: 16, width: '100%', justifyContent: 'center' }} onClick={() => setConfirm(true)}>
@@ -2113,7 +2113,7 @@ const MonthResetModal = ({ workers, ownerId, onReset, onClose, stationId }) => {
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18 }}>هذا الإجراء لا يمكن التراجع عنه — تأكد من تحميل تقرير Excel قبل المتابعة</div>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                 <button className="btn btn-danger" style={{ justifyContent: 'center' }} onClick={handleReset} disabled={loading}>
-                  {loading ? '⏳ جاري الإغلاق...' : '✅ نعم، أغلق الشهر'}
+                  {loading ? 'جاري الإغلاق...' : 'نعم، أغلق الشهر'}
                 </button>
                 <button className="btn btn-ghost" onClick={() => setConfirm(false)}>↩️ رجوع</button>
               </div>
@@ -2136,7 +2136,7 @@ const MonthArchivePage = ({ ownerId, stationId }) => {
       {archives.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon"></div>
-          <div className="empty-title">📦 لا يوجد أرشيف بعد</div>
+          <div className="empty-title">لا يوجد أرشيف بعد</div>
           <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>بعد إغلاق الشهر الأول هيظهر هنا</div>
         </div>
       ) : (
@@ -2182,7 +2182,7 @@ const MonthArchivePage = ({ ownerId, stationId }) => {
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table>
-                  <thead><tr><th>العامل</th><th>مكان العمل</th><th>الراتب</th><th>الخصومات</th><th>🎁 الحوافز</th><th>السحوبات</th><th>صافي المدفوع</th></tr></thead>
+                  <thead><tr><th>العامل</th><th>مكان العمل</th><th>الراتب</th><th>الخصومات</th><th>الحوافز</th><th>السحوبات</th><th>صافي المدفوع</th></tr></thead>
                   <tbody>
                     {(selected.workerSnapshots || []).map(w => (
                       <tr key={w.id}>
@@ -2311,7 +2311,7 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
           </div>
           {unpaidCount > 0 && (
             <button className="btn btn-success btn-sm" onClick={() => setPayAllConfirm(true)}>
-              ✅ صرف الكل ({unpaidCount} عامل)
+              صرف الكل ({unpaidCount} عامل)
             </button>
           )}
           {paidCount === workers.length && workers.length > 0 && (
@@ -2351,22 +2351,22 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
                       const phone = w.phone.startsWith('0') ? '2' + w.phone : w.phone;
                       const msg = encodeURIComponent(
                         'مرحباً يا ' + w.name + ' \n' +
-                        'أرسلت إليك WaqoudPro تفاصيل راتبك ⛽\n' +
+                        'أرسلت إليك WaqoudPro تفاصيل راتبك\n' +
                         '─────────────────\n' +
                         'راتب شهر ' + months[now.getMonth()] + ' ' + now.getFullYear() + '\n' +
-                        '📍 مكان العمل: ' + (w.pump || '—') + '\n' +
+                        'مكان العمل: ' + (w.pump || '—') + '\n' +
                         '─────────────────\n' +
                         'الراتب الأساسي: ' + fmt(w.salary) + '\n' +
                         (w.delays.length > 0 ? '\n⏰ التأخيرات:\n' + w.delays.map(d => '   • ' + (d.date || '—') + ' ← -' + fmt(d.deduction||0)).join('\n') + '\n' : '') +
-                        (w.absences.length > 0 ? '\n🚫 الغيابات:\n' + w.absences.map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
-                        ((w.absences_no_reason||[]).length > 0 ? '\n⚠️ العجز:\n' + (w.absences_no_reason||[]).map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
+                        (w.absences.length > 0 ? '\nالغيابات:\n' + w.absences.map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
+                        ((w.absences_no_reason||[]).length > 0 ? '\nالعجز:\n' + (w.absences_no_reason||[]).map(a => '   • ' + (a.date || '—') + ' ← -' + fmt(a.deduction||0)).join('\n') + '\n' : '') +
                         ((w.incentives || w.discipline||[]).filter(d=>(d.amount||d.reward||0)>0).length > 0 ? '\nالحوافز:\n' + (w.incentives||w.discipline||[]).filter(d=>(d.amount||d.reward||0)>0).map(d => '   • ' + (d.date || '—') + (d.reason ? ' (' + d.reason + ')' : '') + ' ← +' + fmt(d.amount||d.reward||0)).join('\n') + '\n' : '') +
                         ((w.cash_withdrawals||[]).length > 0 ? '\nالسحوبات النقدية:\n' + (w.cash_withdrawals||[]).map(c => '   • ' + (c.date || '—') + ' ← -' + fmt(c.amount||0)).join('\n') + '\n' : '') +
                         '\n─────────────────\n' +
                         '✅ صافي المدفوع: ' + fmt(net) + '\n' +
                         '─────────────────\n' +
                         ' تاريخ الصرف: ' + new Date().toLocaleDateString('ar-EG') + '\n\n' +
-                        'شكراً على مجهودك وتفانيك في العمل 💪\n' +
+                        'شكراً على مجهودك وتفانيك في العمل \n' +
                         '_تم الإرسال عبر WaqoudPro_'
                       );
                       window.open('https://wa.me/' + phone + '?text=' + msg, '_blank');
@@ -2430,8 +2430,8 @@ const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
         <select className="form-input" style={{ width: 'auto' }} value={month} onChange={e => setMonth(+e.target.value)}>{months.map((m, i) => <option key={i} value={i}>{m}</option>)}</select>
         <select className="form-input" style={{ width: 'auto' }} value={year} onChange={e => setYear(+e.target.value)}>{[2023, 2024, 2025, 2026].map(y => <option key={y}>{y}</option>)}</select>
         <button className="btn btn-accent" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط ', 'warning'); return; } generateMonthlyReport(displayWorkers, month, year, months[month]); toast('جاري تحميل ملف Excel', 'info'); }}>تحميل Excel {!planHasExcelAdv(plan) && ''}</button>
-        <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️ طباعة</button>
-        {onResetMonth && planHasMonthReset(plan) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(plan) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط ','warning')}>🔒 إغلاق الشهر </button>}
+        <button className="btn btn-ghost" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='6,9 6,2 18,2 18,9'/><path d='M6,18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg> طباعة</button>
+        {onResetMonth && planHasMonthReset(plan) && <button className="btn btn-danger" style={{marginRight:'auto'}} onClick={() => setShowReset(true)}>إغلاق الشهر وبدء شهر جديد</button>}{onResetMonth && !planHasMonthReset(plan) && <button className="btn btn-ghost" style={{marginRight:'auto', opacity:.6}} onClick={() => toast('أرشفة الشهور متاحة في الباقة المميزة فقط ','warning')}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/></svg> إغلاق الشهر </button>}
       </div>
       {showReset && <MonthResetModal workers={workers} ownerId={ownerId} stationId={stationId} onReset={onResetMonth} onClose={() => setShowReset(false)} />}
       {archivedMonth && (
@@ -2455,10 +2455,10 @@ const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
         {[
           { label: 'العمال', value: workers.length, icon: '', color: '#3b82f6' },
           { label: 'إجمالي الرواتب', value: fmt(totalSal), icon: '', color: '#f59e0b' },
-          { label: 'الخصومات', value: fmt(allDed), icon: '➖', color: '#ef4444' },
-          { label: 'الحوافز', value: fmt(allRewards), icon: '🎁', color: '#10b981' },
+          { label: 'الخصومات', value: fmt(allDed), icon: null, color: '#ef4444' },
+          { label: 'الحوافز', value: fmt(allRewards), icon: null, color: '#10b981' },
           { label: 'السحب النقدي', value: fmt(allCash), icon: '', color: '#3b82f6' },
-          { label: 'صافي المدفوع', value: fmt(totalNet), icon: '✅', color: '#10b981' }
+          { label: 'صافي المدفوع', value: fmt(totalNet), icon: null, color: '#10b981' }
         ].map((s, i) => (
           <div key={i} className="stat-card" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 8 }}>
             <div style={{ fontSize: 28 }}>{s.icon}</div>
@@ -2471,7 +2471,7 @@ const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
         <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>تفاصيل العمال</div></div>
         <div style={{ overflowX: 'auto' }}>
           <table>
-            <thead><tr><th>العامل</th><th>مكان العمل</th><th>أيام العمل</th><th>⏱️ التأخيرات</th><th>📅 الغيابات</th><th>الخصومات</th><th>🎁 الحوافز</th><th>السحب النقدي</th><th>صافي المدفوع</th></tr></thead>
+            <thead><tr><th>العامل</th><th>مكان العمل</th><th>أيام العمل</th><th>التأخيرات</th><th>الغيابات</th><th>الخصومات</th><th>الحوافز</th><th>السحب النقدي</th><th>صافي المدفوع</th></tr></thead>
             <tbody>
               {displayWorkers.map(w => (
                 <tr key={w.id}>
@@ -2516,7 +2516,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
   const [errors, setErrors] = useState({});
   const [saved, setSaved] = useState(false);
 
-  const shiftLabels = { morning: '🌅 صباحية', evening: '🌆 مسائية', night: '🌙 ليلية' };
+  const shiftLabels = { morning: 'صباحية', evening: 'مسائية', night: 'ليلية' };
   const fuelTypes = ['بنزين 80', 'بنزين 92', 'بنزين 95', 'سولار'];
 
   const validate = () => {
@@ -2590,7 +2590,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, background: 'rgba(0,0,0,0.2)', padding: 4, borderRadius: 10 }}>
-          {[['calc', '🧮 الحساب'], ['history', `السجل${history.length > 0 ? ` (${history.length})` : ''}`]].map(([key, label]) => (
+          {[['calc', 'الحساب'], ['history', `السجل${history.length > 0 ? ` (${history.length})` : ''}`]].map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} style={{ padding: '6px 14px', borderRadius: 7, border: 'none', cursor: 'pointer', fontFamily: "'Cairo', sans-serif", fontSize: 12, fontWeight: 700, background: tab === key ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'transparent', color: tab === key ? '#0f172a' : 'var(--text-muted)', transition: 'all 0.2s' }}>{label}</button>
           ))}
         </div>
@@ -2608,9 +2608,9 @@ const ShiftSettlement = ({ worker, ownerId }) => {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}> نوع الوردية</div>
               <select value={shiftType} onChange={e => setShiftType(e.target.value)} style={inp()}>
-                <option value="morning">🌅 صباحية</option>
-                <option value="evening">🌆 مسائية</option>
-                <option value="night">🌙 ليلية</option>
+                <option value="morning">صباحية</option>
+                <option value="evening">مسائية</option>
+                <option value="night">ليلية</option>
               </select>
             </div>
           </div>
@@ -2640,7 +2640,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
           {/* نوع الوقود + السعر */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🛢️ نوع الوقود</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>نوع الوقود</div>
               <select value={fuelType} onChange={e => setFuelType(e.target.value)} style={inp()}>
                 {fuelTypes.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
@@ -2667,7 +2667,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
 
           {/* أزرار */}
           <div style={{ display: 'flex', gap: 10, marginBottom: result ? 20 : 0 }}>
-            <button onClick={calculate} style={{ flex: 1, padding: '11px 20px', borderRadius: 11, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', fontFamily: "'Cairo', sans-serif", fontSize: 14, fontWeight: 800 }}>🧮 احسب التصفية</button>
+            <button onClick={calculate} style={{ flex: 1, padding: '11px 20px', borderRadius: 11, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#0f172a', fontFamily: "'Cairo', sans-serif", fontSize: 14, fontWeight: 800 }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><rect x='4' y='2' width='16' height='20' rx='2'/><line x1='8' y1='6' x2='16' y2='6'/><line x1='8' y1='10' x2='16' y2='10'/><line x1='8' y1='14' x2='12' y2='14'/></svg> احسب التصفية</button>
             <button onClick={reset} style={{ padding: '11px 16px', borderRadius: 11, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', fontFamily: "'Cairo', sans-serif", fontSize: 13, fontWeight: 600 }}>↺ مسح</button>
           </div>
 
@@ -2686,9 +2686,9 @@ const ShiftSettlement = ({ worker, ownerId }) => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', background: 'rgba(0,0,0,0.15)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 {[
                   { label: 'الكمية المباعة', value: `${result.qty.toFixed(2)} لتر`, icon: '' },
-                  { label: 'المبلغ المطلوب', value: `${result.required.toFixed(2)} ج`, icon: '🎯', color: '#f59e0b' },
+                  { label: 'المبلغ المطلوب', value: `${result.required.toFixed(2)} ج`, icon: null, color: '#f59e0b' },
                   { label: 'الواصل فعلياً', value: `${result.recv.toFixed(2)} ج`, icon: '', color: '#3b82f6' },
-                  { label: result.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(result.diff).toFixed(2)} ج`, icon: result.diff >= 0 ? '📈' : '📉', color: result.diff >= 0 ? '#10b981' : '#ef4444' },
+                  { label: result.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(result.diff).toFixed(2)} ج`, icon: result.diff >= 0 ? '↑' : '↓', color: result.diff >= 0 ? '#10b981' : '#ef4444' },
                 ].map(({ label, value, icon, color }, i) => (
                   <div key={i} style={{ padding: '14px 18px', borderLeft: i % 2 === 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5 }}>{icon} {label}</div>
@@ -2703,7 +2703,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
                 ) : (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 9, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', fontSize: 13, fontWeight: 700 }}>تم الحفظ في السجل</span>
                 )}
-                <button onClick={() => window.print()} style={{ padding: '8px 14px', borderRadius: 9, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', fontFamily: "'Cairo', sans-serif", fontSize: 13 }}>🖨️ طباعة</button>
+                <button onClick={() => window.print()} style={{ padding: '8px 14px', borderRadius: 9, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', fontFamily: "'Cairo', sans-serif", fontSize: 13 }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='6,9 6,2 18,2 18,9'/><path d='M6,18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg> طباعة</button>
               </div>
             </div>
           )}
@@ -2715,8 +2715,8 @@ const ShiftSettlement = ({ worker, ownerId }) => {
         <div style={{ padding: '20px 22px' }}>
           {history.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 6 }}>📭 لا يوجد سجل بعد</div>
+              <div style={{ marginBottom: 12, color: "var(--text-muted)" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)', marginBottom: 6 }}>لا يوجد سجل بعد</div>
               <div style={{ fontSize: 13 }}>احسب تصفية واحفظها وهتظهر هنا</div>
             </div>
           ) : (
@@ -2724,9 +2724,9 @@ const ShiftSettlement = ({ worker, ownerId }) => {
               {stats && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
                   {[
-                    { label: 'إجمالي الورديات', value: stats.totalShifts, color: '#3b82f6', icon: '📊' },
-                    { label: 'إجمالي الزيادات', value: `${stats.totalSurplus.toFixed(0)} ج`, color: '#10b981', icon: '📈' },
-                    { label: 'إجمالي العجز', value: `${stats.totalDeficit.toFixed(0)} ج`, color: '#ef4444', icon: '📉' },
+                    { label: 'إجمالي الورديات', value: stats.totalShifts, color: '#3b82f6', icon: null },
+                    { label: 'إجمالي الزيادات', value: `${stats.totalSurplus.toFixed(0)} ج`, color: '#10b981', icon: '↑' },
+                    { label: 'إجمالي العجز', value: `${stats.totalDeficit.toFixed(0)} ج`, color: '#ef4444', icon: '↓' },
                   ].map(({ label, value, color, icon }) => (
                     <div key={label} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
                       <div style={{ fontSize: 18, marginBottom: 4 }}>{icon}</div>
@@ -2740,7 +2740,7 @@ const ShiftSettlement = ({ worker, ownerId }) => {
                 {history.map((h) => (
                   <div key={h.id} style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 12, padding: '13px 16px', border: `1px solid ${h.diff > 0 ? 'rgba(16,185,129,0.2)' : h.diff < 0 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: 160 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{shiftLabels[h.shiftType] || '⛽ وردية'} · {h.date}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{shiftLabels[h.shiftType] || 'وردية'} · {h.date}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{h.fuelType} · {h.qty?.toFixed(1)} لتر · المطلوب: {h.required?.toFixed(0)} ج · الواصل: {h.recv?.toFixed(0)} ج</div>
                       {h.note && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{h.note}</div>}
                     </div>
@@ -2780,18 +2780,18 @@ const WorkerProfile = ({ worker, onUpdate }) => {
           <div className="detail-avatar">{w.avatar}</div>
           <div>
             <div style={{ fontSize: 21, fontWeight: 800 }}>{w.name}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>⛽ {w.pump || 'غير محدد'}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>{w.pump || 'غير محدد'}</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-ghost btn-sm no-print" onClick={() => { if (!planHasExcelAdv(plan)) { toast('تقارير Excel المتقدمة متاحة في الباقة المميزة فقط ', 'warning'); return; } generateReport(w); toast('جاري تحميل ملف Excel', 'info'); }}>تقريري Excel {!planHasExcelAdv(plan) && ''}</button>
-          <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}>🖨️</button>
+          <button className="btn btn-ghost btn-sm no-print" onClick={() => { window.print(); toast('جاري الطباعة', 'info'); }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='6,9 6,2 18,2 18,9'/><path d='M6,18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg></button>
         </div>
       </div>
 
       {/* البيانات الأساسية */}
       <div className="detail-section" style={{ marginBottom: 18 }}>
-        <div className="detail-section-hdr"><div className="detail-section-title">⚙️ البيانات الأساسية</div></div>
+        <div className="detail-section-hdr"><div className="detail-section-title">البيانات الأساسية</div></div>
         <div className="detail-body">
           <div className="form-grid-2" style={{ gap: 16 }}>
             <div><div className="form-label">مكان العمل</div><span className="badge badge-blue" style={{ fontSize: 13, padding: '5px 14px' }}>{w.pump}</span></div>
@@ -2834,7 +2834,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
       {/* الغيابات */}
       <div className="detail-section" style={{ marginBottom: 18 }}>
         <div className="detail-section-hdr">
-          <div className="detail-section-title">❌ الغيابات <span className="badge badge-danger">{w.absences.length} يوم</span></div>
+          <div className="detail-section-title">الغيابات <span className="badge badge-danger">{w.absences.length} يوم</span></div>
         </div>
         {w.absences.length === 0
           ? <div style={{ padding: '22px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>✅ لا توجد غيابات مسجلة</div>
@@ -2963,7 +2963,7 @@ const WorkerProfile = ({ worker, onUpdate }) => {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 48 }}></div>
           <span className={`badge ${net >= w.salary * 0.9 ? 'badge-success' : net >= w.salary * 0.75 ? 'badge-warning' : 'badge-danger'}`} style={{ marginTop: 8, fontSize: 12 }}>
-            {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : '❗ خصومات عالية'}
+            {net >= w.salary * 0.9 ? '✅ ممتاز' : net >= w.salary * 0.75 ? '⚠️ جيد' : 'خصومات عالية'}
           </span>
         </div>
       </div>
@@ -3125,7 +3125,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
 4️⃣ اكتب اسمك بالظبط: ${workerName}
 5️⃣ كود الانضمام: ${ownerCode}
 
-متنساش تحفظ الكود! 🔑`
+متنساش تحفظ الكود!`
     );
     window.open(`https://wa.me/?text=${msg}`, '_blank');
 
@@ -3152,7 +3152,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
             </div>
             <div className="modal-body">
               <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, padding: '16px', marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>⚠️ انتبه! هذا الإجراء لا يمكن التراجع عنه</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>انتبه! هذا الإجراء لا يمكن التراجع عنه</div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 2 }}>
                   <div>• سيتم حذف حساب <b style={{ color: 'var(--text)' }}>{confirmDelete.name}</b> نهائياً</div>
                   <div>• ستُحذف جميع بياناته — الرواتب، الحضور، الخصومات</div>
@@ -3178,7 +3178,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setChangePassId(null)}>
           <div className="modal" style={{ maxWidth: 420, animation: 'fadeIn .2s ease' }}>
             <div className="modal-header">
-              <div className="modal-title">🔑 تغيير كلمة المرور</div>
+              <div className="modal-title">تغيير كلمة المرور</div>
               <button className="close-btn" onClick={() => setChangePassId(null)}>×</button>
             </div>
             <div className="modal-body">
@@ -3189,7 +3189,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-primary" onClick={() => handleChangePassword(changePassId)}>💾 حفظ</button>
+              <button className="btn btn-primary" onClick={() => handleChangePassword(changePassId)}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/><polyline points='17,21 17,13 7,13 7,21'/><polyline points='7,3 7,8 15,8'/></svg> حفظ</button>
               <button className="btn btn-ghost" onClick={() => setChangePassId(null)}>✕ إلغاء</button>
             </div>
           </div>
@@ -3256,10 +3256,10 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(u.id); setEditForm({...u}); }}>✏️ تعديل</button>
+                        <button className="btn btn-ghost btn-xs" onClick={() => { setEditId(u.id); setEditForm({...u}); }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/></svg> تعديل</button>
                         <button className="btn btn-blue btn-xs" onClick={() => { setChangePassId(u.id); setNewPass(''); setNewPassErr(''); }}>كلمة المرور</button>
                         {canDelete(u) && (
-                          <button className="btn btn-danger btn-xs" onClick={() => setConfirmDelete({ id: u.id, name: u.name })}>🗑️ حذف</button>
+                          <button className="btn btn-danger btn-xs" onClick={() => setConfirmDelete({ id: u.id, name: u.name })}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='3,6 5,6 21,6'/><path d='M19,6l-1,14H6L5,6'/><path d='M10,11v6'/><path d='M14,11v6'/><path d='M9,6V4h6v2'/></svg> حذف</button>
                         )}
                       </div>
                     </td>
@@ -3274,7 +3274,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
       {/* ==================== قائمة الدعوات ==================== */}
       <div className="card" style={{ marginTop: 24 }}>
         <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-          📩 دعوة العمال
+          دعوة العمال
         </div>
 
         {/* كود الانضمام */}
@@ -3331,7 +3331,7 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
 4️⃣ اكتب اسمك بالظبط: ${workerName}
 5️⃣ كود الانضمام: ${ownerCode}
 
-متنساش تحفظ الكود! 🔑`);
+متنساش تحفظ الكود!`);
                     window.open(`https://wa.me/?text=${msg}`, '_blank');
                   }}>إعادة إرسال</button>
                   <button className="btn btn-danger btn-xs" onClick={() => handleRemoveInvite(workerName)}></button>
@@ -3549,7 +3549,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
       <div className="login-bg" />
       <div className="login-card" style={{ animation: 'fadeIn .4s ease' }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div className="login-logo">⛽</div>
+          <div className="login-logo"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round"><path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/><path d="M19 8h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v6"/></svg></div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>WaqoudPro</div>
           <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>نظام المحطات الذكي</div>
         </div>
@@ -3557,7 +3557,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 18, background: 'rgba(255,255,255,0.04)', padding: 6, borderRadius: 14, border: '1px solid var(--border)' }}>
           <button style={tabStyle('login')}    onClick={() => { setTab('login');    setErrors({}); }}>تسجيل الدخول</button>
-          <button style={tabStyle('register')} onClick={() => { setTab('register'); setErrors({}); }}>✨ إنشاء حساب</button>
+          <button style={tabStyle('register')} onClick={() => { setTab('register'); setErrors({}); }}>إنشاء حساب</button>
         </div>
 
         <div className="card">
@@ -3580,7 +3580,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">{loginForm.loginRole === 'owner' ? '📧 البريد الإلكتروني' : 'اسم المستخدم'}</label>
+                <label className="form-label">{loginForm.loginRole === 'owner' ? 'البريد الإلكتروني' : 'اسم المستخدم'}</label>
                 <input
                   type={loginForm.loginRole === 'owner' ? 'email' : 'text'}
                   placeholder={loginForm.loginRole === 'owner' ? 'example@email.com' : 'اكتب اسم المستخدم'}
@@ -3593,7 +3593,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
                 <input type="password" placeholder="أدخل كلمة المرور" {...lf('password')} />
                 {errors.password && <div className="form-error">{errors.password}</div>}
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>🔓 دخول</button>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}><svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 9.9-1'/></svg> دخول</button>
             </form>
           )}
 
@@ -3646,10 +3646,10 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
               {/* المالك يسجل بإيميل، العامل بـ username */}
               {regForm.role === 'owner' ? (
                 <div className="form-group">
-                  <label className="form-label">📧 البريد الإلكتروني</label>
+                  <label className="form-label">البريد الإلكتروني</label>
                   <input type="email" placeholder="example@email.com" {...rf('email')} />
                   {errors.reg_email && <div className="form-error">{errors.reg_email}</div>}
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>⚠️ هيتبعتلك إيميل تأكيد — تأكد إنه حقيقي</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>هيتبعتلك إيميل تأكيد — تأكد إنه حقيقي</div>
                 </div>
               ) : (
                 <div className="form-group">
@@ -3665,7 +3665,7 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
                 <input type="password" placeholder="6 أحرف على الأقل" {...rf('password')} />
                 {errors.reg_password && <div className="form-error">{errors.reg_password}</div>}
               </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>✨ إنشاء الحساب</button>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 15, marginTop: 6 }}>إنشاء الحساب</button>
             </form>
           )}
         </div>
@@ -3859,10 +3859,10 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
   };
 
   const statusCfg = [
-    { id: 'present',   label: '✅ حاضر',   color: '#10b981' },
+    { id: 'present',   label: 'حاضر',   color: '#10b981' },
     { id: 'late',      label: '⏰ متأخر',   color: '#f59e0b' },
-    { id: 'absent',    label: '❌ غايب',    color: '#ef4444' },
-    { id: 'no-reason', label: '🚫 عجز',    color: '#a855f7' },
+    { id: 'absent',    label: 'غايب',    color: '#ef4444' },
+    { id: 'no-reason', label: 'عجز',    color: '#a855f7' },
   ];
 
   const count = (s) => workers.filter(w => (entries[w.id]?.status || 'present') === s).length;
@@ -3913,7 +3913,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
         {loading
           ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></div>
           : workers.length === 0
-            ? <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">👷 لا يوجد عمال مضافين بعد</div></div>
+            ? <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
             : <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
                 {workers.map(w => {
                   const e = entries[w.id] || {};
@@ -3992,7 +3992,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
         <div className="table-container">
           <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>سجل الورديات السابقة</div></div>
           {history.length === 0
-            ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon"></div><div className="empty-title">📭 لا يوجد سجل بعد</div></div>
+            ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon"></div><div className="empty-title">لا يوجد سجل بعد</div></div>
             : history.map(h => {
               const present  = h.entries.filter(e => e.status === 'present').length;
               const absent   = h.entries.filter(e => e.status === 'absent').length;
@@ -4010,7 +4010,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
                     {present  > 0 && <span style={{ background:'rgba(16,185,129,0.12)', border:'1px solid rgba(16,185,129,0.3)', color:'#10b981', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>✅ {present}</span>}
                     {late     > 0 && <span style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.3)', color:'#f59e0b', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>⏰ {late}</span>}
                     {absent   > 0 && <span style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)', color:'#ef4444', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>❌ {absent}</span>}
-                    {noReason > 0 && <span style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)', color:'#a855f7', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>🚫 {noReason}</span>}
+                    {noReason > 0 && <span style={{ background:'rgba(168,85,247,0.12)', border:'1px solid rgba(168,85,247,0.3)', color:'#a855f7', padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700 }}>{noReason}</span>}
                   </div>
                 </div>
               );
@@ -4221,11 +4221,11 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>⛽ تصفية الوردية</div>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>تصفية الوردية</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>سجّل قراءات العداد لكل وردية — العجز والزيادة تتسجل تلقائياً على العامل</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[['shift','⛽ تسجيل الوردية'],['history','السجل'],['report','تقرير شهري']].map(([t,l]) => (
+          {[['shift','تسجيل الوردية'],['history','السجل'],['report','تقرير شهري']].map(([t,l]) => (
             <button key={t} className={`admin-tab ${tab===t?'active':''}`} onClick={() => setTab(t)}>{l}</button>
           ))}
         </div>
@@ -4261,13 +4261,13 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
 
         {/* Global fuel price */}
         <div style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.02))', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 14, padding: '14px 18px', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 16 }}>💰</div>
+          
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>سعر اللتر (ج.م) — يُطبّق على جميع العمال</div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <input className="shift-mini-input" style={{ width: 130 }} type="number" min="0" step="0.01" placeholder="مثال: 10.25"
                 value={globalFuelPrice} onChange={ev => setGlobalFuelPrice(ev.target.value)} />
-              <button className="btn btn-accent btn-sm" onClick={applyGlobalPrice}>⚡ تطبيق على الكل </button>
+              <button className="btn btn-accent btn-sm" onClick={applyGlobalPrice}>تطبيق على الكل </button>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>أو أدخل السعر لكل عامل على حدة</span>
             </div>
           </div>
@@ -4275,7 +4275,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
 
         {/* Worker cards */}
         {workers.length === 0
-          ? <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">👷 لا يوجد عمال مضافين بعد</div></div>
+          ? <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">لا يوجد عمال مضافين بعد</div></div>
           : <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
               {workers.map(w => {
                 const e = entries[w.id] || {};
@@ -4305,7 +4305,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
                     {/* Meter inputs */}
                     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>⛽ نوع الوقود</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 5, fontWeight: 600 }}>نوع الوقود</div>
                         <select
                           value={e.fuelType || w.defaultFuelType || 'بنزين 92'}
                           onChange={ev => setField(w.id, 'fuelType', ev.target.value)}
@@ -4361,8 +4361,8 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', background: 'rgba(0,0,0,0.12)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                           {[
                             { label: 'الكمية المباعة', value: `${Math.abs(sold ?? 0).toLocaleString('ar-EG')} لتر`, icon: '', color: 'var(--text)' },
-                            { label: 'المبلغ المطلوب', value: `${(e.required||0).toFixed(2)} ج`, icon: '🎯', color: '#f59e0b' },
-                            { label: e.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(e.diff).toFixed(2)} ج`, icon: e.diff >= 0 ? '📈' : '📉', color: e.diff >= 0 ? '#10b981' : '#ef4444' },
+                            { label: 'المبلغ المطلوب', value: `${(e.required||0).toFixed(2)} ج`, icon: null, color: '#f59e0b' },
+                            { label: e.diff >= 0 ? 'الزيادة' : 'العجز', value: `${Math.abs(e.diff).toFixed(2)} ج`, icon: e.diff >= 0 ? '↑' : '↓', color: e.diff >= 0 ? '#10b981' : '#ef4444' },
                           ].map(({ label, value, icon, color }, i) => (
                             <div key={i} style={{ padding: '10px 14px', borderLeft: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{icon} {label}</div>
@@ -4397,7 +4397,7 @@ const FuelLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
         <div className="table-container">
           <div className="table-hdr"><div style={{ fontSize: 15, fontWeight: 700 }}>آخر القراءات</div></div>
           {loading ? <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
-          : logs.length === 0 ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon">⛽</div><div className="empty-title">لا توجد قراءات مسجّلة بعد</div></div>
+          : logs.length === 0 ? <div className="empty-state" style={{ padding: 40 }}><div className="empty-icon"></div><div className="empty-title">لا توجد قراءات مسجّلة بعد</div></div>
           : logs.slice(0, 50).map(l => {
             const isShortage = l.result === 'shortage';
             return (
@@ -4645,7 +4645,7 @@ const StationSwitcher = ({ stations, activeStation, onSwitch, onManage }) => {
   return (
     <div className="station-switcher" ref={ref}>
       <button className={`station-switcher-btn ${open ? 'open' : ''}`} onClick={() => setOpen(v => !v)}>
-        <span style={{ fontSize: 16 }}>⛽</span>
+        
         <span className="st-name">{current?.name || 'اختر محطة'}</span>
         <span className="st-arrow">▼</span>
       </button>
@@ -4654,7 +4654,7 @@ const StationSwitcher = ({ stations, activeStation, onSwitch, onManage }) => {
           {stations.map(s => (
             <div key={s.id} className={`station-item ${s.id === activeStation ? 'active' : ''}`}
               onClick={() => { onSwitch(s.id); setOpen(false); }}>
-              <div className="station-item-icon">⛽</div>
+              <div className="station-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/></svg></div>
               <div style={{ flex: 1 }}>
                 <div className="station-item-name">{s.name}</div>
                 <div className="station-item-sub">{s.address || 'لا يوجد عنوان'}</div>
@@ -4664,7 +4664,7 @@ const StationSwitcher = ({ stations, activeStation, onSwitch, onManage }) => {
           ))}
           <div className="station-switcher-footer">
             <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'center' }}
-              onClick={() => { onManage(); setOpen(false); }}>⚙️ إدارة المحطات</button>
+              onClick={() => { onManage(); setOpen(false); }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/></svg> إدارة المحطات</button>
           </div>
         </div>
       )}
@@ -4716,12 +4716,12 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
     } catch { toast('حدث خطأ في الحذف', 'error'); }
     setDeleting(null);
   };
-  const planLabels = { free: '🆓 مجانية', starter: '🚀 أساسية', pro: '⭐ احترافية', enterprise: '👑 مميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية' };
+  const planLabels = { free: 'مجانية', starter: 'أساسية', pro: 'احترافية', enterprise: 'مميزة', lifetime: 'مدى الحياة', trial: 'تجريبية' };
   return (
     <div className="stations-page">
       <div className="station-limit-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 22 }}>⛽</span>
+          
           <div>
             <div style={{ fontWeight: 700, fontSize: 14 }}>محطاتك</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{stations.length} من {limit === Infinity ? 'غير محدود' : limit} محطات — باقة {planLabels[plan] || plan}</div>
@@ -4730,22 +4730,22 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
         <button className="btn btn-primary btn-sm" onClick={openAdd}>+ إضافة محطة {stations.length >= limit && limit !== Infinity ? '' : ''}</button>
       </div>
       {stations.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">⛽</div><div className="empty-title">لا توجد محطات بعد</div><button className="btn btn-primary" style={{marginTop:16}} onClick={openAdd}>➕ إضافة أول محطة</button></div>
+        <div className="empty-state"><div className="empty-icon"></div><div className="empty-title">لا توجد محطات بعد</div><button className="btn btn-primary" style={{marginTop:16}} onClick={openAdd}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg> إضافة أول محطة</button></div>
       ) : stations.map(s => (
         <div key={s.id} className={`station-card ${s.id === activeStation ? 'active-station' : ''}`}>
-          <div className="station-card-icon">⛽</div>
+          <div className="station-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/></svg></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div className="station-card-name">{s.name}</div>
               {s.id === activeStation && <span style={{ background: 'rgba(26,86,219,0.2)', color: 'var(--primary-light)', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>✓ نشطة</span>}
             </div>
             <div className="station-card-meta">
-                {s.address && <span>📍 {s.address}</span>}
+                {s.address && <span>{s.address}</span>}
                 <span>{(workers||[]).filter(w => w.stationId === s.id).length} عامل</span>
               </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {s.id !== activeStation && <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}>⚡ تفعيل</button>}
+            {s.id !== activeStation && <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}>تفعيل</button>}
             <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}></button>
             {stations.length > 1 && <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s)} disabled={deleting === s.id}>{deleting === s.id ? '...' : ''}</button>}
           </div>
@@ -4760,7 +4760,7 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
               <div className="form-group"><label className="form-label">العنوان (اختياري)</label><input className="form-input" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="مثال: شارع النيل" /></div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? '⏳...' : editStation ? '💾 حفظ' : '✅ إضافة'}</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? '...' : editStation ? 'حفظ' : 'إضافة'}</button>
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>✕ إلغاء</button>
             </div>
           </div>
@@ -4797,7 +4797,7 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
     },
     {
       id: 'starter',
-      emoji: '🚀',
+      emoji: '',
       name: 'الأساسية',
       desc: 'مناسبة للمحطات الصغيرة',
       price: '149',
@@ -4834,7 +4834,7 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
         { yes: true,  text: 'أرشيف وإغلاق الشهر' },
       ],
       btnClass: 'btn-primary',
-      btnLabel: '🔥 اشترك الآن',
+      btnLabel: 'اشترك الآن',
     },
     {
       id: 'enterprise',
@@ -4859,8 +4859,8 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
     },
     {
       id: 'lifetime',
-      emoji: '♾️',
-      name: '♾️ مدى الحياة',
+      emoji: '',
+      name: 'مدى الحياة',
       desc: 'ادفع مرة واحدة — استخدم للأبد',
       price: '4,999',
       period: 'دفعة واحدة فقط — بدون أي رسوم شهرية',
@@ -4898,7 +4898,7 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
               ← رجوع للتطبيق
             </button>
           )}
-          <div className="pricing-icon">⛽</div>
+          <div className="pricing-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/><path d="M19 8h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v6"/></svg></div>
           <div className="pricing-title">انتهت فترة التجربة المجانية</div>
           <div className="pricing-sub">
             استمتعت بـ {TRIAL_DAYS} يوم مجاناً — اختر الخطة المناسبة لمحطتك وابقى متحكم في كل شيء
@@ -4911,7 +4911,7 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
             <div key={plan.id} className={`plan-card ${plan.className}`}>
               {plan.popular && <div className="popular-badge">الأكثر مبيعاً</div>}
               {plan.lifetime && <div className="lifetime-badge">مدى الحياة</div>}
-              {plan.free && <div className="free-badge">✅ مجاناً للأبد</div>}
+              {plan.free && <div className="free-badge">مجاناً للأبد</div>}
               <div className="plan-emoji">{plan.emoji}</div>
               <div className="plan-name">{plan.name}</div>
               <div className="plan-desc">{plan.desc}</div>
@@ -4924,7 +4924,7 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
               <div className="plan-features">
                 {plan.features.map((f, i) => (
                   <div key={i} className={`plan-feature ${f.yes ? 'yes' : 'no'}`}>
-                    <span className="feat-icon">{f.yes ? '✅' : '❌'}</span>
+                    <span className="feat-icon" style={{ color: f.yes ? '#10b981' : 'rgba(239,68,68,0.4)' }}>{f.yes ? '✓' : '✕'}</span>
                     <span>{f.text}</span>
                   </div>
                 ))}
@@ -5000,7 +5000,7 @@ const TrialBanner = ({ remaining, onViewPlans, userName }) => {
 
       {/* النص في النص تماماً */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <span style={{ fontSize: 16 }}>{urgent ? '🔴' : '⏳'}</span>
+        <span style={{ fontSize: 12, color: urgent ? '#ef4444' : 'var(--text-muted)' }}>{urgent ? '●' : '○'}</span>
 
         <span style={{ fontSize: 13, fontWeight: 600, color: urgent ? '#ef4444' : '#f59e0b' }}>
           {userName && <strong style={{ color: 'var(--text)' }}>{userName}، </strong>}
@@ -5031,7 +5031,7 @@ const TrialBanner = ({ remaining, onViewPlans, userName }) => {
 
         {/* زرار الاشتراك */}
         <button className="btn btn-accent btn-sm" onClick={onViewPlans} style={{ marginRight: 4 }}>
-          💳 اشترك الآن
+          اشترك الآن
         </button>
       </div>
     </div>
@@ -5089,7 +5089,7 @@ const AVATAR_OPTIONS = [
   { emoji: '🔥', label: 'نار' },
   { emoji: '', label: 'برق' },
   { emoji: '💎', label: 'ماس' },
-  { emoji: '🚀', label: 'صاروخ' },
+  { emoji: '', label: 'صاروخ' },
   { emoji: '⛽', label: 'محطة' },
   { emoji: '🏆', label: 'بطل' },
   { emoji: '🌟', label: 'نجمة' },
@@ -5124,7 +5124,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
   const [selectedBg, setSelectedBg] = useState(user.avatarBg || AVATAR_BG_OPTIONS[0].value);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
-  const planLabels = { free: 'المجانية', starter: 'الأساسية', enterprise: 'المميزة', lifetime: '♾️ مدى الحياة', trial: '🎯 تجريبية', basic: 'الأساسية', pro: 'الاحترافية' };
+  const planLabels = { free: 'المجانية', starter: 'الأساسية', enterprise: 'المميزة', lifetime: 'مدى الحياة', trial: 'تجريبية', basic: 'الأساسية', pro: 'الاحترافية' };
   const currentPlan = plan;
   const planLabel = planLabels[currentPlan] || currentPlan;
   const isPremium = currentPlan === 'enterprise' || currentPlan === 'lifetime';
@@ -5240,7 +5240,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
         <div className="modal-overlay" onClick={() => setShowAvatarPicker(false)}>
           <div className="modal" style={{ maxWidth: 460, animation: 'fadeIn .2s ease' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">🎨 اختر أفاتار</div>
+              <div className="modal-title">اختر أفاتار</div>
               <button className="close-btn" onClick={() => setShowAvatarPicker(false)}>✕</button>
             </div>
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -5330,13 +5330,13 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
       {/* ── البيانات الشخصية ── */}
       <div className="card" style={{ padding: 26 }}>
         <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 18 }}>👤</span> البيانات الشخصية
+          البيانات الشخصية
         </div>
 
         {/* الإيميل - عرض فقط */}
         <div style={{ marginBottom: 16, padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>📧 البريد الإلكتروني</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>البريد الإلكتروني</div>
             <div style={{ fontSize: 14, direction: 'ltr', textAlign: 'left' }}>{user.email || '—'}</div>
           </div>
           <span style={{ fontSize: 11, background: 'rgba(100,116,139,0.1)', color: 'var(--text-muted)', padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>لا يمكن تغييره</span>
@@ -5355,7 +5355,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
             <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01XXXXXXXXX" type="tel" dir="ltr" />
           </div>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, marginTop: -8 }}>📌 رقمك بيُستخدم لإرسال الإشعارات عبر واتساب</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, marginTop: -8 }}>رقمك بيُستخدم لإرسال الإشعارات عبر واتساب</div>
 
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={save} disabled={saving}>
           {saving ? '⏳ جاري الحفظ...' : 'حفظ البيانات'}
@@ -5377,7 +5377,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
             }}>
               {planLabel}
             </div>
-            {isPremium && <span style={{ fontSize: 12, color: '#10b981' }}>✅ أنت على أعلى باقة</span>}
+            {isPremium && <span style={{ fontSize: 12, color: '#10b981' }}>أنت على أعلى باقة</span>}
           </div>
           {!isPremium && (
             <button className="btn btn-accent btn-sm" onClick={() => onShowPricing && onShowPricing()}>
@@ -5412,7 +5412,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
       {user.ownerCode && (
         <div className="card" style={{ padding: 22 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🔑</span> كود الانضمام الخاص بك
+            كود الانضمام الخاص بك
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
@@ -5423,7 +5423,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
             }}>
               {user.ownerCode}
             </div>
-            <button className="btn btn-ghost" onClick={() => { navigator.clipboard?.writeText(user.ownerCode); toast('تم نسخ الكود ✓', 'success'); }}>📋 نسخ</button>
+            <button className="btn btn-ghost" onClick={() => { navigator.clipboard?.writeText(user.ownerCode); toast('تم نسخ الكود ✓', 'success'); }}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg> نسخ</button>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>يستخدمه العمال عند التسجيل للانضمام لحسابك</div>
         </div>
@@ -5433,7 +5433,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
       <div className="card" style={{ padding: 22 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showPassSection ? 20 : 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18 }}>🔐</span> تغيير كلمة المرور
+            تغيير كلمة المرور
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowPassSection(v => !v)}>
             {showPassSection ? '✕ إغلاق' : ' تغيير'}
@@ -5486,12 +5486,12 @@ const AdminLoginPage = ({ onAuth }) => {
         onAuth(cred.user);
       } else {
         await signOut(auth);
-        setErr('ليس لديك صلاحية الوصول ❌');
+        setErr('ليس لديك صلاحية الوصول');
         setShake(true);
         setTimeout(() => setShake(false), 600);
       }
     } catch (e) {
-      setErr('باسوورد غلط أو حساب غير موجود ❌');
+      setErr('باسوورد غلط أو حساب غير موجود');
       setShake(true);
       setTimeout(() => setShake(false), 600);
     }
@@ -5503,7 +5503,7 @@ const AdminLoginPage = ({ onAuth }) => {
       <div style={{ width: 360, animation: shake ? 'shake .5s ease' : 'fadeIn .3s ease' }}>
         <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}`}</style>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 48, marginBottom: 10 }}>🔐</div>
+          <div style={{ fontSize: 48, marginBottom: 10 }}><svg width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'><rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/></svg></div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>لوحة تحكم المطور</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>WaqoudPro — Admin Only</div>
         </div>
@@ -5521,13 +5521,13 @@ const AdminLoginPage = ({ onAuth }) => {
                 autoFocus
               />
               <button onClick={() => setShow(!show)} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-muted)' }}>
-                {show ? '🙈' : '👁️'}
+                {show ? <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M17.94 17.94A10 10 0 0 1 12 20c-7 0-11-8-11-8a18 18 0 0 1 5.06-5.94'/><line x1='1' y1='1' x2='23' y2='23'/></svg> : <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/><circle cx='12' cy='12' r='3'/></svg>}
               </button>
             </div>
             {err && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 6 }}>{err}</div>}
           </div>
           <button className="btn btn-danger" style={{ width: '100%', justifyContent: 'center' }} onClick={submit} disabled={loading}>
-            {loading ? '⏳ جاري الدخول...' : '🔓 دخول'}
+            {loading ? 'جاري الدخول...' : 'دخول'}
           </button>
         </div>
       </div>
@@ -5583,7 +5583,7 @@ const AdminPanel = () => {
   };
 
   const typeColors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', danger: '#ef4444' };
-  const typeIcons  = { info: 'ℹ️', success: '✅', warning: '⚠️', danger: '🚨' };
+  const typeIcons  = { info: 'i', success: '✓', warning: '!', danger: '!' };
   const typeLabels = { info: 'معلومة', success: 'إيجابي', warning: 'تحذير', danger: 'مهم' };
 
   if (!authed) return <AdminLoginPage onAuth={(u) => { setAuthed(true); setAdminUser(u); }} />;
@@ -5596,7 +5596,7 @@ const AdminPanel = () => {
       <div className="admin-wrap">
         {/* Header */}
         <div className="admin-header">
-          <div style={{ fontSize: 40 }}>🛠️</div>
+          
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <div style={{ fontSize: 20, fontWeight: 800 }}>لوحة تحكم المطور</div>
@@ -5623,7 +5623,7 @@ const AdminPanel = () => {
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap' }}>
           {[
-            { id: 'send', label: '📢 إرسال إشعار جديد' },
+            { id: 'send', label: 'إرسال إشعار جديد' },
             { id: 'history', label: `الإشعارات السابقة (${announcements.length})` },
             { id: 'owners', label: `الملاك (${owners.length})` },
           ].map(t => (
@@ -5636,7 +5636,7 @@ const AdminPanel = () => {
         {/* TAB: SEND */}
         {tab === 'send' && (
           <div className="announce-form">
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 20 }}>📢 إشعار جديد لجميع الملاك</div>
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 20 }}>إشعار جديد لجميع الملاك</div>
 
             {/* Type selector */}
             <div style={{ marginBottom: 16 }}>
@@ -5672,7 +5672,7 @@ const AdminPanel = () => {
             {/* Preview */}
             {(title || body) && (
               <div className="announce-preview">
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, fontWeight: 700 }}>👁️ معاينة كما سيراها الملاك:</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, fontWeight: 700 }}>معاينة كما سيراها الملاك:</div>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <div style={{ width: 38, height: 38, borderRadius: 10, background: `rgba(${type === 'info' ? '59,130,246' : type === 'success' ? '16,185,129' : type === 'warning' ? '245,158,11' : '239,68,68'},.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{typeIcons[type]}</div>
                   <div>
@@ -5686,7 +5686,7 @@ const AdminPanel = () => {
             {/* Send */}
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button className="btn btn-primary" style={{ justifyContent: 'center', minWidth: 160 }} onClick={sendAnnouncement} disabled={sending || !title.trim() || !body.trim()}>
-                {sending ? '⏳ جاري الإرسال...' : `📢 إرسال لـ ${owners.length} مالك`}
+                {sending ? 'جاري الإرسال...' : `إرسال لـ ${owners.length} مالك`}
               </button>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 بيوصل في الـ notification bell لكل الملاك فور دخولهم
@@ -5700,7 +5700,7 @@ const AdminPanel = () => {
           <div className="table-container">
             <div className="table-hdr">
               <div style={{ fontSize: 15, fontWeight: 700 }}>الإشعارات السابقة</div>
-              <button className="btn btn-ghost btn-sm" onClick={loadData}>🔄 تحديث</button>
+              <button className="btn btn-ghost btn-sm" onClick={loadData}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='23,4 23,10 17,10'/><path d='M20.49,15a9,9,0,1,1-2.12-9.36L23,10'/></svg> تحديث</button>
             </div>
             {loadingAnns ? (
               <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
@@ -5739,14 +5739,14 @@ const AdminPanel = () => {
                   إرسال واتساب لـ {ownersWithPhone.length} مالك عندهم رقم
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
-                  ⚠️ واتساب مش بيسمح بـ bulk — هيفتح لكل مالك نافذة منفصلة. اضغط على اسمه أو استخدم زرار "واتساب الكل"
+                  واتساب مش بيسمح بـ bulk — هيفتح لكل مالك نافذة منفصلة. اضغط على اسمه أو استخدم زرار "واتساب الكل"
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {ownersWithPhone.map(o => {
                     const phone = o.phone.startsWith('0') ? '2' + o.phone : o.phone;
                     const latestAnn = announcements[0];
                     const msg = latestAnn
-                      ? encodeURIComponent(`⛽ WaqoudPro
+                      ? encodeURIComponent(`WaqoudPro
 مرحباً يا ${o.name} 
 
 ${typeIcons[latestAnn.type] || 'ℹ️'} ${latestAnn.title}
@@ -5754,7 +5754,7 @@ ${typeIcons[latestAnn.type] || 'ℹ️'} ${latestAnn.title}
 ${latestAnn.body}
 ─────────────────
 فريق WaqoudPro 🚀`)
-                      : encodeURIComponent(`⛽ WaqoudPro
+                      : encodeURIComponent(`WaqoudPro
 مرحباً يا ${o.name} 
 لديك إشعار جديد في التطبيق — افتح التطبيق للاطلاع عليه.`);
                     return (
@@ -5771,7 +5771,7 @@ ${latestAnn.body}
             {ownersWithoutPhone.length > 0 && (
               <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 14, padding: '14px 18px', marginBottom: 20 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>
-                  ⚠️ {ownersWithoutPhone.length} مالك بدون رقم — مش هيوصلهم واتساب
+                  {ownersWithoutPhone.length} مالك بدون رقم — مش هيوصلهم واتساب
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {ownersWithoutPhone.map(o => (
@@ -5787,13 +5787,13 @@ ${latestAnn.body}
             <div className="table-container">
               <div className="table-hdr">
                 <div style={{ fontSize: 15, fontWeight: 700 }}>كل الملاك ({owners.length})</div>
-                <button className="btn btn-ghost btn-sm" onClick={loadData}>🔄 تحديث</button>
+                <button className="btn btn-ghost btn-sm" onClick={loadData}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='23,4 23,10 17,10'/><path d='M20.49,15a9,9,0,1,1-2.12-9.36L23,10'/></svg> تحديث</button>
               </div>
               {loadingOwners ? (
                 <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
               ) : owners.length === 0 ? (
                 <div className="empty-state" style={{ padding: 40 }}>
-                  <div className="empty-icon">👤</div>
+                  <div className="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
                   <div className="empty-title">لا يوجد ملاك مسجلين بعد</div>
                 </div>
               ) : owners.map(o => (
@@ -5810,7 +5810,7 @@ ${latestAnn.body}
                   <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 8, fontWeight: 700,
                     background: o.plan === 'lifetime' ? 'rgba(168,85,247,0.15)' : o.plan === 'enterprise' ? 'rgba(245,158,11,0.15)' : o.plan === 'trial' ? 'rgba(59,130,246,0.15)' : 'rgba(100,116,139,0.1)',
                     color: o.plan === 'lifetime' ? '#a855f7' : o.plan === 'enterprise' ? '#f59e0b' : o.plan === 'trial' ? '#3b82f6' : 'var(--text-muted)' }}>
-                    { o.plan === 'lifetime' ? '♾️ مدى الحياة' : o.plan === 'enterprise' ? '👑 مميزة' : o.plan === 'starter' ? '🚀 أساسية' : o.plan === 'trial' ? '🎯 تجريبية' : 'مجاني' }
+                    { o.plan === 'lifetime' ? 'مدى الحياة' : o.plan === 'enterprise' ? 'مميزة' : o.plan === 'starter' ? 'أساسية' : o.plan === 'trial' ? 'تجريبية' : 'مجاني' }
                   </span>
                   {/* تغيير الباقة */}
                   <select
@@ -5851,7 +5851,7 @@ ${latestAnn.body}
                         loadData();
                       } catch (err) { toast('خطأ في الحذف: ' + err.message, 'error'); }
                     }}
-                  >🗑️ حذف</button>
+                  ><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='3,6 5,6 21,6'/><path d='M19,6l-1,14H6L5,6'/><path d='M10,11v6'/><path d='M14,11v6'/><path d='M9,6V4h6v2'/></svg> حذف</button>
                 </div>
               ))}
             </div>
@@ -5902,7 +5902,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
         notifs.push({
           id: `ann_${ann.id}`,
           type: ann.type || 'info',
-          icon: { info: 'ℹ️', success: '✅', warning: '⚠️', danger: '🚨' }[ann.type] || 'ℹ️',
+          icon: { info: 'i', success: '✓', warning: '!', danger: '!' }[ann.type] || 'i',
           title: ann.title,
           sub: ann.body,
           time: ann.createdAt ? new Date(ann.createdAt).toLocaleString('ar-EG') : '',
@@ -5916,7 +5916,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
       workers.filter(w => totalDed(w) > w.salary * 0.3 && w.salary > 0).forEach(w => {
         notifs.push({
           id: `high_ded_${w.id}`,
-          type: 'danger', icon: '💸',
+          type: 'danger', icon: '$',
           title: `خصومات عالية — ${w.name}`,
           sub: `${fmt(totalDed(w))} خصومات (${Math.round((totalDed(w)/w.salary)*100)}% من الراتب)`,
           time: '', ts: now - 5000,
@@ -5946,12 +5946,12 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
         }
         const rewards = (workerRecord.incentives || workerRecord.discipline||[]).filter(d=>(d.amount||d.reward||0)>0);
         if (rewards.length > 0) {
-          notifs.push({ id: `worker_rewards`, type: 'success', icon: '🎁', title: `${rewards.length} حافز مسجل هذا الشهر`, sub: `إجمالي الحوافز: ${fmt(rewards.reduce((s,d)=>s+(d.amount||d.reward||0),0))}`, time: '', ts: now - 4000, page: 'profile', hint: '← عرض ملفك الشخصي' });
+          notifs.push({ id: `worker_rewards`, type: 'success', icon: '+', title: `${rewards.length} حافز مسجل هذا الشهر`, sub: `إجمالي الحوافز: ${fmt(rewards.reduce((s,d)=>s+(d.amount||d.reward||0),0))}`, time: '', ts: now - 4000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
         const net = calcNet(workerRecord);
         const pct = workerRecord.salary > 0 ? Math.round((net/workerRecord.salary)*100) : 100;
         if (pct < 80 && workerRecord.salary > 0) {
-          notifs.push({ id: `worker_net_low`, type: 'danger', icon: '💰', title: `صافي راتبك ${pct}% هذا الشهر`, sub: `${fmt(net)} من أصل ${fmt(workerRecord.salary)}`, time: '', ts: now - 10000, page: 'profile', hint: '← عرض ملفك الشخصي' });
+          notifs.push({ id: `worker_net_low`, type: 'danger', icon: '$', title: `صافي راتبك ${pct}% هذا الشهر`, sub: `${fmt(net)} من أصل ${fmt(workerRecord.salary)}`, time: '', ts: now - 10000, page: 'profile', hint: '← عرض ملفك الشخصي' });
         }
       }
     }
@@ -5996,7 +5996,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
   return (
     <div className="notif-bell-wrap" ref={ref}>
       <button className={`notif-bell-btn ${unreadCount > 0 ? 'has-notif' : ''}`} onClick={() => setOpen(!open)} title="الإشعارات">
-        🔔
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
 
@@ -6102,7 +6102,7 @@ const NotificationBell = ({ user, workers, onNavigate }) => {
           <div className="notif-list">
             {notifications.length === 0 ? (
               <div className="notif-empty">
-                <div className="notif-empty-icon">🔕</div>
+                <div className="notif-empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/></svg></div>
                 <div>لا توجد إشعارات حالياً</div>
               </div>
             ) : notifications.map(n => {
@@ -6447,7 +6447,7 @@ const App = ({ onShowPricing }) => {
       <div className="main-content" style={{ marginRight: sidebarCollapsed ? 0 : 'var(--sidebar-w)', transition: 'margin-right 0.3s ease' }}>
         <div className="topbar no-print">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="hamburger" onClick={() => setSidebarOpen(true)}>☰</button>
+            <button className="hamburger" onClick={() => setSidebarOpen(true)}><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='3' y1='6' x2='21' y2='6'/><line x1='3' y1='12' x2='21' y2='12'/><line x1='3' y1='18' x2='21' y2='18'/></svg></button>
             <button
               onClick={() => setSidebarCollapsed(v => !v)}
               className="no-print"
@@ -6600,7 +6600,7 @@ const App = ({ onShowPricing }) => {
                   <div style={{ fontSize: 52, marginBottom: 16 }}></div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>تقرير صرف الرواتب</div>
                   <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
-                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>👑 ترقية للمميزة</button>
+                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='17,11 12,6 7,11'/><line x1='12' y1='6' x2='12' y2='18'/></svg> ترقية للمميزة</button>
                 </div>
           )}
           {page === 'month_archive' && user.role === 'owner' && (
@@ -6610,7 +6610,7 @@ const App = ({ onShowPricing }) => {
                   <div style={{ fontSize: 52, marginBottom: 16 }}></div>
                   <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>أرشيف الشهور</div>
                   <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>هذه الميزة متاحة في الباقة المميزة فقط</div>
-                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}>👑 ترقية للمميزة</button>
+                  <button className="btn btn-accent" onClick={() => onShowPricing && onShowPricing()}><svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='17,11 12,6 7,11'/><line x1='12' y1='6' x2='12' y2='18'/></svg> ترقية للمميزة</button>
                 </div>
           )}
           {page === 'profile' && workerRecord && <WorkerProfile worker={workerRecord} onUpdate={updateWorker} />}
