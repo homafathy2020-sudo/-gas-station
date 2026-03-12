@@ -23,14 +23,14 @@ body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--t
 
 .sidebar { width: var(--sidebar-w); background: var(--dark-2); border-left: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; right: 0; top: 0; bottom: 0; z-index: 100; transition: transform 0.3s ease; }
 .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-.logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .logo-text { font-size: 16px; font-weight: 800; line-height: 1.2; }
 .logo-sub { font-size: 11px; color: var(--text-muted); }
 .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
 .nav-section-title { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 8px 8px 4px; margin-top: 8px; }
-.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-muted); transition: all 0.2s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: right; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-muted); transition: all 0.2s; margin-bottom: 1px; border: none; background: none; width: 100%; text-align: right; letter-spacing: 0.1px; }
 .nav-item:hover { background: var(--card-hover); color: var(--text); }
-.nav-item.active { background: linear-gradient(135deg, rgba(26,86,219,0.3), rgba(245,158,11,0.1)); color: var(--primary-light); border: 1px solid rgba(26,86,219,0.3); }
+.nav-item.active { background: rgba(26,86,219,0.15); color: var(--primary-light); border: 1px solid rgba(26,86,219,0.25); font-weight: 600; }
 .nav-icon { font-size: 18px; width: 20px; text-align: center; }
 .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
 .user-card { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: var(--card); }
@@ -41,7 +41,7 @@ body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--t
 .logout-btn:hover { background: rgba(239,68,68,0.2); }
 .main-content { flex: 1; margin-right: var(--sidebar-w); display: flex; flex-direction: column; }
 .topbar { background: var(--dark-2); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-.topbar-title { font-size: 20px; font-weight: 700; }
+.topbar-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 .page-content { padding: 28px; flex: 1; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 16px; margin-bottom: 28px; }
@@ -1605,17 +1605,17 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
       {showPlacesManager && <WorkPlacesManager workPlaces={workPlaces} onAdd={onAddPlace} onEdit={onEditPlace} onDelete={onDeletePlace} onClose={() => setShowPlacesManager(false)} />}
       <div className="stats-grid">
         {[
-          { icon: '', label: 'إجمالي العمال', value: workers.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-          { icon: '', label: 'إجمالي الرواتب', value: fmt(totalSal), color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
-          { icon: '✅', label: 'صافي المدفوعات', value: fmt(totalNet), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-          { icon: '➖', label: 'إجمالي الخصومات', value: fmt(allDed), color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-          { icon: '', label: 'إجمالي السحوبات', value: fmt(allCash), color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-          { icon: '', label: 'حالات العجز', value: `${totalAbsNoReason}`, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-          { icon: '🎁', label: 'عدد الحوافز', value: `${totalIncentivesCount}`, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-          { icon: '💚', label: 'إجمالي الحوافز', value: fmt(totalRewardsVal), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: 'إجمالي العمال', value: workers.length, color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>, label: 'إجمالي الرواتب', value: fmt(totalSal), color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>, label: 'صافي المدفوعات', value: fmt(totalNet), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>, label: 'إجمالي الخصومات', value: fmt(allDed), color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>, label: 'إجمالي السحوبات', value: fmt(allCash), color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>, label: 'حالات العجز', value: String(totalAbsNoReason), color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>, label: 'عدد الحوافز', value: String(totalIncentivesCount), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+          { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>, label: 'إجمالي الحوافز', value: fmt(totalRewardsVal), color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
         ].map((s, i) => (
           <div key={i} className="stat-card">
-            <div className="stat-icon" style={{ background: s.bg }}>{s.icon}</div>
+            <div className="stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
             <div>
               <div style={{ fontSize: s.value.toString().length > 9 ? '16px' : '22px', fontWeight: 800, color: s.color }}>{s.value}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{s.label}</div>
@@ -1625,7 +1625,7 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 22 }}>
         <div className="card">
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>💹 ملخص الرواتب</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>ملخص الرواتب</div>
           {[
             { label: 'إجمالي الرواتب', val: totalSal, color: '#3b82f6', pct: 100 },
             { label: 'الخصومات', val: allDed, color: '#ef4444', pct: totalSal ? (allDed / totalSal) * 100 : 0 },
@@ -3682,42 +3682,53 @@ const LoginPage = ({ onLogin, onRegisterWorker }) => {
 const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) => {
   const navs = {
     owner: [
-      { id: 'dashboard', icon: '📊', label: '📊 لوحة التحكم' },
-      { id: 'workers', icon: '', label: '👷 إدارة العمال' },
-      { id: 'shift_log', icon: '', label: '📝 سجل الوردية' },
-      { id: 'fuel_log', icon: '⛽', label: '🗓️ تصفية الوردية' },
-      { id: 'reports', icon: '📋', label: 'التقارير' },
-      { id: 'salary_payment', icon: '', label: '💵 صرف الرواتب' },
-      { id: 'month_archive', icon: '', label: '📦 أرشيف الشهور' },
-      { id: 'stations', icon: '⛽', label: 'محطاتي' },
-      { id: 'accounts', icon: '🔐', label: '🔐 إدارة الحسابات' },
-      { id: 'owner_profile', icon: '👤', label: '👤 ملفي الشخصي' }
+      { id: 'dashboard',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>, label: 'لوحة التحكم' },
+      { id: 'workers',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: 'إدارة العمال' },
+      { id: 'shift_log',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, label: 'سجل الوردية' },
+      { id: 'fuel_log',       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/><path d="M19 8h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v6a1 1 0 0 1-1 1"/></svg>, label: 'تصفية الوردية' },
+      { id: 'reports',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>, label: 'التقارير' },
+      { id: 'salary_payment', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>, label: 'صرف الرواتب' },
+      { id: 'month_archive',  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>, label: 'أرشيف الشهور' },
+      { id: 'stations',       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22V8l7-6 7 6v14"/><circle cx="17" cy="5" r="3"/><path d="M20 8v8"/></svg>, label: 'محطاتي' },
+      { id: 'accounts',       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, label: 'إدارة الحسابات' },
+      { id: 'owner_profile',  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, label: 'ملفي الشخصي' },
     ],
     manager: [
-      { id: 'workers', icon: '', label: '👷 إدارة العمال' },
-      { id: 'shift_log', icon: '', label: '📝 سجل الوردية' },
-      { id: 'fuel_log', icon: '⛽', label: '🗓️ تصفية الوردية' },
-      { id: 'reports', icon: '📋', label: 'التقارير' }
+      { id: 'workers',   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: 'إدارة العمال' },
+      { id: 'shift_log', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, label: 'سجل الوردية' },
+      { id: 'fuel_log',  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/></svg>, label: 'تصفية الوردية' },
+      { id: 'reports',   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>, label: 'التقارير' },
     ],
     worker: [
-      { id: 'profile', icon: '👤', label: '👤 ملفي الشخصي' }
+      { id: 'profile', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, label: 'ملفي الشخصي' },
     ],
   };
   return (
     <>
       <div className={`mobile-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
       <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{ transform: collapsed ? 'translateX(100%)' : undefined, transition: 'transform 0.3s ease' }}>
-        <div className="sidebar-logo"><div className="logo-icon">⛽</div><div><div className="logo-text">WaqoudPro</div><div className="logo-sub">نظام المحطات الذكي</div></div></div>
+        <div className="sidebar-logo">
+          <div className="logo-icon" style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/><path d="M19 8h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v6a1 1 0 0 1-1 1"/>
+            </svg>
+          </div>
+          <div><div className="logo-text">WaqoudPro</div><div className="logo-sub">نظام المحطات الذكي</div></div>
+        </div>
         <nav className="sidebar-nav">
           <div className="nav-section-title">القائمة الرئيسية</div>
           {(navs[user.role] || []).map(item => (
             <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => { setPage(item.id); onClose(); }}>
-              <span className="nav-icon">{item.icon}</span>{item.label}
+              <span className="nav-icon" style={{ display:'flex', alignItems:'center', opacity: page === item.id ? 1 : 0.6 }}>{item.icon}</span>
+              <span>{item.label}</span>
             </button>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <button className="logout-btn" onClick={onLogout}>🚪 تسجيل الخروج</button>
+          <button className="logout-btn" onClick={onLogout} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            تسجيل الخروج
+          </button>
         </div>
       </div>
     </>
@@ -5380,8 +5391,8 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
             { ok: true, label: 'رواتب وخصومات' },
             { ok: planHasExcelAdv(currentPlan), label: 'تقارير Excel' },
             { ok: planHasWhatsApp(currentPlan), label: 'واتساب للعمال' },
-            { ok: planHasSalaryPay(currentPlan), label: '💵 صرف الرواتب' },
-            { ok: planHasMonthReset(currentPlan), label: '📦 أرشيف الشهور' },
+            { ok: planHasSalaryPay(currentPlan), label: 'صرف الرواتب' },
+            { ok: planHasMonthReset(currentPlan), label: 'أرشيف الشهور' },
           ].map((f, i) => (
             <span key={i} style={{
               fontSize: 11, fontWeight: 600,
@@ -6411,7 +6422,7 @@ const App = ({ onShowPricing }) => {
     }
   };
 
-  const titles = { dashboard: '📊 لوحة التحكم', workers: '👷 إدارة العمال', reports: '📋 التقارير الشهرية', profile: '👤 ملفي الشخصي', accounts: '🔐 إدارة الحسابات', salary_payment: '💵 صرف الرواتب', month_archive: '📦 أرشيف الشهور', owner_profile: '👤 ملفي الشخصي', stations: '⛽ إدارة المحطات' };
+  const titles = { dashboard: 'لوحة التحكم', workers: 'إدارة العمال', reports: 'التقارير الشهرية', profile: 'ملفي الشخصي', accounts: 'إدارة الحسابات', salary_payment: 'صرف الرواتب', month_archive: 'أرشيف الشهور', owner_profile: 'ملفي الشخصي', stations: 'إدارة المحطات', shift_log: 'سجل الوردية', fuel_log: 'تصفية الوردية' };
   const workerRecord = user?.role === 'worker' ? workers.find(w => w.id === user.id) : null;
 
   const updateWorker = async (updated) => {
@@ -6473,7 +6484,7 @@ const App = ({ onShowPricing }) => {
             <div>
               <div className="topbar-title">{titles[page]}</div>
               {user.role === 'owner' && activeStation && ['workers','reports','salary_payment','shift_log','fuel_log','month_archive'].includes(page) && (
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>⛽ {stations.find(s => s.id === activeStation)?.name || ''}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{stations.find(s => s.id === activeStation)?.name || ''}</div>
               )}
             </div>
           </div>
