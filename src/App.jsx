@@ -44,8 +44,8 @@ body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--t
 .topbar-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 .page-content { padding: 28px; flex: 1; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 28px; }
-.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: flex-start; gap: 16px; transition: all 0.2s; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s; min-width: 0; }
 .stat-card:hover { transform: translateY(-2px); background: var(--card-hover); }
 .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap; }
@@ -2328,7 +2328,7 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
             تم الصرف: <b style={{ color: '#10b981' }}>{fmt(totalPaid)}</b> · متبقي: <b style={{ color: '#f59e0b' }}>{fmt(totalUnpaid)}</b>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', minWidth: 200 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{paidPct}%</span>
             <div className="progress-bar-wrap">
@@ -2477,7 +2477,7 @@ const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
         <div style={{ fontSize: 22, fontWeight: 800 }}>التقرير الشهري — {months[month]} {year}</div>
         <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>WaqoudPro</div>
       </div>
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', marginBottom: 22 }}>
+      <div className="stats-grid" style={{ marginBottom: 22 }}>
         {[
           { label: 'العمال', value: workers.length, icon: '', color: '#3b82f6' },
           { label: 'إجمالي الرواتب', value: fmt(totalSal), icon: '', color: '#f59e0b' },
