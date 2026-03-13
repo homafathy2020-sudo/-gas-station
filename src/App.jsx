@@ -5140,7 +5140,7 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
   // Photo state
   const [photoURL, setPhotoURL] = useState(user.photoURL || '');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const photoInputRef = React.useRef(null);
+  const photoInputRef = useRef(null);
 
   const planLabels = { free: 'المجانية', starter: 'الأساسية', enterprise: 'المميزة', lifetime: 'مدى الحياة', trial: 'تجريبية', basic: 'الأساسية', pro: 'الاحترافية' };
   const currentPlan = plan;
