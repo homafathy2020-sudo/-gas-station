@@ -3816,7 +3816,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
   return (
     <>
       <div className={`mobile-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
-      <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{ transform: collapsed && window.innerWidth > 768 ? 'translateX(100%)' : undefined, transition: 'transform 0.3s ease' }}>
+      <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{ transition: 'transform 0.3s ease' }}>
         <div className="sidebar-logo">
           <div className="logo-icon" style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round">
@@ -6881,6 +6881,12 @@ const App = ({ onShowPricing }) => {
   const [ownerUsers, setOwnerUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [stations, setStations] = useState([]);
   const [activeStation, setActiveStation] = useState(null);
   const unsubscribeListeners = useRef([]);
@@ -7158,7 +7164,7 @@ const App = ({ onShowPricing }) => {
   return (
     <div className="app-shell">
       <Sidebar user={user} page={page} setPage={setPage} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={sidebarCollapsed} />
-      <div className="main-content" style={{ marginRight: sidebarCollapsed ? 0 : 'var(--sidebar-w)', transition: 'margin-right 0.3s ease' }}>
+      <div className="main-content" style={{ marginRight: isMobile ? 0 : (sidebarCollapsed ? 0 : 'var(--sidebar-w)'), transition: 'margin-right 0.3s ease' }}>
         <div className="topbar no-print">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="hamburger" onClick={() => setSidebarOpen(true)}><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='3' y1='6' x2='21' y2='6'/><line x1='3' y1='12' x2='21' y2='12'/><line x1='3' y1='18' x2='21' y2='18'/></svg></button>
