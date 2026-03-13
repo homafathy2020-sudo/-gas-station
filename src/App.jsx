@@ -3860,7 +3860,7 @@ const ShiftLogPage = ({ workers, ownerId, onUpdateWorker, activeStation }) => {
 
   const statusCfg = [
     { id: 'present',   label: 'حاضر',   color: '#10b981' },
-    { id: 'late',      label: '⏰ متأخر',   color: '#f59e0b' },
+    { id: 'late',      label: 'متأخر',   color: '#f59e0b' },
     { id: 'absent',    label: 'غايب',    color: '#ef4444' },
     { id: 'no-reason', label: 'عجز',    color: '#a855f7' },
   ];
@@ -4745,16 +4745,34 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
               </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {s.id !== activeStation && <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}>تفعيل</button>}
-            <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}></button>
-            {stations.length > 1 && <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s)} disabled={deleting === s.id}>{deleting === s.id ? '...' : ''}</button>}
+            {s.id !== activeStation && (
+              <button className="btn btn-blue btn-sm" onClick={() => onSetActive(s.id)}
+                style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20,6 9,17 4,12"/></svg>
+                تفعيل
+              </button>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}
+              style={{ display:'flex', alignItems:'center', gap:5 }}
+              title="تعديل المحطة">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              تعديل
+            </button>
+            {stations.length > 1 && (
+              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(s)} disabled={deleting === s.id}
+                style={{ display:'flex', alignItems:'center', gap:5 }}
+                title="حذف المحطة">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/></svg>
+                {deleting === s.id ? 'جاري الحذف...' : 'حذف'}
+              </button>
+            )}
           </div>
         </div>
       ))}
       {showModal && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="modal">
-            <div className="modal-header"><div className="modal-title">{editStation ? 'تعديل المحطة' : '⛽ إضافة محطة'}</div><button className="close-btn" onClick={() => setShowModal(false)}>✕</button></div>
+            <div className="modal-header"><div className="modal-title">{editStation ? 'تعديل المحطة' : 'إضافة محطة'}</div><button className="close-btn" onClick={() => setShowModal(false)}>✕</button></div>
             <div className="modal-body">
               <div className="form-group"><label className="form-label">اسم المحطة *</label><input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: محطة المنصورة" /></div>
               <div className="form-group"><label className="form-label">العنوان (اختياري)</label><input className="form-input" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="مثال: شارع النيل" /></div>
@@ -5119,10 +5137,10 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [savingPass, setSavingPass] = useState(false);
-  // Avatar state
-  const [selectedEmoji, setSelectedEmoji] = useState(user.avatarEmoji || '');
-  const [selectedBg, setSelectedBg] = useState(user.avatarBg || AVATAR_BG_OPTIONS[0].value);
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  // Photo state
+  const [photoURL, setPhotoURL] = useState(user.photoURL || '');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = React.useRef(null);
 
   const planLabels = { free: 'المجانية', starter: 'الأساسية', enterprise: 'المميزة', lifetime: 'مدى الحياة', trial: 'تجريبية', basic: 'الأساسية', pro: 'الاحترافية' };
   const currentPlan = plan;
@@ -5131,12 +5149,42 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
   const totalWorkersCount = workers.length;
   const totalSalaries = workers.reduce((s, w) => s + (w.salary || 0), 0);
 
+  // رفع صورة البروفايل — base64 في Firestore
+  const handlePhotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast('الملف يجب أن يكون صورة', 'error'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast('حجم الصورة يجب أن يكون أقل من 2MB', 'error'); return; }
+    setUploadingPhoto(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target.result;
+      setPhotoURL(base64);
+      try {
+        await updateDoc(doc(db, 'users', user.id), { photoURL: base64 });
+        onUpdate({ ...user, photoURL: base64, name: name.trim(), phone: phone.trim() });
+        toast('تم رفع الصورة ✓', 'success');
+      } catch { toast('فشل حفظ الصورة، حاول مرة أخرى', 'error'); }
+      setUploadingPhoto(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = async () => {
+    setPhotoURL('');
+    try {
+      await updateDoc(doc(db, 'users', user.id), { photoURL: '' });
+      onUpdate({ ...user, photoURL: '' });
+      toast('تم حذف الصورة', 'success');
+    } catch { toast('حدث خطأ', 'error'); }
+  };
+
   const save = async () => {
     if (!name.trim()) { toast('الاسم مطلوب', 'error'); return; }
     setSaving(true);
-    const updated = { ...user, name: name.trim(), phone: phone.trim(), avatarEmoji: selectedEmoji, avatarBg: selectedBg };
+    const updated = { ...user, name: name.trim(), phone: phone.trim(), photoURL };
     try {
-      await updateDoc(doc(db, 'users', user.id), { name: updated.name, phone: updated.phone, avatarEmoji: selectedEmoji, avatarBg: selectedBg });
+      await updateDoc(doc(db, 'users', user.id), { name: updated.name, phone: updated.phone });
       onUpdate(updated);
       toast('تم حفظ بياناتك ✓', 'success');
     } catch { toast('حدث خطأ، حاول مرة أخرى', 'error'); }
@@ -5163,11 +5211,11 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
     setSavingPass(false);
   };
 
-  const avatarBg = selectedBg || 'linear-gradient(135deg,var(--primary),var(--accent))';
-  const avatarContent = selectedEmoji || name[0] || '؟';
-
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', animation: 'fadeIn .3s ease', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* hidden file input */}
+      <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
 
       {/* ── HERO HEADER ── */}
       <div style={{
@@ -5182,34 +5230,60 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* خلفية ديكور */}
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 80% 50%, rgba(245,158,11,0.07) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
-        {/* الأفاتار */}
+        {/* صورة البروفايل */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div style={{
             width: 90, height: 90, borderRadius: 22,
-            background: avatarBg,
+            background: photoURL ? 'transparent' : 'linear-gradient(135deg,var(--primary),var(--accent))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: selectedEmoji ? 42 : 36, fontWeight: 900,
+            fontSize: 36, fontWeight: 900,
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
             border: '3px solid rgba(255,255,255,0.1)',
-            transition: 'all 0.3s',
+            overflow: 'hidden',
           }}>
-            {avatarContent}
+            {photoURL
+              ? <img src={photoURL} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : (name[0] || '؟')
+            }
           </div>
+          {/* زرار رفع صورة */}
           <button
-            onClick={() => setShowAvatarPicker(true)}
+            onClick={() => photoInputRef.current?.click()}
+            disabled={uploadingPhoto}
             style={{
               position: 'absolute', bottom: -6, left: -6,
               width: 28, height: 28, borderRadius: '50%',
               background: 'var(--primary-light)', border: '2px solid var(--dark-2)',
-              color: 'white', cursor: 'pointer', fontSize: 13,
+              color: 'white', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.2s',
             }}
-            title="تغيير الأفاتار"
-          ></button>
+            title="رفع صورة"
+          >
+            {uploadingPhoto
+              ? <div className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />
+              : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16,16 12,12 8,16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39,18.39A5,5,0,0,0,18,9h-1.26A8,8,0,1,0,3,16.3"/></svg>
+            }
+          </button>
+          {/* زرار حذف الصورة */}
+          {photoURL && (
+            <button
+              onClick={removePhoto}
+              style={{
+                position: 'absolute', top: -6, left: -6,
+                width: 22, height: 22, borderRadius: '50%',
+                background: '#ef4444', border: '2px solid var(--dark-2)',
+                color: 'white', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10,
+              }}
+              title="حذف الصورة"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          )}
         </div>
 
         {/* البيانات */}
@@ -5232,100 +5306,12 @@ const OwnerProfilePage = ({ user, onUpdate, onShowPricing, workers, workPlaces, 
               {planLabel}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* ── AVATAR PICKER MODAL ── */}
-      {showAvatarPicker && (
-        <div className="modal-overlay" onClick={() => setShowAvatarPicker(false)}>
-          <div className="modal" style={{ maxWidth: 460, animation: 'fadeIn .2s ease' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">اختر أفاتار</div>
-              <button className="close-btn" onClick={() => setShowAvatarPicker(false)}>✕</button>
-            </div>
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {/* معاينة */}
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div style={{
-                  width: 80, height: 80, borderRadius: 20,
-                  background: selectedBg || avatarBg,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: selectedEmoji ? 38 : 32, fontWeight: 900,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                  transition: 'all 0.3s',
-                }}>
-                  {selectedEmoji || name[0] || '؟'}
-                </div>
-              </div>
-
-              {/* اختيار الأيقونة */}
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>الأيقونة</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 8 }}>
-                  {/* خيار بلا أيقونة — أول حرف من الاسم */}
-                  <button
-                    onClick={() => setSelectedEmoji('')}
-                    title="أول حرف من الاسم"
-                    style={{
-                      width: '100%', aspectRatio: '1', borderRadius: 10,
-                      background: !selectedEmoji ? 'rgba(26,86,219,0.2)' : 'rgba(255,255,255,0.05)',
-                      border: !selectedEmoji ? '2px solid var(--primary-light)' : '1px solid var(--border)',
-                      cursor: 'pointer', fontSize: 16, fontWeight: 900, color: 'var(--text)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {name[0] || '؟'}
-                  </button>
-                  {AVATAR_OPTIONS.map(opt => (
-                    <button
-                      key={opt.emoji}
-                      onClick={() => setSelectedEmoji(opt.emoji)}
-                      title={opt.label}
-                      style={{
-                        width: '100%', aspectRatio: '1', borderRadius: 10,
-                        background: selectedEmoji === opt.emoji ? 'rgba(26,86,219,0.2)' : 'rgba(255,255,255,0.05)',
-                        border: selectedEmoji === opt.emoji ? '2px solid var(--primary-light)' : '1px solid var(--border)',
-                        cursor: 'pointer', fontSize: 22,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {opt.emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* اختيار اللون */}
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>لون الخلفية</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {AVATAR_BG_OPTIONS.map(bg => (
-                    <button
-                      key={bg.value}
-                      onClick={() => setSelectedBg(bg.value)}
-                      title={bg.label}
-                      style={{
-                        width: 38, height: 38, borderRadius: 10,
-                        background: bg.value,
-                        border: selectedBg === bg.value ? '3px solid white' : '2px solid transparent',
-                        cursor: 'pointer',
-                        boxShadow: selectedBg === bg.value ? '0 0 0 2px var(--primary-light)' : 'none',
-                        transition: 'all 0.15s',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowAvatarPicker(false)}>✓ تم</button>
-              <button className="btn btn-ghost" onClick={() => setShowAvatarPicker(false)}>✕ إغلاق</button>
-            </div>
+          <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-muted)' }}>
+            {photoURL ? 'اضغط على السهم لتغيير الصورة' : 'اضغط على السهم لرفع صورة شخصية'}
+            {' · '}<span style={{ color: 'var(--text-muted)' }}>PNG / JPG / WEBP — أقل من 2MB</span>
           </div>
         </div>
-      )}
+      </div>
 
       {/* ── البيانات الشخصية ── */}
       <div className="card" style={{ padding: 26 }}>
@@ -6504,14 +6490,17 @@ const App = ({ onShowPricing }) => {
                 title="ملفي الشخصي"
                 style={{
                   width: 38, height: 38, borderRadius: 10, cursor: 'pointer',
-                  background: user.avatarBg || 'linear-gradient(135deg,var(--primary),var(--accent))',
+                  background: user.photoURL ? 'transparent' : 'linear-gradient(135deg,var(--primary),var(--accent))',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 700, fontSize: user.avatarEmoji ? 19 : 16,
+                  fontWeight: 700, fontSize: 16, overflow: 'hidden',
                   border: page === 'owner_profile' ? '2px solid var(--primary-light)' : '2px solid transparent',
-                  transition: 'all 0.2s', flexShrink: 0,
+                  transition: 'all 0.2s', flexShrink: 0, padding: 0,
                 }}
               >
-                {user.avatarEmoji || user.name[0]}
+                {user.photoURL
+                  ? <img src={user.photoURL} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+                  : user.name[0]
+                }
               </button>
             )}
           </div>
