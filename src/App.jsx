@@ -186,7 +186,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .month-archive-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
 
 /* ===== ADMIN PANEL ===== */
-.admin-wrap { max-width: 780px; margin: 0 auto; animation: fadeIn .3s ease; }
+.admin-wrap { max-width: 1100px; margin: 0 auto; animation: fadeIn .3s ease; }
 .admin-header { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04)); border: 2px solid rgba(239,68,68,0.3); border-radius: 20px; padding: 26px 30px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; }
 .admin-badge { background: rgba(239,68,68,0.2); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
 .announce-form { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 26px; margin-bottom: 22px; }
@@ -4790,6 +4790,25 @@ const StationsPage = ({ ownerId, stations, activeStation, onSetActive, onRefresh
 
 // ===== شاشة انتهاء التجربة / الخطط =====
 const PricingScreen = ({ onBack, onSelectFree }) => {
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountResult, setDiscountResult] = useState(null); // { valid, discount, code, reason }
+  const [checkingCode, setCheckingCode] = useState(false);
+
+  const checkDiscount = async () => {
+    if (!discountCode.trim()) return;
+    setCheckingCode(true);
+    const result = await validateDiscountCode(discountCode);
+    setDiscountResult(result);
+    setCheckingCode(false);
+  };
+
+  const getDiscountedPrice = (price) => {
+    if (!discountResult?.valid || !discountResult?.discount) return null;
+    const original = parseFloat(price.replace(',',''));
+    if (isNaN(original) || original === 0) return null;
+    return Math.round(original * (1 - discountResult.discount / 100));
+  };
+
   const plans = [
     {
       id: 'free',
@@ -4901,7 +4920,10 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
   ];
 
   const msg = encodeURIComponent(`مرحباً، أريد الاشتراك في WaqoudPro لإدارة المحطة 🚀`);
-  const wa = (plan) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في خطة "${plan}" — WaqoudPro ⛽`)}`;
+  const wa = (plan, discountedPrice) => {
+    const codeInfo = discountResult?.valid ? `\nكود الخصم: ${discountResult.code} (${discountResult.discount}% خصم)${discountedPrice ? `\nالسعر بعد الخصم: ${discountedPrice} ج.م` : ''}` : '';
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`مرحباً، أريد الاشتراك في خطة "${plan}" — WaqoudPro ⛽${codeInfo}`)}`;
+  };
 
   return (
     <div className="expired-screen">
@@ -4923,9 +4945,56 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
           </div>
         </div>
 
+        {/* Discount Code Section */}
+        <div style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: `2px solid ${discountResult?.valid ? 'rgba(16,185,129,0.4)' : discountResult?.valid === false ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
+          borderRadius: 16, padding: '20px 24px', marginBottom: 28,
+          transition: 'border-color .3s',
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            🎟️ عندك كود خصم؟
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="أدخل كود الخصم..."
+              value={discountCode}
+              onChange={e => { setDiscountCode(e.target.value.toUpperCase()); setDiscountResult(null); }}
+              onKeyDown={e => e.key === 'Enter' && checkDiscount()}
+              style={{ flex: 1, minWidth: 180, letterSpacing: 2, fontWeight: 700, textAlign: 'center',
+                borderColor: discountResult?.valid ? 'rgba(16,185,129,0.6)' : discountResult?.valid === false ? 'rgba(239,68,68,0.5)' : 'var(--border)' }}
+            />
+            <button
+              className="btn btn-primary"
+              onClick={checkDiscount}
+              disabled={checkingCode || !discountCode.trim()}
+              style={{ minWidth: 120, justifyContent: 'center' }}
+            >
+              {checkingCode ? '⏳ جاري التحقق...' : '✓ تطبيق الكود'}
+            </button>
+          </div>
+          {discountResult && (
+            <div style={{
+              marginTop: 12, padding: '10px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              background: discountResult.valid ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.08)',
+              border: `1px solid ${discountResult.valid ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.2)'}`,
+              color: discountResult.valid ? '#10b981' : '#ef4444',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              {discountResult.valid
+                ? `✅ كود صحيح! خصم ${discountResult.discount}% على جميع الخطط المدفوعة`
+                : `❌ ${discountResult.reason}`}
+            </div>
+          )}
+        </div>
+
         {/* Plans */}
         <div className="plans-grid">
-          {plans.map(plan => (
+          {plans.map(plan => {
+            const discountedPrice = !plan.isFreePlan ? getDiscountedPrice(plan.price) : null;
+            return (
             <div key={plan.id} className={`plan-card ${plan.className}`}>
               {plan.popular && <div className="popular-badge">الأكثر مبيعاً</div>}
               {plan.lifetime && <div className="lifetime-badge">مدى الحياة</div>}
@@ -4934,10 +5003,26 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
               <div className="plan-name">{plan.name}</div>
               <div className="plan-desc">{plan.desc}</div>
               <div className="plan-price">
-                <sup>ج.م </sup>{plan.price}
-                {!plan.lifetime && <sub> /شهر</sub>}
+                {discountedPrice ? (
+                  <>
+                    <div style={{ fontSize: 16, color: 'var(--text-muted)', textDecoration: 'line-through', fontWeight: 600, marginBottom: 2 }}>
+                      <sup style={{ fontSize: 11 }}>ج.م </sup>{plan.price}
+                    </div>
+                    <div style={{ color: '#10b981' }}>
+                      <sup style={{ fontSize: 16, fontWeight: 700, color: '#10b981' }}>ج.م </sup>{discountedPrice.toLocaleString('ar-EG')}
+                      {!plan.lifetime && <sub style={{ fontSize: 14, color: '#10b981' }}> /شهر</sub>}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <sup>ج.م </sup>{plan.price}
+                    {!plan.lifetime && <sub> /شهر</sub>}
+                  </>
+                )}
               </div>
-              <div className="plan-period">{plan.period}</div>
+              <div className="plan-period">
+                {discountedPrice ? <span style={{ color: '#10b981', fontWeight: 700 }}>خصم {discountResult.discount}% مطبّق 🎉</span> : plan.period}
+              </div>
               <div className="plan-divider" />
               <div className="plan-features">
                 {plan.features.map((f, i) => (
@@ -4953,12 +5038,16 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
                   {plan.btnLabel}
                 </button>
               ) : (
-                <a href={wa(plan.name)} target="_blank" rel="noreferrer" className={`btn ${plan.btnClass}`} style={{ justifyContent: 'center', textDecoration: 'none', marginTop: 'auto', paddingTop: plan.lifetime ? 20 : undefined }}>
+                <a href={wa(plan.name, discountedPrice)} target="_blank" rel="noreferrer"
+                  className={`btn ${plan.btnClass}`}
+                  style={{ justifyContent: 'center', textDecoration: 'none', marginTop: 'auto', paddingTop: plan.lifetime ? 20 : undefined }}
+                  onClick={() => discountResult?.valid && incrementCodeUsage(discountResult.code)}
+                >
                   {plan.btnLabel}
                 </a>
               )}
             </div>
-          ))}
+          );})}
         </div>
 
         {/* Contact */}
@@ -5077,6 +5166,48 @@ const saveAnnouncement = async (ann) => {
 
 const deleteAnnouncement = async (id) => {
   await deleteDoc(doc(db, 'announcements', id));
+};
+
+// ==================== DISCOUNT CODES UTILS ====================
+const getDiscountCodes = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'discountCodes'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  } catch { return []; }
+};
+
+const saveDiscountCode = async (code) => {
+  const id = code.code.toUpperCase().trim();
+  await setDoc(doc(db, 'discountCodes', id), { ...code, code: id, createdAt: code.createdAt || Date.now() });
+  return id;
+};
+
+const deleteDiscountCode = async (id) => {
+  await deleteDoc(doc(db, 'discountCodes', id));
+};
+
+const validateDiscountCode = async (codeStr) => {
+  try {
+    const id = codeStr.toUpperCase().trim();
+    const snap = await getDoc(doc(db, 'discountCodes', id));
+    if (!snap.exists()) return { valid: false, reason: 'الكود غير موجود' };
+    const data = snap.data();
+    if (!data.active) return { valid: false, reason: 'الكود غير مفعّل' };
+    if (data.expiresAt && new Date(data.expiresAt) < new Date()) return { valid: false, reason: 'انتهت صلاحية الكود' };
+    if (data.usageLimit && (data.usageCount || 0) >= data.usageLimit) return { valid: false, reason: 'تم استنفاد الحد المسموح به للكود' };
+    return { valid: true, discount: data.discount, code: id, name: data.name };
+  } catch { return { valid: false, reason: 'حدث خطأ، حاول مرة أخرى' }; }
+};
+
+const incrementCodeUsage = async (codeStr) => {
+  try {
+    const id = codeStr.toUpperCase().trim();
+    const ref = doc(db, 'discountCodes', id);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      await updateDoc(ref, { usageCount: (snap.data().usageCount || 0) + 1 });
+    }
+  } catch {}
 };
 
 const getAllOwners = async () => {
@@ -5521,18 +5652,462 @@ const AdminLoginPage = ({ onAuth }) => {
   );
 };
 
+// ==================== DISCOUNT CODES TAB ====================
+const DiscountCodesTab = () => {
+  const toast = useToast();
+  const [codes, setCodes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editCode, setEditCode] = useState(null);
+  const [form, setForm] = useState({ code: '', name: '', discount: '', expiresAt: '', usageLimit: '', active: true });
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const list = await getDiscountCodes();
+    setCodes(list);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openAdd = () => {
+    setEditCode(null);
+    setForm({ code: '', name: '', discount: '', expiresAt: '', usageLimit: '', active: true });
+    setShowModal(true);
+  };
+
+  const openEdit = (c) => {
+    setEditCode(c);
+    setForm({ code: c.code, name: c.name || '', discount: String(c.discount), expiresAt: c.expiresAt || '', usageLimit: c.usageLimit ? String(c.usageLimit) : '', active: c.active !== false });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.code.trim()) { toast('أدخل الكود', 'error'); return; }
+    if (!form.discount || isNaN(+form.discount) || +form.discount <= 0 || +form.discount > 100) { toast('نسبة الخصم يجب أن تكون بين 1 و 100', 'error'); return; }
+    setSaving(true);
+    try {
+      await saveDiscountCode({
+        code: form.code.toUpperCase().trim(),
+        name: form.name.trim(),
+        discount: +form.discount,
+        expiresAt: form.expiresAt || null,
+        usageLimit: form.usageLimit ? +form.usageLimit : null,
+        usageCount: editCode?.usageCount || 0,
+        active: form.active,
+        createdAt: editCode?.createdAt || Date.now(),
+      });
+      toast(editCode ? 'تم تحديث الكود ✓' : 'تم إضافة الكود ✓', 'success');
+      setShowModal(false);
+      await load();
+    } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+    setSaving(false);
+  };
+
+  const handleToggle = async (c) => {
+    try {
+      await saveDiscountCode({ ...c, active: !c.active });
+      toast(!c.active ? 'تم تفعيل الكود' : 'تم إيقاف الكود', 'info');
+      await load();
+    } catch(e) { toast('خطأ', 'error'); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف الكود؟')) return;
+    await deleteDiscountCode(id);
+    toast('تم حذف الكود', 'info');
+    await load();
+  };
+
+  const isExpired = (c) => c.expiresAt && new Date(c.expiresAt) < new Date();
+  const isExhausted = (c) => c.usageLimit && (c.usageCount || 0) >= c.usageLimit;
+
+  const getStatus = (c) => {
+    if (!c.active) return { label: 'موقوف', color: '#64748b', bg: 'rgba(100,116,139,0.12)' };
+    if (isExpired(c)) return { label: 'منتهي الصلاحية', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
+    if (isExhausted(c)) return { label: 'مستنفد', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' };
+    return { label: 'نشط', color: '#10b981', bg: 'rgba(16,185,129,0.12)' };
+  };
+
+  return (
+    <div>
+      <div className="table-container">
+        <div className="table-hdr">
+          <div style={{ fontSize: 15, fontWeight: 700 }}>🎟️ أكواد الخصم ({codes.length})</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost btn-sm" onClick={load}>
+              <svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><polyline points='23,4 23,10 17,10'/><path d='M20.49,15a9,9,0,1,1-2.12-9.36L23,10'/></svg> تحديث
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={openAdd}>
+              <svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg> كود جديد
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center' }}><div className="spinner" /></div>
+        ) : codes.length === 0 ? (
+          <div className="empty-state" style={{ padding: 50 }}>
+            <div className="empty-icon">🎟️</div>
+            <div className="empty-title">لا توجد أكواد خصم بعد</div>
+            <div style={{ marginTop: 16 }}>
+              <button className="btn btn-primary" onClick={openAdd}>أضف أول كود</button>
+            </div>
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>الكود</th>
+                <th>الاسم</th>
+                <th>الخصم</th>
+                <th>الاستخدام</th>
+                <th>تاريخ الانتهاء</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {codes.map(c => {
+                const st = getStatus(c);
+                return (
+                  <tr key={c.id}>
+                    <td>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 15, letterSpacing: 2, background: 'rgba(26,86,219,0.1)', padding: '3px 10px', borderRadius: 8, color: 'var(--primary-light)' }}>
+                        {c.code}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 600 }}>{c.name || '—'}</td>
+                    <td>
+                      <span style={{ fontWeight: 800, fontSize: 16, color: '#10b981' }}>{c.discount}%</span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: 13 }}>
+                        {c.usageCount || 0}
+                        {c.usageLimit ? <span style={{ color: 'var(--text-muted)' }}>/{c.usageLimit}</span> : <span style={{ color: 'var(--text-muted)' }}> (غير محدود)</span>}
+                      </span>
+                      {c.usageLimit && (
+                        <div style={{ height: 4, background: 'var(--dark-3)', borderRadius: 2, marginTop: 4, overflow: 'hidden', width: 80 }}>
+                          <div style={{ height: '100%', background: isExhausted(c) ? '#ef4444' : '#10b981', width: `${Math.min(100, ((c.usageCount||0)/c.usageLimit)*100)}%`, borderRadius: 2 }} />
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ fontSize: 12, color: isExpired(c) ? '#ef4444' : 'var(--text-muted)' }}>
+                      {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('ar-EG') : 'بلا تاريخ'}
+                    </td>
+                    <td>
+                      <span style={{ background: st.bg, color: st.color, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+                        {st.label}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-xs btn-ghost" onClick={() => openEdit(c)} title="تعديل">✏️</button>
+                        <button
+                          className={`btn btn-xs ${c.active ? 'btn-warning' : 'btn-success'}`}
+                          onClick={() => handleToggle(c)}
+                          title={c.active ? 'إيقاف' : 'تفعيل'}
+                        >
+                          {c.active ? '⏸' : '▶'}
+                        </button>
+                        <button className="btn btn-xs btn-danger" onClick={() => handleDelete(c.id)} title="حذف">🗑</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="modal" style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <div className="modal-title">{editCode ? 'تعديل كود الخصم' : 'إضافة كود خصم جديد'}</div>
+              <button className="close-btn" onClick={() => setShowModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label className="form-label">الكود *</label>
+                  <input className="form-input" placeholder="مثال: SAVE20" value={form.code}
+                    onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                    style={{ letterSpacing: 2, fontWeight: 700, textAlign: 'center' }}
+                    disabled={!!editCode}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">نسبة الخصم % *</label>
+                  <input className="form-input" type="number" placeholder="20" min="1" max="100" value={form.discount}
+                    onChange={e => setForm(f => ({ ...f, discount: e.target.value }))} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">الاسم / الوصف</label>
+                <input className="form-input" placeholder="مثال: خصم الصيف 2025" value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div className="form-grid-2">
+                <div className="form-group">
+                  <label className="form-label">تاريخ الانتهاء</label>
+                  <input className="form-input" type="date" value={form.expiresAt}
+                    onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">حد الاستخدام</label>
+                  <input className="form-input" type="number" placeholder="فارغ = غير محدود" value={form.usageLimit}
+                    onChange={e => setForm(f => ({ ...f, usageLimit: e.target.value }))} />
+                </div>
+              </div>
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                  الكود مفعّل
+                </label>
+              </div>
+              {form.discount && form.code && (
+                <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 12, padding: '12px 16px', marginTop: 8 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>معاينة:</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#10b981' }}>
+                    الكود <span style={{ fontFamily: 'monospace', letterSpacing: 2 }}>{form.code || 'CODE'}</span> يعطي خصم <strong>{form.discount}%</strong> على جميع الخطط
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                    مثال: باقة 349 ج.م → <strong style={{ color: '#10b981' }}>{Math.round(349*(1-form.discount/100))} ج.م</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
+                {saving ? '⏳ جاري الحفظ...' : editCode ? '✓ حفظ التعديلات' : '+ إضافة الكود'}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==================== ADMIN DASHBOARD ====================
+const AdminDashboard = ({ owners, announcements, discountCodes }) => {
+  const now = new Date();
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // KPIs
+  const totalOwners = owners.length;
+  const activeThisMonth = owners.filter(o => {
+    if (!o.createdAt) return false;
+    return new Date(o.createdAt) >= thisMonthStart;
+  }).length;
+
+  const planDist = owners.reduce((acc, o) => {
+    const p = o.plan || 'trial';
+    acc[p] = (acc[p] || 0) + 1;
+    return acc;
+  }, {});
+
+  const totalWorkers = owners.reduce((s, o) => s + (o.workersCount || 0), 0);
+
+  // نمو التسجيلات آخر 30 يوم
+  const last30 = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (29 - i));
+    return d.toISOString().slice(0, 10);
+  });
+  const regByDay = last30.map(date => ({
+    date,
+    label: new Date(date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
+    count: owners.filter(o => o.createdAt && o.createdAt.slice(0, 10) === date).length,
+  }));
+  const maxReg = Math.max(...regByDay.map(d => d.count), 1);
+
+  const planColors = { trial: '#3b82f6', free: '#10b981', starter: '#6366f1', pro: '#f59e0b', enterprise: '#f59e0b', lifetime: '#a855f7' };
+  const planLabels = { trial: 'تجريبية', free: 'مجانية', starter: 'أساسية', pro: 'احترافية', enterprise: 'مميزة', lifetime: 'مدى الحياة' };
+
+  const recentOwners = [...owners].sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1).slice(0, 10);
+
+  const kpiCards = [
+    { label: 'إجمالي الملاك', value: totalOwners, icon: '👥', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+    { label: 'تسجيلات هذا الشهر', value: activeThisMonth, icon: '📈', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+    { label: 'إجمالي العمال', value: totalWorkers || '—', icon: '👷', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+    { label: 'إجمالي الإشعارات', value: announcements.length, icon: '📣', color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
+  ];
+
+  return (
+    <div style={{ animation: 'fadeIn .3s ease' }}>
+      {/* KPI Cards */}
+      <div className="stats-grid" style={{ marginBottom: 24 }}>
+        {kpiCards.map((k, i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-icon" style={{ background: k.bg }}>
+              <span style={{ fontSize: 22 }}>{k.icon}</span>
+            </div>
+            <div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: k.color }}>{k.value}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Growth Chart */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+          📊 نمو التسجيلات — آخر 30 يوم
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, overflow: 'hidden' }}>
+          {regByDay.map((d, i) => (
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minWidth: 0 }}>
+              <div
+                title={`${d.label}: ${d.count} تسجيل`}
+                style={{
+                  width: '100%', borderRadius: '3px 3px 0 0',
+                  background: d.count > 0 ? 'linear-gradient(180deg,#3b82f6,rgba(59,130,246,0.5))' : 'rgba(255,255,255,0.04)',
+                  height: `${Math.max(4, (d.count / maxReg) * 100)}px`,
+                  transition: 'all .3s', cursor: 'default',
+                  border: d.count > 0 ? '1px solid rgba(59,130,246,0.4)' : '1px solid rgba(255,255,255,0.05)',
+                  position: 'relative',
+                }}
+              >
+                {d.count > 0 && (
+                  <div style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: 9, fontWeight: 800, color: '#3b82f6', whiteSpace: 'nowrap' }}>
+                    {d.count}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{regByDay[0]?.label}</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{regByDay[14]?.label}</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{regByDay[29]?.label}</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        {/* Plan Distribution */}
+        <div className="card">
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            🥧 توزيع الباقات
+          </div>
+          {Object.keys(planDist).length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: 20 }}>لا يوجد بيانات بعد</div>
+          ) : Object.entries(planDist).sort((a,b) => b[1]-a[1]).map(([plan, count]) => {
+            const pct = totalOwners > 0 ? Math.round((count / totalOwners) * 100) : 0;
+            const col = planColors[plan] || '#64748b';
+            return (
+              <div key={plan} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: col }}>{planLabels[plan] || plan}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{count} مالك ({pct}%)</span>
+                </div>
+                <div style={{ height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: col, borderRadius: 4, transition: 'width .5s ease' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Discount Codes Usage */}
+        <div className="card">
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            🎟️ استخدام أكواد الخصم
+          </div>
+          {discountCodes.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: 20 }}>لا توجد أكواد بعد</div>
+          ) : discountCodes.filter(c => (c.usageCount || 0) > 0).length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: 20 }}>لم يُستخدم أي كود بعد</div>
+          ) : discountCodes.filter(c => (c.usageCount||0) > 0).sort((a,b) => (b.usageCount||0)-(a.usageCount||0)).map(c => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 12, letterSpacing: 1, background: 'rgba(26,86,219,0.1)', padding: '2px 8px', borderRadius: 6, color: 'var(--primary-light)', minWidth: 90, textAlign: 'center' }}>
+                {c.code}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ height: 7, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: c.usageLimit ? `${Math.min(100,((c.usageCount||0)/c.usageLimit)*100)}%` : '60%', background: 'linear-gradient(90deg,#10b981,#3b82f6)', borderRadius: 4 }} />
+                </div>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#10b981', minWidth: 40, textAlign: 'left' }}>
+                {c.usageCount}x
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Registrations */}
+      <div className="table-container">
+        <div className="table-hdr">
+          <div style={{ fontSize: 15, fontWeight: 700 }}>🕐 آخر 10 تسجيلات</div>
+        </div>
+        {recentOwners.length === 0 ? (
+          <div className="empty-state" style={{ padding: 40 }}>
+            <div className="empty-icon">👤</div>
+            <div className="empty-title">لا يوجد ملاك بعد</div>
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الإيميل</th>
+                <th>الباقة</th>
+                <th>تاريخ التسجيل</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentOwners.map(o => {
+                const col = planColors[o.plan] || '#64748b';
+                return (
+                  <tr key={o.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,var(--primary),var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 }}>
+                          {(o.name||'?')[0]}
+                        </div>
+                        <span style={{ fontWeight: 600 }}>{o.name || '—'}</span>
+                      </div>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{o.email}</td>
+                    <td>
+                      <span style={{ background: `${col}22`, color: col, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+                        {planLabels[o.plan] || o.plan || 'تجريبية'}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      {o.createdAt ? new Date(o.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ==================== ADMIN PANEL ====================
 const AdminPanel = () => {
   const toast = useToast();
   const [authed, setAuthed] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
-  const [tab, setTab] = useState('send'); // send | history | owners
+  const [tab, setTab] = useState('dashboard'); // dashboard | send | history | owners | discounts
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [type, setType] = useState('info'); // info | success | warning | danger
   const [sending, setSending] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
   const [owners, setOwners] = useState([]);
+  const [discountCodes, setDiscountCodes] = useState([]);
   const [loadingOwners, setLoadingOwners] = useState(false);
   const [loadingAnns, setLoadingAnns] = useState(false);
 
@@ -5544,9 +6119,10 @@ const AdminPanel = () => {
   const loadData = async () => {
     setLoadingAnns(true);
     setLoadingOwners(true);
-    const [anns, ownList] = await Promise.all([getAnnouncements(), getAllOwners()]);
+    const [anns, ownList, codes] = await Promise.all([getAnnouncements(), getAllOwners(), getDiscountCodes()]);
     setAnnouncements(anns);
     setOwners(ownList);
+    setDiscountCodes(codes);
     setLoadingAnns(false);
     setLoadingOwners(false);
   };
@@ -5588,7 +6164,7 @@ const AdminPanel = () => {
               <div style={{ fontSize: 20, fontWeight: 800 }}>لوحة تحكم المطور</div>
               <span className="admin-badge">ADMIN</span>
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>إدارة الإشعارات والملاك — WaqoudPro</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>إدارة الإشعارات والملاك وأكواد الخصم — WaqoudPro</div>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div className="admin-stat">
@@ -5603,21 +6179,37 @@ const AdminPanel = () => {
               <div style={{ fontSize: 22, fontWeight: 900, color: '#f59e0b' }}>{announcements.length}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>إشعار مُرسل</div>
             </div>
+            <div className="admin-stat">
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#a855f7' }}>{discountCodes.length}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>كود خصم</div>
+            </div>
           </div>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap' }}>
           {[
-            { id: 'send', label: 'إرسال إشعار جديد' },
-            { id: 'history', label: `الإشعارات السابقة (${announcements.length})` },
-            { id: 'owners', label: `الملاك (${owners.length})` },
+            { id: 'dashboard', label: '📊 الإحصائيات' },
+            { id: 'send', label: '📣 إشعار جديد' },
+            { id: 'history', label: `📋 الإشعارات (${announcements.length})` },
+            { id: 'owners', label: `👥 الملاك (${owners.length})` },
+            { id: 'discounts', label: `🎟️ أكواد الخصم (${discountCodes.length})` },
           ].map(t => (
             <button key={t.id} className={`admin-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
               {t.label}
             </button>
           ))}
         </div>
+
+        {/* TAB: DASHBOARD */}
+        {tab === 'dashboard' && (
+          <AdminDashboard owners={owners} announcements={announcements} discountCodes={discountCodes} />
+        )}
+
+        {/* TAB: DISCOUNTS */}
+        {tab === 'discounts' && (
+          <DiscountCodesTab />
+        )}
 
         {/* TAB: SEND */}
         {tab === 'send' && (
