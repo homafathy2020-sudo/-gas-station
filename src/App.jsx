@@ -149,14 +149,23 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .table-hdr { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(100%); } .sidebar.open { transform: translateX(0); }
-  .main-content { margin-right: 0; } .hamburger { display: flex; }
+  .sidebar { transform: translateX(100%) !important; } .sidebar.open { transform: translateX(0) !important; }
+  .main-content { margin-right: 0 !important; } .hamburger { display: flex; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .page-content { padding: 16px; }
+  .topbar { padding: 12px 16px; }
+  .topbar-title { font-size: 15px; }
+  .card { padding: 16px; border-radius: 12px; }
+  .table-hdr { flex-direction: column; align-items: flex-start; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .modal { max-width: 100%; margin: 0; border-radius: 16px 16px 0 0; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .form-grid-2 { grid-template-columns: 1fr; }
   .page-content { padding: 16px; } .topbar { padding: 12px 16px; }
   .net-amount { font-size: 26px; }
 }
-@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .stat-card { padding: 14px; } .stat-icon { width: 38px; height: 38px; font-size: 17px; } }
 @media print {
   .sidebar, .topbar, .no-print { display: none !important; }
   .main-content { margin-right: 0; }
@@ -3807,7 +3816,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
   return (
     <>
       <div className={`mobile-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
-      <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{ transform: collapsed ? 'translateX(100%)' : undefined, transition: 'transform 0.3s ease' }}>
+      <div className={`sidebar ${isOpen ? 'open' : ''}`} style={{ transform: collapsed && window.innerWidth > 768 ? 'translateX(100%)' : undefined, transition: 'transform 0.3s ease' }}>
         <div className="sidebar-logo">
           <div className="logo-icon" style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round">
