@@ -44,7 +44,7 @@ body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--t
 .topbar-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 .page-content { padding: 28px; flex: 1; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 28px; }
 .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: flex-start; gap: 16px; transition: all 0.2s; }
 .stat-card:hover { transform: translateY(-2px); background: var(--card-hover); }
 .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
@@ -186,7 +186,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .pay-btn.paid-btn { background: rgba(100,116,139,0.1); border-color: rgba(100,116,139,0.2); color: #64748b; cursor: default; }
 .pay-btn.paid-btn:hover { transform: none; }
 .paid-stamp { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-.salary-summary-bar { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03)); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 18px 24px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.salary-summary-bar { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03)); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 18px 24px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; min-width: 0; }
 .progress-bar-wrap { height: 10px; background: rgba(255,255,255,0.07); border-radius: 5px; overflow: hidden; flex: 1; min-width: 120px; }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 5px; transition: width .5s ease; }
 
@@ -1638,7 +1638,7 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 22 }}>
         <div className="card">
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>ملخص الرواتب</div>
           {[
@@ -2317,7 +2317,7 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
             تم الصرف: <b style={{ color: '#10b981' }}>{fmt(totalPaid)}</b> · متبقي: <b style={{ color: '#f59e0b' }}>{fmt(totalUnpaid)}</b>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', minWidth: 200 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', minWidth: 0, width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{paidPct}%</span>
             <div className="progress-bar-wrap">
@@ -6880,14 +6880,6 @@ const App = ({ onShowPricing }) => {
   const [workPlaces, setWorkPlaces] = useState([]);
   const [ownerUsers, setOwnerUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [sidebarOpen]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [stations, setStations] = useState([]);
   const [activeStation, setActiveStation] = useState(null);
