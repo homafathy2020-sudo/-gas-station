@@ -44,7 +44,7 @@ body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--t
 .topbar-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 .page-content { padding: 28px; flex: 1; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 16px; margin-bottom: 28px; }
 .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: flex-start; gap: 16px; transition: all 0.2s; }
 .stat-card:hover { transform: translateY(-2px); background: var(--card-hover); }
 .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
@@ -149,23 +149,34 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .table-hdr { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(100%) !important; } .sidebar.open { transform: translateX(0) !important; }
-  .main-content { margin-right: 0 !important; } .hamburger { display: flex; }
-  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-  .page-content { padding: 16px; }
-  .topbar { padding: 12px 16px; }
+  .sidebar { transform: translateX(100%) !important; }
+  .sidebar.open { transform: translateX(0) !important; }
+  .main-content { margin-right: 0 !important; }
+  .hamburger { display: flex; }
+  .app-shell { overflow-x: hidden; }
+  .page-content { padding: 14px; }
+  .topbar { padding: 10px 14px; }
   .topbar-title { font-size: 15px; }
-  .card { padding: 16px; border-radius: 12px; }
+  .card { padding: 14px; border-radius: 12px; }
+  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .stat-card { padding: 12px; gap: 10px; flex-direction: row; align-items: center; }
+  .stat-icon { width: 36px; height: 36px; font-size: 16px; flex-shrink: 0; }
   .table-hdr { flex-direction: column; align-items: flex-start; }
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .form-grid-2 { grid-template-columns: 1fr; }
   .modal { max-width: 100%; margin: 0; border-radius: 16px 16px 0 0; }
   .modal-overlay { align-items: flex-end; padding: 0; }
-  .stats-grid { grid-template-columns: 1fr 1fr; }
-  .form-grid-2 { grid-template-columns: 1fr; }
-  .page-content { padding: 16px; } .topbar { padding: 12px 16px; }
+  .salary-summary-bar { flex-direction: column; align-items: flex-start; padding: 14px; }
+  .shift-sum-card, .fuel-stat-card { min-width: unset !important; }
   .net-amount { font-size: 26px; }
+  .toast-container { left: 10px; right: 10px; bottom: 16px; }
+  .toast { min-width: unset; width: 100%; }
 }
-@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .stat-card { padding: 14px; } .stat-icon { width: 38px; height: 38px; font-size: 17px; } }
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .stat-card { padding: 10px; }
+  .stat-icon { width: 32px; height: 32px; font-size: 14px; }
+}
 @media print {
   .sidebar, .topbar, .no-print { display: none !important; }
   .main-content { margin-right: 0; }
@@ -186,7 +197,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .pay-btn.paid-btn { background: rgba(100,116,139,0.1); border-color: rgba(100,116,139,0.2); color: #64748b; cursor: default; }
 .pay-btn.paid-btn:hover { transform: none; }
 .paid-stamp { display: inline-flex; align-items: center; gap: 5px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-.salary-summary-bar { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03)); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 18px 24px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; min-width: 0; }
+.salary-summary-bar { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03)); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 18px 24px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
 .progress-bar-wrap { height: 10px; background: rgba(255,255,255,0.07); border-radius: 5px; overflow: hidden; flex: 1; min-width: 120px; }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 5px; transition: width .5s ease; }
 
@@ -1638,7 +1649,7 @@ const OwnerDashboard = ({ workers, workPlaces, onAddPlace, onEditPlace, onDelete
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, marginBottom: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginBottom: 22 }}>
         <div className="card">
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>ملخص الرواتب</div>
           {[
@@ -2317,7 +2328,7 @@ const SalaryPaymentPage = ({ workers, ownerId, stationId }) => {
             تم الصرف: <b style={{ color: '#10b981' }}>{fmt(totalPaid)}</b> · متبقي: <b style={{ color: '#f59e0b' }}>{fmt(totalUnpaid)}</b>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', minWidth: 0, width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end', minWidth: 200 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{paidPct}%</span>
             <div className="progress-bar-wrap">
@@ -6880,6 +6891,16 @@ const App = ({ onShowPricing }) => {
   const [workPlaces, setWorkPlaces] = useState([]);
   const [ownerUsers, setOwnerUsers] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [stations, setStations] = useState([]);
   const [activeStation, setActiveStation] = useState(null);
@@ -7158,7 +7179,7 @@ const App = ({ onShowPricing }) => {
   return (
     <div className="app-shell">
       <Sidebar user={user} page={page} setPage={setPage} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={sidebarCollapsed} />
-      <div className="main-content" style={{ marginRight: sidebarCollapsed ? 0 : 'var(--sidebar-w)', transition: 'margin-right 0.3s ease' }}>
+      <div className="main-content" style={{ marginRight: isMobile ? 0 : (sidebarCollapsed ? 0 : 'var(--sidebar-w)'), transition: 'margin-right 0.3s ease' }}>
         <div className="topbar no-print">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="hamburger" onClick={() => setSidebarOpen(true)}><svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><line x1='3' y1='6' x2='21' y2='6'/><line x1='3' y1='12' x2='21' y2='12'/><line x1='3' y1='18' x2='21' y2='18'/></svg></button>
