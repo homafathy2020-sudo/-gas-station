@@ -4981,11 +4981,21 @@ const PricingScreen = ({ onBack, onSelectFree }) => {
               background: discountResult.valid ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.08)',
               border: `1px solid ${discountResult.valid ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.2)'}`,
               color: discountResult.valid ? '#10b981' : '#ef4444',
-              display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', alignItems: 'flex-start', gap: 8, flexDirection: 'column',
             }}>
-              {discountResult.valid
-                ? `✅ كود صحيح! خصم ${discountResult.discount}% على جميع الخطط المدفوعة`
-                : `❌ ${discountResult.reason}`}
+              <div>
+                {discountResult.valid
+                  ? `✅ كود صحيح! خصم ${discountResult.discount}% على جميع الخطط المدفوعة`
+                  : `❌ ${discountResult.reason}`}
+              </div>
+              {discountResult._permissionError && (
+                <div style={{ fontSize: 11, color: '#f59e0b', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, padding: '8px 12px', width: '100%' }}>
+                  <div style={{ fontWeight: 800, marginBottom: 4 }}>⚙️ كيفية الحل في Firestore Rules:</div>
+                  <code style={{ fontSize: 10, fontFamily: 'monospace', display: 'block', lineHeight: 1.8, color: '#f8fafc' }}>
+                    {`match /discountCodes/{id} {\n  allow read: if true;\n}`}
+                  </code>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -5189,14 +5199,22 @@ const deleteDiscountCode = async (id) => {
 const validateDiscountCode = async (codeStr) => {
   try {
     const id = codeStr.toUpperCase().trim();
+    if (!id) return { valid: false, reason: 'أدخل الكود أولاً' };
     const snap = await getDoc(doc(db, 'discountCodes', id));
     if (!snap.exists()) return { valid: false, reason: 'الكود غير موجود' };
     const data = snap.data();
-    if (!data.active) return { valid: false, reason: 'الكود غير مفعّل' };
+    if (data.active === false) return { valid: false, reason: 'الكود غير مفعّل' };
     if (data.expiresAt && new Date(data.expiresAt) < new Date()) return { valid: false, reason: 'انتهت صلاحية الكود' };
     if (data.usageLimit && (data.usageCount || 0) >= data.usageLimit) return { valid: false, reason: 'تم استنفاد الحد المسموح به للكود' };
     return { valid: true, discount: data.discount, code: id, name: data.name };
-  } catch { return { valid: false, reason: 'حدث خطأ، حاول مرة أخرى' }; }
+  } catch (e) {
+    // لو المشكلة permission — الـ rules مش مسمحة بالقراءة
+    if (e?.code === 'permission-denied') {
+      return { valid: false, reason: 'خطأ في الصلاحيات — راجع Firestore Rules', _permissionError: true };
+    }
+    console.error('validateDiscountCode error:', e?.code, e?.message);
+    return { valid: false, reason: 'تعذّر التحقق من الكود، حاول مرة أخرى' };
+  }
 };
 
 const incrementCodeUsage = async (codeStr) => {
