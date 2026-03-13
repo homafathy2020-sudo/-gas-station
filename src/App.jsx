@@ -554,6 +554,11 @@ const syncInvites = async (ownerId) => {
 const MAX_BACKUPS = 30;
 const BACKUP_INTERVAL_HOURS = 24;
 
+// ── مراجع Firestore للـ backup ──
+const backupsCol     = (ownerId) => collection(db, 'owners', ownerId, 'backups');
+const backupDoc      = (ownerId, backupId) => doc(db, 'owners', ownerId, 'backups', backupId);
+const backupMetaDoc  = (ownerId) => doc(db, 'owners', ownerId, 'meta', 'backupMeta');
+
 // جلب كل الـ backups مرتبة من الأحدث للأقدم
 const getBackupsList = async (ownerId) => {
   try {
@@ -561,7 +566,10 @@ const getBackupsList = async (ownerId) => {
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return list;
-  } catch { return []; }
+  } catch (e) {
+    console.error('getBackupsList error:', e?.code, e?.message);
+    return [];
+  }
 };
 
 // إنشاء backup جديد
@@ -574,17 +582,10 @@ const createBackup = async (ownerId, workers, workPlaces, members, label = 'تل
     label,
     createdAt: now,
     workersCount: workers.length,
-    data: {
-      workers,
-      workPlaces,
-      members,
-    }
+    data: { workers, workPlaces, members },
   };
 
-  // احفظ الـ backup
   await setDoc(backupDoc(ownerId, backupId), snapshot);
-
-  // حدّث آخر وقت backup
   await setDoc(backupMetaDoc(ownerId), { lastBackupAt: now }, { merge: true });
 
   // لو عدد الـ backups أكبر من الحد → احذف الأقدم
@@ -599,24 +600,29 @@ const createBackup = async (ownerId, workers, workPlaces, members, label = 'تل
   return backupId;
 };
 
-// استعادة backup — بيكتب فوق البيانات الحالية
+// استعادة backup — بيجيب البيانات الحالية من Firestore الأول ثم بيكتب فوقها
 const restoreBackup = async (ownerId, backup) => {
   const { workers = [], workPlaces = [], members = [] } = backup.data || {};
 
-  // 1) احذف كل العمال الحاليين
+  // 1) جيب البيانات الحالية من Firestore
+  const [currentWorkers, currentPlaces, currentMembers] = await Promise.all([
+    getDocs(collection(db, 'owners', ownerId, 'workers')),
+    getDocs(collection(db, 'owners', ownerId, 'workplaces')),
+    getDocs(collection(db, 'owners', ownerId, 'members')),
+  ]);
+
+  // 2) احذف البيانات الحالية
   for (const d of currentWorkers.docs) {
     try { await deleteDoc(doc(db, 'owners', ownerId, 'workers', d.id)); } catch {}
   }
-  // 2) احذف كل الـ workplaces الحالية
   for (const d of currentPlaces.docs) {
     try { await deleteDoc(doc(db, 'owners', ownerId, 'workplaces', d.id)); } catch {}
   }
-  // 3) احذف كل الـ members الحاليين
   for (const d of currentMembers.docs) {
     try { await deleteDoc(doc(db, 'owners', ownerId, 'members', d.id)); } catch {}
   }
 
-  // 4) أعد كتابة البيانات من الـ backup
+  // 3) أعد كتابة البيانات من الـ backup
   for (const w of workers) {
     await setDoc(doc(db, 'owners', ownerId, 'workers', String(w.id)), w);
   }
