@@ -16,8 +16,8 @@ const globalStyles = `
   --border: rgba(255,255,255,0.08); --card: rgba(255,255,255,0.04); --card-hover: rgba(255,255,255,0.07);
   --sidebar-w: 260px;
 }
-html { direction: rtl; }
-body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+html { direction: rtl; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; overflow-x: hidden; width: 100%; max-width: 100vw; }
 ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--dark-2); } ::-webkit-scrollbar-thumb { background: var(--dark-3); border-radius: 3px; }
 .app-shell { display: flex; min-height: 100vh; }
 
@@ -44,8 +44,8 @@ body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--t
 .topbar-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
 .page-content { padding: 28px; flex: 1; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-bottom: 28px; }
-.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s; min-width: 0; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: flex-start; gap: 16px; transition: all 0.2s; }
 .stat-card:hover { transform: translateY(-2px); background: var(--card-hover); }
 .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap; }
@@ -2477,7 +2477,7 @@ const ReportsPage = ({ workers, ownerId, onResetMonth, stationId }) => {
         <div style={{ fontSize: 22, fontWeight: 800 }}>التقرير الشهري — {months[month]} {year}</div>
         <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>WaqoudPro</div>
       </div>
-      <div className="stats-grid" style={{ marginBottom: 22 }}>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', marginBottom: 22 }}>
         {[
           { label: 'العمال', value: workers.length, icon: '', color: '#3b82f6' },
           { label: 'إجمالي الرواتب', value: fmt(totalSal), icon: '', color: '#f59e0b' },
@@ -7401,6 +7401,17 @@ export default function Root() {
   const [trialInfo, setTrialInfo] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const planUnsubRef = useRef(null);
+
+  // تأكد إن الـ viewport صح على الموبايل
+  useEffect(() => {
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'viewport';
+      document.head.appendChild(meta);
+    }
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+  }, []);
 
   // تابع حالة Auth + onSnapshot على trial doc عشان التزامن الفوري مع الأدمن
   useEffect(() => {
