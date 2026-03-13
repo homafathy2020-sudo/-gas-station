@@ -3351,6 +3351,101 @@ const AccountsPage = ({ users, onAddUser, onEditUser, onDeleteUser, currentUser,
   );
 };
 
+// ==================== LANDING PAGE ====================
+const LandingPage = ({ onGetStarted, onLogin }) => {
+  const features = [
+    { icon: "👷", title: "إدارة عمال الطرمبات", desc: "سجّل كل عامل مع راتبه ومكان عمله وتابع التأخيرات والغيابات لحظة بلحظة." },
+    { icon: "📦", title: "تصفية الوردية وحساب العجز", desc: "أدخل قراءة العداد والمبلغ المستلم — النظام يكشف الزيادة أو العجز فوراً." },
+    { icon: "💬", title: "إشعارات واتساب للعمال", desc: "بعد أي خصم أو مكافأة، ابعت للعامل رسالة واتساب بكل التفاصيل تلقائياً." },
+    { icon: "📊", title: "تقارير Excel شهرية", desc: "حمّل تقرير Excel منسّق لكل العمال جاهز للطباعة والأرشيف فوراً." },
+    { icon: "🔒", title: "نسخ احتياطي تلقائي", desc: "بياناتك محفوظة بنسخ احتياطية كل 24 ساعة — مفيش خوف من فقدان البيانات." },
+    { icon: "⚡", title: "حساب الرواتب في ثوانٍ", desc: "النظام يطرح الخصومات ويحسب الصافي تلقائياً بعد كل إدخال بدون أخطاء." },
+  ];
+  const plans = [
+    { name: "مجاني", price: "0", period: "للأبد", workers: "5 عمال", color: "#10b981", highlight: false },
+    { name: "الأساسية", price: "149", period: "شهرياً", workers: "10 عمال", color: "#3b82f6", highlight: false },
+    { name: "الاحترافية", price: "349", period: "شهرياً", workers: "20 عاملاً", color: "#f59e0b", highlight: true },
+    { name: "المميزة", price: "599", period: "شهرياً", workers: "غير محدود", color: "#8b5cf6", highlight: false },
+  ];
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--dark)", fontFamily: "Cairo, sans-serif", direction: "rtl", color: "var(--text)" }}>
+      <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(10,14,23,0.85)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--border)", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 22 }}>⛽</span>
+          <span style={{ fontWeight: 900, fontSize: 18, background: "linear-gradient(135deg,#3b82f6,#f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>WaqoudPro</span>
+        </div>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <button onClick={onLogin} style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "8px 20px", borderRadius: 10, fontFamily: "Cairo,sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>تسجيل الدخول</button>
+          <button onClick={onGetStarted} style={{ background: "linear-gradient(135deg,#1a56db,#3b82f6)", color: "white", border: "none", padding: "8px 20px", borderRadius: 10, fontFamily: "Cairo,sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer", boxShadow: "0 4px 15px rgba(26,86,219,0.4)" }}>ابدأ مجاناً ←</button>
+        </div>
+      </nav>
+      <section style={{ maxWidth: 900, margin: "0 auto", padding: "80px 24px 60px", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", color: "#60a5fa", padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 700, marginBottom: 28 }}>⛽ نظام إدارة محطات الوقود</div>
+        <h1 style={{ fontSize: "clamp(32px,6vw,58px)", fontWeight: 900, lineHeight: 1.15, marginBottom: 20 }}>
+          إدارة <span style={{ background: "linear-gradient(135deg,#3b82f6,#f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>عمال محطتك</span><br />من لوحة واحدة
+        </h1>
+        <p style={{ fontSize: 17, color: "var(--text-muted)", lineHeight: 1.8, maxWidth: 560, margin: "0 auto 36px" }}>WaqoudPro يحسب الرواتب والخصومات وتصفية الورديات تلقائياً — ويبلّغ كل عامل عبر واتساب فوراً. مصمم خصيصاً لمحطات البنزين.</p>
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
+          <button onClick={onGetStarted} style={{ background: "linear-gradient(135deg,#1a56db,#3b82f6)", color: "white", border: "none", padding: "14px 36px", borderRadius: 14, fontFamily: "Cairo,sans-serif", fontWeight: 800, fontSize: 16, cursor: "pointer", boxShadow: "0 8px 32px rgba(26,86,219,0.4)" }}>🚀 ابدأ الآن مجاناً</button>
+          <button onClick={onLogin} style={{ background: "rgba(255,255,255,0.06)", color: "white", border: "1px solid rgba(255,255,255,0.12)", padding: "14px 36px", borderRadius: 14, fontFamily: "Cairo,sans-serif", fontWeight: 800, fontSize: 16, cursor: "pointer" }}>تسجيل الدخول</button>
+        </div>
+        <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap" }}>
+          {[["١٥ يوم","تجربة مجانية"],["١٠٠٪","بيانات محفوظة"],["٢٤/٧","متاح دائماً"]].map(([num,label],i) => (
+            <div key={i} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 22, fontWeight: 900, background: "linear-gradient(135deg,#3b82f6,#60a5fa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{num}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "60px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ display: "inline-block", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", color: "#60a5fa", padding: "4px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 14 }}>المميزات</div>
+          <h2 style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 900, marginBottom: 10 }}>كل ما تحتاجه لإدارة <span style={{ background: "linear-gradient(135deg,#3b82f6,#f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>محطتك باحترافية</span></h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 16 }}>
+          {features.map((f,i) => (
+            <div key={i} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 16, padding: "22px 20px" }}>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
+              <h3 style={{ fontWeight: 800, fontSize: 15, marginBottom: 8 }}>{f.title}</h3>
+              <p style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.7 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 24px" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ display: "inline-block", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", color: "#f59e0b", padding: "4px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700, marginBottom: 14 }}>الأسعار</div>
+          <h2 style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 900, marginBottom: 10 }}>أسعار <span style={{ background: "linear-gradient(135deg,#3b82f6,#f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>تناسب كل محطة</span></h2>
+          <p style={{ color: "var(--text-muted)", fontSize: 15 }}>ابدأ مجاناً. طوّر خطتك عندما تنمو.</p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
+          {plans.map((p,i) => (
+            <div key={i} style={{ background: p.highlight ? "linear-gradient(160deg,rgba(245,158,11,0.12),rgba(245,158,11,0.04))" : "var(--card)", border: "1px solid " + (p.highlight ? "rgba(245,158,11,0.4)" : "var(--border)"), borderRadius: 18, padding: "28px 20px", textAlign: "center", position: "relative" }}>
+              {p.highlight && <div style={{ position: "absolute", top: -12, right: "50%", transform: "translateX(50%)", background: "linear-gradient(135deg,#d97706,#f59e0b)", color: "white", fontSize: 10, fontWeight: 800, padding: "4px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>الأكثر مبيعاً ⭐</div>}
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)", marginBottom: 8 }}>{p.name}</div>
+              <div style={{ fontSize: 36, fontWeight: 900, color: p.color, lineHeight: 1 }}>{p.price === "0" ? "مجاناً" : p.price}</div>
+              {p.price !== "0" && <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>ج.م / {p.period}</div>}
+              <div style={{ fontSize: 12, color: "var(--text-muted)", margin: "12px 0 20px", background: "rgba(255,255,255,0.04)", padding: "6px 10px", borderRadius: 8 }}>{p.workers}</div>
+              <button onClick={onGetStarted} style={{ width: "100%", background: p.highlight ? "linear-gradient(135deg,#d97706,#f59e0b)" : "rgba(255,255,255,0.07)", color: "white", border: "none", padding: "10px", borderRadius: 10, fontFamily: "Cairo,sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{p.price === "0" ? "ابدأ مجاناً" : "اشترك الآن"}</button>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section style={{ maxWidth: 800, margin: "20px auto 80px", padding: "0 24px" }}>
+        <div style={{ background: "linear-gradient(135deg,rgba(26,86,219,0.15),rgba(59,130,246,0.08))", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 24, padding: "52px 32px", textAlign: "center" }}>
+          <h2 style={{ fontSize: "clamp(22px,4vw,36px)", fontWeight: 900, marginBottom: 14 }}>ابدأ إدارة محطتك<br /><span style={{ background: "linear-gradient(135deg,#3b82f6,#f59e0b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>بذكاء اليوم</span></h2>
+          <p style={{ color: "var(--text-muted)", fontSize: 15, marginBottom: 32 }}>جرّب مجاناً لمدة 15 يوم — بدون بطاقة بنكية، بدون أي التزام.</p>
+          <button onClick={onGetStarted} style={{ background: "linear-gradient(135deg,#1a56db,#3b82f6)", color: "white", border: "none", padding: "15px 42px", borderRadius: 14, fontFamily: "Cairo,sans-serif", fontWeight: 800, fontSize: 16, cursor: "pointer", boxShadow: "0 8px 32px rgba(26,86,219,0.4)" }}>🚀 إنشاء حساب مجاني</button>
+        </div>
+      </section>
+      <footer style={{ borderTop: "1px solid var(--border)", padding: "24px", textAlign: "center" }}>
+        <p style={{ color: "var(--text-muted)", fontSize: 12 }}>© 2025 WaqoudPro — جميع الحقوق محفوظة</p>
+      </footer>
+    </div>
+  );
+};
+
 // ==================== LOGIN (Firebase Auth) ====================
 const LoginPage = ({ onLogin, onRegisterWorker }) => {
   const [tab, setTab] = useState('login');
@@ -6770,6 +6865,7 @@ const App = ({ onShowPricing }) => {
   const plan = usePlan();
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
   const [page, setPage] = useState('dashboard');
   const [workers, setWorkers] = useState([]);
   const [workPlaces, setWorkPlaces] = useState([]);
@@ -7039,6 +7135,13 @@ const App = ({ onShowPricing }) => {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)' }}>
       <div className="spinner" />
     </div>
+  );
+
+  if (!user && showLanding) return (
+    <LandingPage
+      onGetStarted={() => setShowLanding(false)}
+      onLogin={() => setShowLanding(false)}
+    />
   );
 
   if (!user) return <LoginPage onLogin={handleLogin} onRegisterWorker={handleRegisterWorker} />;
