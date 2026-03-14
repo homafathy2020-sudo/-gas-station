@@ -3835,6 +3835,9 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
             </svg>
           </div>
           <div><div className="logo-text">WaqoudPro</div><div className="logo-sub">نظام المحطات الذكي</div></div>
+          <button onClick={onClose} style={{ marginRight: 'auto', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
         <nav className="sidebar-nav">
           <div className="nav-section-title">القائمة الرئيسية</div>
