@@ -7181,7 +7181,7 @@ const App = ({ onShowPricing }) => {
 
   return (
     <div className="app-shell">
-      <Sidebar user={user} page={page} setPage={setPage} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={sidebarCollapsed} />
+      <Sidebar user={user} page={page} setPage={setPage} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => { setSidebarOpen(false); setSidebarCollapsed(true); }} collapsed={sidebarCollapsed} />
       <div className="main-content" style={{ marginRight: isMobile ? 0 : (sidebarCollapsed ? 0 : 'var(--sidebar-w)'), transition: 'margin-right 0.3s ease' }}>
         <div className="topbar no-print">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
