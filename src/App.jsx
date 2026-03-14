@@ -3834,9 +3834,9 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
               <path d="M3 22V8l7-6 7 6v14"/><path d="M14 22V12H10v10"/><path d="M19 8h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v6a1 1 0 0 1-1 1"/>
             </svg>
           </div>
-          <div><div className="logo-text">WaqoudPro</div><div className="logo-sub">نظام المحطات الذكي</div></div>
-          <button onClick={onClose} style={{ marginRight: 'auto', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <div style={{flex:1}}><div className="logo-text">WaqoudPro</div><div className="logo-sub">نظام المحطات الذكي</div></div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
         <nav className="sidebar-nav">
