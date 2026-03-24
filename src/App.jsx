@@ -5406,7 +5406,7 @@ const Sidebar = ({ user, page, setPage, onLogout, isOpen, onClose, collapsed }) 
         <nav className="sidebar-nav">
           <div className="nav-section-title">القائمة الرئيسية</div>
           {(navs[user.role] || []).map(item => (
-            <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => { setPage(item.id); onClose(); }}>
+            <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => { setPage(item.id); }}>
               <span className="nav-icon" style={{ display:'flex', alignItems:'center', opacity: page === item.id ? 1 : 0.6 }}>{item.icon}</span>
               <span>{item.label}</span>
             </button>
